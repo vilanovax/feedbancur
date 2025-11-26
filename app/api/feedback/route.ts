@@ -188,50 +188,56 @@ export async function POST(request: NextRequest) {
     // بررسی اینکه آیا FormData است یا JSON
     const contentType = request.headers.get("content-type") || "";
     let validatedData: any;
-    let imageUrl: string | null = null;
+    let imageUrls: string[] = [];
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
-      const imageFile = formData.get("image") as File | null;
+      const imageCount = parseInt(formData.get("imageCount") as string) || 0;
       
-      // آپلود تصویر اگر وجود داشته باشد
-      if (imageFile && imageFile.size > 0) {
-        // بررسی نوع فایل
-        if (!imageFile.type.startsWith("image/")) {
-          return NextResponse.json(
-            { error: "فقط فایل‌های تصویری مجاز هستند" },
-            { status: 400 }
-          );
-        }
-
-        // بررسی اندازه فایل (حداکثر 5MB)
-        if (imageFile.size > 5 * 1024 * 1024) {
-          return NextResponse.json(
-            { error: "حجم فایل نباید بیشتر از 5 مگابایت باشد" },
-            { status: 400 }
-          );
-        }
-
-        const bytes = await imageFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
+      // آپلود تصاویر اگر وجود داشته باشند
+      if (imageCount > 0) {
         // ایجاد پوشه uploads اگر وجود نداشته باشد
         const uploadsDir = join(process.cwd(), "public", "uploads", "feedback");
         if (!existsSync(uploadsDir)) {
           mkdirSync(uploadsDir, { recursive: true });
         }
 
-        // نام فایل
-        const timestamp = Date.now();
-        const extension = imageFile.name.split(".").pop();
-        const filename = `feedback-${timestamp}-${Math.random().toString(36).substring(7)}.${extension}`;
-        const filepath = join(uploadsDir, filename);
+        for (let i = 0; i < imageCount; i++) {
+          const imageFile = formData.get(`image_${i}`) as File | null;
+          
+          if (imageFile && imageFile.size > 0) {
+            // بررسی نوع فایل
+            if (!imageFile.type.startsWith("image/")) {
+              return NextResponse.json(
+                { error: "فقط فایل‌های تصویری مجاز هستند" },
+                { status: 400 }
+              );
+            }
 
-        // ذخیره فایل
-        await writeFile(filepath, buffer);
+            // بررسی اندازه فایل (حداکثر 5MB)
+            if (imageFile.size > 5 * 1024 * 1024) {
+              return NextResponse.json(
+                { error: "حجم هر فایل نباید بیشتر از 5 مگابایت باشد" },
+                { status: 400 }
+              );
+            }
 
-        // URL فایل
-        imageUrl = `/uploads/feedback/${filename}`;
+            const bytes = await imageFile.arrayBuffer();
+            const buffer = Buffer.from(bytes);
+
+            // نام فایل
+            const timestamp = Date.now();
+            const extension = imageFile.name.split(".").pop();
+            const filename = `feedback-${timestamp}-${i}-${Math.random().toString(36).substring(7)}.${extension}`;
+            const filepath = join(uploadsDir, filename);
+
+            // ذخیره فایل
+            await writeFile(filepath, buffer);
+
+            // URL فایل
+            imageUrls.push(`/uploads/feedback/${filename}`);
+          }
+        }
       }
 
       // ساخت object از FormData
@@ -241,14 +247,17 @@ export async function POST(request: NextRequest) {
         type: formData.get("type") as string,
         isAnonymous: formData.get("isAnonymous") === "true",
         departmentId: formData.get("departmentId") as string,
-        image: imageUrl,
+        image: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
       };
 
       validatedData = feedbackSchema.parse(data);
     } else {
       const body = await request.json();
       validatedData = feedbackSchema.parse(body);
-      imageUrl = validatedData.image || null;
+      // اگر image به صورت array است، آن را به JSON string تبدیل کن
+      if (Array.isArray(validatedData.image)) {
+        validatedData.image = JSON.stringify(validatedData.image);
+      }
     }
 
     // بررسی بخش و مدیر آن
@@ -274,7 +283,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: validatedData.title,
         content: validatedData.content,
-        image: imageUrl,
+        image: validatedData.image,
         type: validatedData.type,
         isAnonymous: validatedData.isAnonymous,
         departmentId: validatedData.departmentId,

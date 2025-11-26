@@ -14,7 +14,27 @@ type SortOption = "newest" | "oldest" | "priority" | "title";
 export default function AnnouncementsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>(() => {
+    // بارگذاری از cache در صورت وجود
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("announcements_cache");
+      const cacheTime = localStorage.getItem("announcements_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 5 دقیقه معتبر است
+        if (timeDiff < 5 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            // اگر parse نشد، cache را پاک کن
+            localStorage.removeItem("announcements_cache");
+            localStorage.removeItem("announcements_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>(() => {
@@ -66,11 +86,42 @@ export default function AnnouncementsPage() {
   }, [status, router]);
 
   const fetchAnnouncements = async () => {
+    // اگر cache معتبر وجود دارد، از آن استفاده کن
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("announcements_cache");
+      const cacheTime = localStorage.getItem("announcements_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 5 * 60 * 1000) {
+          try {
+            const cachedData = JSON.parse(cached);
+            setAnnouncements(cachedData);
+            setLoading(false);
+            // در پس‌زمینه به‌روزرسانی کن
+            fetchAnnouncementsFromAPI();
+            return;
+          } catch (e) {
+            // اگر parse نشد، ادامه بده و از API بگیر
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا منقضی شده، از API بگیر
+    await fetchAnnouncementsFromAPI();
+  };
+
+  const fetchAnnouncementsFromAPI = async () => {
     try {
       const res = await fetch("/api/announcements");
       if (res.ok) {
         const data = await res.json();
         setAnnouncements(data);
+        // ذخیره در cache
+        if (typeof window !== "undefined") {
+          localStorage.setItem("announcements_cache", JSON.stringify(data));
+          localStorage.setItem("announcements_cache_time", Date.now().toString());
+        }
       }
     } catch (error) {
       console.error("Error fetching announcements:", error);
@@ -155,7 +206,7 @@ export default function AnnouncementsPage() {
     return sorted;
   }, [announcements, searchQuery, sortOption]);
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">در حال بارگذاری...</div>
@@ -252,7 +303,25 @@ export default function AnnouncementsPage() {
         </div>
 
         {/* لیست یا گرید اعلانات */}
-        {filteredAndSortedAnnouncements.length === 0 ? (
+        {loading && announcements.length === 0 ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-pulse"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-3"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredAndSortedAnnouncements.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
             <Bell size={48} className="mx-auto text-gray-400 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">

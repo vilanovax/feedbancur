@@ -11,7 +11,26 @@ import AppHeader from "@/components/AdminHeader";
 export default function DepartmentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>(() => {
+    // بارگذاری از cache در صورت وجود
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 10 دقیقه معتبر است
+        if (timeDiff < 10 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("departments_cache");
+            localStorage.removeItem("departments_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -47,11 +66,41 @@ export default function DepartmentsPage() {
   }, [status]);
 
   const fetchDepartments = async () => {
+    // اگر cache معتبر وجود دارد، از آن استفاده کن
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 10 * 60 * 1000) {
+          try {
+            const cachedData = JSON.parse(cached);
+            setDepartments(cachedData);
+            // در پس‌زمینه به‌روزرسانی کن
+            fetchDepartmentsFromAPI();
+            return;
+          } catch (e) {
+            // اگر parse نشد، ادامه بده و از API بگیر
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا منقضی شده، از API بگیر
+    await fetchDepartmentsFromAPI();
+  };
+
+  const fetchDepartmentsFromAPI = async () => {
     try {
       const res = await fetch("/api/departments");
       if (res.ok) {
         const data = await res.json();
         setDepartments(data);
+        // ذخیره در cache
+        if (typeof window !== "undefined") {
+          localStorage.setItem("departments_cache", JSON.stringify(data));
+          localStorage.setItem("departments_cache_time", Date.now().toString());
+        }
       }
     } catch (error) {
       console.error("Error fetching departments:", error);
@@ -75,6 +124,11 @@ export default function DepartmentsPage() {
       if (res.ok) {
         setShowModal(false);
         setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("departments_cache");
+          localStorage.removeItem("departments_cache_time");
+        }
         fetchDepartments();
         alert("بخش با موفقیت ایجاد شد");
       } else {
@@ -124,6 +178,11 @@ export default function DepartmentsPage() {
         setShowEditModal(false);
         setSelectedDepartment(null);
         setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("departments_cache");
+          localStorage.removeItem("departments_cache_time");
+        }
         fetchDepartments();
         alert("بخش با موفقیت بروزرسانی شد");
       } else {
@@ -151,6 +210,11 @@ export default function DepartmentsPage() {
       if (res.ok) {
         setShowDeleteModal(false);
         setSelectedDepartment(null);
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("departments_cache");
+          localStorage.removeItem("departments_cache_time");
+        }
         fetchDepartments();
         alert("بخش با موفقیت حذف شد");
       } else {
@@ -233,7 +297,39 @@ export default function DepartmentsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {departments.map((dept) => (
+          {loading && departments.length === 0 ? (
+            // Skeleton Loading
+            Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 animate-pulse"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-3 space-x-reverse flex-1">
+                    <div className="bg-gray-300 dark:bg-gray-600 p-3 rounded-lg w-12 h-12"></div>
+                    <div className="flex-1">
+                      <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-24 mb-2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                  </div>
+                </div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              </div>
+            ))
+          ) : departments.length === 0 ? (
+            <div className="col-span-full bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+              <Building2 size={48} className="mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">
+                هیچ بخشی وجود ندارد
+              </p>
+            </div>
+          ) : (
+            departments.map((dept) => (
             <div
               key={dept.id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 relative"
@@ -309,7 +405,8 @@ export default function DepartmentsPage() {
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* Create Modal */}

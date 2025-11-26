@@ -13,7 +13,26 @@ type ViewMode = "grid" | "list";
 export default function TasksPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>(() => {
+    // بارگذاری از cache در صورت وجود (فقط برای حالت بدون فیلتر)
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("tasks_cache");
+      const cacheTime = localStorage.getItem("tasks_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 3 دقیقه معتبر است
+        if (timeDiff < 3 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("tasks_cache");
+            localStorage.removeItem("tasks_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState(() => {
     if (typeof window !== "undefined") {
@@ -61,6 +80,34 @@ export default function TasksPage() {
   }, [status, router, statusFilter]);
 
   const fetchTasks = async () => {
+    // اگر فیلتر خالی است و cache معتبر وجود دارد، از آن استفاده کن
+    if (!statusFilter) {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("tasks_cache");
+        const cacheTime = localStorage.getItem("tasks_cache_time");
+        if (cached && cacheTime) {
+          const timeDiff = Date.now() - parseInt(cacheTime);
+          if (timeDiff < 3 * 60 * 1000) {
+            try {
+              const cachedData = JSON.parse(cached);
+              setTasks(cachedData);
+              setLoading(false);
+              // در پس‌زمینه به‌روزرسانی کن
+              fetchTasksFromAPI();
+              return;
+            } catch (e) {
+              // اگر parse نشد، ادامه بده و از API بگیر
+            }
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا فیلتر اعمال شده، از API بگیر
+    await fetchTasksFromAPI();
+  };
+
+  const fetchTasksFromAPI = async () => {
     try {
       let url = "/api/tasks";
       if (statusFilter) {
@@ -71,6 +118,13 @@ export default function TasksPage() {
       if (res.ok) {
         const data = await res.json();
         setTasks(data);
+        // ذخیره در cache فقط اگر فیلتر خالی باشد
+        if (!statusFilter) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("tasks_cache", JSON.stringify(data));
+            localStorage.setItem("tasks_cache_time", Date.now().toString());
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -120,7 +174,7 @@ export default function TasksPage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">در حال بارگذاری...</div>
@@ -191,7 +245,61 @@ export default function TasksPage() {
         </div>
 
         {/* لیست یا گرید تسک‌ها */}
-        {tasks.length === 0 ? (
+        {loading && tasks.length === 0 ? (
+          // Skeleton Loading
+          viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-pulse flex flex-col"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                      <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16 mb-3"></div>
+                  <div className="space-y-2 mb-4 flex-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+                  </div>
+                  <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-pulse"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
+                        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded-full w-16"></div>
+                      </div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6 mb-3"></div>
+                      <div className="flex gap-4">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : tasks.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
             <p className="text-gray-500 dark:text-gray-400">
               هیچ تسکی یافت نشد

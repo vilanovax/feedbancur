@@ -4,16 +4,55 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check } from "lucide-react";
+import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
+import Image from "next/image";
 
 export default function FeedbacksPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>(() => {
+    // بارگذاری از cache در صورت وجود (فقط برای حالت بدون فیلتر)
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("feedbacks_cache");
+      const cacheTime = localStorage.getItem("feedbacks_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 2 دقیقه معتبر است (چون فیدبک‌ها بیشتر تغییر می‌کنند)
+        if (timeDiff < 2 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("feedbacks_cache");
+            localStorage.removeItem("feedbacks_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
+  const [departments, setDepartments] = useState<any[]>(() => {
+    // بارگذاری بخش‌ها از cache
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 10 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("departments_cache");
+            localStorage.removeItem("departments_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [quickFilter, setQuickFilter] = useState<"all" | "active" | "forwarded" | "archived" | "deferred" | "completed">("all");
@@ -42,6 +81,9 @@ export default function FeedbacksPage() {
   const [newMessageTexts, setNewMessageTexts] = useState<Record<string, string>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -81,11 +123,41 @@ export default function FeedbacksPage() {
   }, [feedbacks]);
 
   const fetchDepartments = async () => {
+    // اگر cache معتبر وجود دارد، از آن استفاده کن
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 10 * 60 * 1000) {
+          try {
+            const cachedData = JSON.parse(cached);
+            setDepartments(cachedData);
+            // در پس‌زمینه به‌روزرسانی کن
+            fetchDepartmentsFromAPI();
+            return;
+          } catch (e) {
+            // اگر parse نشد، ادامه بده و از API بگیر
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا منقضی شده، از API بگیر
+    await fetchDepartmentsFromAPI();
+  };
+
+  const fetchDepartmentsFromAPI = async () => {
     try {
       const res = await fetch("/api/departments");
       if (res.ok) {
         const data = await res.json();
         setDepartments(data);
+        // ذخیره در cache
+        if (typeof window !== "undefined") {
+          localStorage.setItem("departments_cache", JSON.stringify(data));
+          localStorage.setItem("departments_cache_time", Date.now().toString());
+        }
       }
     } catch (error) {
       console.error("Error fetching departments:", error);
@@ -105,6 +177,36 @@ export default function FeedbacksPage() {
   };
 
   const fetchFeedbacks = async () => {
+    // اگر فیلترها خالی هستند و cache معتبر وجود دارد، از آن استفاده کن
+    const hasFilters = selectedDepartment || selectedStatus || (quickFilter !== "all");
+    
+    if (!hasFilters) {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("feedbacks_cache");
+        const cacheTime = localStorage.getItem("feedbacks_cache_time");
+        if (cached && cacheTime) {
+          const timeDiff = Date.now() - parseInt(cacheTime);
+          if (timeDiff < 2 * 60 * 1000) {
+            try {
+              const cachedData = JSON.parse(cached);
+              setFeedbacks(cachedData);
+              setLoading(false);
+              // در پس‌زمینه به‌روزرسانی کن
+              fetchFeedbacksFromAPI();
+              return;
+            } catch (e) {
+              // اگر parse نشد، ادامه بده و از API بگیر
+            }
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا فیلترها اعمال شده‌اند، از API بگیر
+    await fetchFeedbacksFromAPI();
+  };
+
+  const fetchFeedbacksFromAPI = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -131,17 +233,11 @@ export default function FeedbacksPage() {
       }
 
       const url = `/api/feedback?${params.toString()}`;
-      console.log("Fetching from:", url);
       
       const res = await fetch(url);
-      console.log("Response status:", res.status);
       
       if (res.ok) {
         const data = await res.json();
-        console.log("API Response:", data.length, "feedbacks");
-        console.log("Sample feedback:", data[0]);
-        console.log("Quick Filter:", quickFilter);
-        console.log("Selected Status:", selectedStatus);
         
         let filteredData = data;
 
@@ -156,43 +252,35 @@ export default function FeedbacksPage() {
                   (f.status === "PENDING" || f.status === "REVIEWED") &&
                   f.status !== "ARCHIVED"
               );
-              console.log("Active filtered:", filteredData.length, "from", data.length);
               break;
             case "forwarded":
               // فیدبک‌های ارجاع شده
               filteredData = data.filter((f: any) => f.forwardedToId && f.status !== "ARCHIVED");
-              console.log("Forwarded filtered:", filteredData.length, "from", data.length);
               break;
             case "archived":
-              // فیدبک‌های آرشیو شده (API قبلاً فیلتر کرده)
-              filteredData = data;
-              console.log("Archived filtered:", filteredData.length);
-              break;
             case "deferred":
-              // فیدبک‌های رسیدگی آینده (API قبلاً فیلتر کرده)
-              filteredData = data;
-              console.log("Deferred filtered:", filteredData.length);
-              break;
             case "completed":
-              // فیدبک‌های انجام شده (API قبلاً فیلتر کرده)
+              // این فیلترها قبلاً در API اعمال شده‌اند
               filteredData = data;
-              console.log("Completed filtered:", filteredData.length);
               break;
             case "all":
             default:
-              // همه فیدبک‌ها (به جز آرشیو شده‌ها) - بدون فیلتر اضافی
               filteredData = data;
-              console.log("All filter - showing all:", filteredData.length, "from", data.length);
               break;
           }
         } else {
-          // اگر selectedStatus تنظیم شده، از داده‌های API استفاده کن (بدون فیلتر اضافی)
           filteredData = data;
-          console.log("Using selectedStatus filter:", filteredData.length);
         }
 
-        console.log("Final feedbacks to display:", filteredData.length);
         setFeedbacks(filteredData);
+        
+        // ذخیره در cache فقط اگر فیلترها خالی باشند
+        if (!selectedDepartment && !selectedStatus && quickFilter === "all") {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("feedbacks_cache", JSON.stringify(filteredData));
+            localStorage.setItem("feedbacks_cache_time", Date.now().toString());
+          }
+        }
       } else {
         const errorData = await res.json().catch(() => ({}));
         console.error("Error fetching feedbacks:", res.status, res.statusText, errorData);
@@ -294,6 +382,11 @@ export default function FeedbacksPage() {
       if (res.ok) {
         alert("فیدبک با موفقیت ارجاع داده شد");
         closeForwardModal();
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
         fetchFeedbacks();
       } else {
         const error = await res.json();
@@ -334,6 +427,11 @@ export default function FeedbacksPage() {
       if (res.ok) {
         setShowDeleteModal(false);
         setSelectedFeedback(null);
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
         fetchFeedbacks();
       } else {
         const data = await res.json();
@@ -373,6 +471,11 @@ export default function FeedbacksPage() {
       if (res.ok) {
         alert("فیدبک با موفقیت آرشیو شد");
         closeArchiveModal();
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
         fetchFeedbacks();
       } else {
         const error = await res.json();
@@ -406,6 +509,11 @@ export default function FeedbacksPage() {
 
       if (res.ok) {
         alert("وضعیت فیدبک با موفقیت تغییر کرد");
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
         fetchFeedbacks();
       } else {
         const error = await res.json();
@@ -438,6 +546,11 @@ export default function FeedbacksPage() {
         setShowCompleteModal(false);
         setSelectedFeedback(null);
         setCompleteUserResponse("");
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
         fetchFeedbacks();
       } else {
         const error = await res.json();
@@ -747,11 +860,31 @@ export default function FeedbacksPage() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-xl text-gray-600 dark:text-gray-400">
-              در حال بارگذاری...
-            </div>
+        {loading && feedbacks.length === 0 ? (
+          // Skeleton Loading
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col animate-pulse"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                  <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+                </div>
+                <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-20 mb-3"></div>
+                <div className="space-y-2 mb-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+                </div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                <div className="space-y-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : feedbacks.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -771,6 +904,35 @@ export default function FeedbacksPage() {
                     {feedback.title}
                   </h3>
                   <div className="flex items-center gap-2">
+                    {feedback.image && (() => {
+                      // Parse image - می‌تواند string یا JSON array باشد
+                      let images: string[] = [];
+                      try {
+                        const parsed = JSON.parse(feedback.image);
+                        images = Array.isArray(parsed) ? parsed : [feedback.image];
+                      } catch {
+                        images = [feedback.image];
+                      }
+                      
+                      return images.length > 0 ? (
+                        <button
+                          onClick={() => {
+                            setSelectedImages(images);
+                            setCurrentImageIndex(0);
+                            setImageModalOpen(true);
+                          }}
+                          className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition relative"
+                          title={`مشاهده ضمیمه${images.length > 1 ? ` (${images.length} تصویر)` : ""}`}
+                        >
+                          <Paperclip size={18} />
+                          {images.length > 1 && (
+                            <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {images.length}
+                            </span>
+                          )}
+                        </button>
+                      ) : null;
+                    })()}
                     {feedback.forwardedToId && (
                       <button
                         onClick={() => openChatModal(feedback.id)}
@@ -810,7 +972,7 @@ export default function FeedbacksPage() {
                   <div className="flex items-center space-x-1 space-x-reverse">
                     <Calendar size={14} />
                     <span>
-                      {format(new Date(feedback.createdAt), "yyyy/MM/dd")}
+                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
                 </div>
@@ -821,18 +983,20 @@ export default function FeedbacksPage() {
 
                 {(session?.user.role === "ADMIN" || session?.user.role === "MANAGER") && (
                   <div className="space-y-2">
-                    {/* Status Dropdown */}
-                    <select
-                      value={feedback.status}
-                      onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option value="PENDING">در انتظار</option>
-                      <option value="REVIEWED">بررسی شده</option>
-                      <option value="DEFERRED">رسیدگی آینده</option>
-                      <option value="COMPLETED">انجام شد</option>
-                      <option value="ARCHIVED">آرشیو</option>
-                    </select>
+                    {/* Status Dropdown - فقط برای مدیر */}
+                    {session?.user.role === "MANAGER" && (
+                      <select
+                        value={feedback.status}
+                        onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      >
+                        <option value="PENDING">در انتظار</option>
+                        <option value="REVIEWED">بررسی شده</option>
+                        <option value="DEFERRED">رسیدگی آینده</option>
+                        <option value="COMPLETED">انجام شد</option>
+                        <option value="ARCHIVED">آرشیو</option>
+                      </select>
+                    )}
 
                     <div className="flex gap-2">
                       {/* Forward Button */}
@@ -1259,6 +1423,95 @@ export default function FeedbacksPage() {
                 >
                   ارسال
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* مودال نمایش تصویر ضمیمه */}
+        {imageModalOpen && selectedImages.length > 0 && (
+          <div
+            className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+            onClick={() => {
+              setImageModalOpen(false);
+              setSelectedImages([]);
+              setCurrentImageIndex(0);
+            }}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl max-h-[90vh] w-full flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                  ضمیمه فیدبک {selectedImages.length > 1 && `(${currentImageIndex + 1} از ${selectedImages.length})`}
+                </h3>
+                <button
+                  onClick={() => {
+                    setImageModalOpen(false);
+                    setSelectedImages([]);
+                    setCurrentImageIndex(0);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                >
+                  <X size={20} className="text-gray-600 dark:text-gray-400" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4 flex items-center justify-center min-h-[400px] relative">
+                {selectedImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex((prev) => 
+                          prev > 0 ? prev - 1 : selectedImages.length - 1
+                        );
+                      }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition"
+                    >
+                      <ArrowRight size={24} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex((prev) => 
+                          prev < selectedImages.length - 1 ? prev + 1 : 0
+                        );
+                      }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition"
+                    >
+                      <ArrowRight size={24} className="rotate-180" />
+                    </button>
+                  </>
+                )}
+                <div className="relative w-full h-full max-h-[70vh] min-h-[400px]">
+                  <Image
+                    src={selectedImages[currentImageIndex]}
+                    alt={`ضمیمه فیدبک ${currentImageIndex + 1}`}
+                    fill
+                    className="object-contain"
+                    unoptimized
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                  />
+                </div>
+                {selectedImages.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {selectedImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-2 h-2 rounded-full transition ${
+                          index === currentImageIndex
+                            ? "bg-blue-600"
+                            : "bg-gray-400"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

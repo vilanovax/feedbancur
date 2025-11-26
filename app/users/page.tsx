@@ -27,8 +27,45 @@ interface UserType {
 export default function UsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [users, setUsers] = useState<UserType[]>(() => {
+    // بارگذاری از cache در صورت وجود
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("users_cache");
+      const cacheTime = localStorage.getItem("users_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 5 دقیقه معتبر است
+        if (timeDiff < 5 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("users_cache");
+            localStorage.removeItem("users_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    // بارگذاری بخش‌ها از cache
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 10 * 60 * 1000) { // 10 دقیقه برای بخش‌ها
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("departments_cache");
+            localStorage.removeItem("departments_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -73,6 +110,34 @@ export default function UsersPage() {
   }, [status, roleFilter, departmentFilter, search]);
 
   const fetchUsers = async () => {
+    // اگر cache معتبر وجود دارد و فیلترها خالی هستند، از آن استفاده کن
+    if (!roleFilter && !departmentFilter && !search) {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("users_cache");
+        const cacheTime = localStorage.getItem("users_cache_time");
+        if (cached && cacheTime) {
+          const timeDiff = Date.now() - parseInt(cacheTime);
+          if (timeDiff < 5 * 60 * 1000) {
+            try {
+              const cachedData = JSON.parse(cached);
+              setUsers(cachedData);
+              setLoading(false);
+              // در پس‌زمینه به‌روزرسانی کن
+              fetchUsersFromAPI();
+              return;
+            } catch (e) {
+              // اگر parse نشد، ادامه بده و از API بگیر
+            }
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا فیلترها اعمال شده‌اند، از API بگیر
+    await fetchUsersFromAPI();
+  };
+
+  const fetchUsersFromAPI = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
@@ -84,6 +149,13 @@ export default function UsersPage() {
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
+        // ذخیره در cache فقط اگر فیلترها خالی باشند
+        if (!roleFilter && !departmentFilter && !search) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("users_cache", JSON.stringify(data));
+            localStorage.setItem("users_cache_time", Date.now().toString());
+          }
+        }
       } else {
         setError("خطا در دریافت کاربران");
       }
@@ -95,11 +167,41 @@ export default function UsersPage() {
   };
 
   const fetchDepartments = async () => {
+    // اگر cache معتبر وجود دارد، از آن استفاده کن
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("departments_cache");
+      const cacheTime = localStorage.getItem("departments_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 10 * 60 * 1000) {
+          try {
+            const cachedData = JSON.parse(cached);
+            setDepartments(cachedData);
+            // در پس‌زمینه به‌روزرسانی کن
+            fetchDepartmentsFromAPI();
+            return;
+          } catch (e) {
+            // اگر parse نشد، ادامه بده و از API بگیر
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا منقضی شده، از API بگیر
+    await fetchDepartmentsFromAPI();
+  };
+
+  const fetchDepartmentsFromAPI = async () => {
     try {
       const res = await fetch("/api/departments");
       if (res.ok) {
         const data = await res.json();
         setDepartments(data);
+        // ذخیره در cache
+        if (typeof window !== "undefined") {
+          localStorage.setItem("departments_cache", JSON.stringify(data));
+          localStorage.setItem("departments_cache_time", Date.now().toString());
+        }
       }
     } catch (err) {
       console.error("Error fetching departments:", err);
@@ -133,6 +235,11 @@ export default function UsersPage() {
           isActive: true,
         });
         setError("");
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("users_cache");
+          localStorage.removeItem("users_cache_time");
+        }
         fetchUsers();
         if (formData.password) {
           alert(`کاربر با موفقیت ایجاد شد!\nرمز عبور: ${formData.password}`);
@@ -182,6 +289,11 @@ export default function UsersPage() {
         setShowEditModal(false);
         setSelectedUser(null);
         setError("");
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("users_cache");
+          localStorage.removeItem("users_cache_time");
+        }
         fetchUsers();
         alert("کاربر با موفقیت بروزرسانی شد");
       } else {
@@ -208,6 +320,11 @@ export default function UsersPage() {
       if (res.ok) {
         setShowDeleteModal(false);
         setSelectedUser(null);
+        // پاک کردن cache برای به‌روزرسانی
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("users_cache");
+          localStorage.removeItem("users_cache_time");
+        }
         fetchUsers();
         alert("کاربر با موفقیت حذف شد");
       } else {
@@ -262,7 +379,7 @@ export default function UsersPage() {
     );
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -387,9 +504,45 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.length === 0 ? (
+                {loading && users.length === 0 ? (
+                  // Skeleton Loading
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                          <div className="mr-4">
+                            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-24 mb-2"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-16"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-12"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex gap-2">
+                          <div className="h-5 w-5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                          <div className="h-5 w-5 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       کاربری یافت نشد
                     </td>
                   </tr>

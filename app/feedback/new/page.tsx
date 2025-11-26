@@ -12,6 +12,8 @@ export default function NewFeedbackPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [departments, setDepartments] = useState<any[]>([]);
+  const DEPARTMENTS_CACHE_KEY = "feedback-departments-cache";
+  const DEPARTMENTS_CACHE_TTL = 10 * 60 * 1000; // 10 دقیقه
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -19,8 +21,8 @@ export default function NewFeedbackPage() {
     isAnonymous: false,
     departmentId: "",
   });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -31,8 +33,53 @@ export default function NewFeedbackPage() {
   }, [status, router]);
 
   useEffect(() => {
+    loadDepartmentsFromCache();
     fetchDepartments();
   }, []);
+
+  useEffect(() => {
+    if (departments.length === 0) return;
+
+    setFormData((prev) => {
+      const preferredDepartmentId =
+        session?.user.departmentId || prev.departmentId || departments[0]?.id || "";
+
+      if (!prev.departmentId && preferredDepartmentId) {
+        return { ...prev, departmentId: preferredDepartmentId };
+      }
+
+      if (session?.user.departmentId && prev.departmentId !== session.user.departmentId) {
+        return { ...prev, departmentId: session.user.departmentId };
+      }
+
+      return prev;
+    });
+  }, [departments, session?.user.departmentId]);
+
+  const loadDepartmentsFromCache = () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const cached = localStorage.getItem(DEPARTMENTS_CACHE_KEY);
+      if (!cached) return;
+
+      const parsed = JSON.parse(cached);
+      const isValid =
+        parsed &&
+        Array.isArray(parsed.data) &&
+        typeof parsed.timestamp === "number" &&
+        Date.now() - parsed.timestamp < DEPARTMENTS_CACHE_TTL;
+
+      if (isValid) {
+        setDepartments(parsed.data);
+      } else {
+        localStorage.removeItem(DEPARTMENTS_CACHE_KEY);
+      }
+    } catch (err) {
+      console.error("Error loading cached departments:", err);
+      localStorage.removeItem(DEPARTMENTS_CACHE_KEY);
+    }
+  };
 
   const fetchDepartments = async () => {
     try {
@@ -40,13 +87,12 @@ export default function NewFeedbackPage() {
       if (res.ok) {
         const data = await res.json();
         setDepartments(data);
-        if (data.length > 0 && session?.user.departmentId) {
-          setFormData((prev) => ({
-            ...prev,
-            departmentId: session.user.departmentId || data[0].id,
-          }));
-        } else if (data.length > 0) {
-          setFormData((prev) => ({ ...prev, departmentId: data[0].id }));
+        if (typeof window !== "undefined") {
+          const cachePayload = {
+            data,
+            timestamp: Date.now(),
+          };
+          localStorage.setItem(DEPARTMENTS_CACHE_KEY, JSON.stringify(cachePayload));
         }
       }
     } catch (error) {
@@ -55,33 +101,48 @@ export default function NewFeedbackPage() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles: File[] = [];
+    const newPreviews: string[] = [];
+
+    for (const file of files) {
       // بررسی نوع فایل
       if (!file.type.startsWith("image/")) {
         setError("فقط فایل‌های تصویری مجاز هستند");
-        return;
+        continue;
       }
 
       // بررسی اندازه فایل (حداکثر 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        setError("حجم فایل نباید بیشتر از 5 مگابایت باشد");
-        return;
+        setError("حجم هر فایل نباید بیشتر از 5 مگابایت باشد");
+        continue;
       }
 
-      setSelectedImage(file);
+      validFiles.push(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        newPreviews.push(reader.result as string);
+        if (newPreviews.length === validFiles.length) {
+          setImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
       };
       reader.readAsDataURL(file);
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedImages((prev) => [...prev, ...validFiles]);
       setError("");
     }
+
+    // Reset input
+    e.target.value = "";
   };
 
-  const handleRemoveImage = () => {
-    setSelectedImage(null);
-    setImagePreview(null);
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,9 +158,11 @@ export default function NewFeedbackPage() {
       formDataToSend.append("isAnonymous", formData.isAnonymous.toString());
       formDataToSend.append("departmentId", formData.departmentId);
       
-      if (selectedImage) {
-        formDataToSend.append("image", selectedImage);
-      }
+      // اضافه کردن همه تصاویر
+      selectedImages.forEach((image, index) => {
+        formDataToSend.append(`image_${index}`, image);
+      });
+      formDataToSend.append("imageCount", selectedImages.length.toString());
 
       const res = await fetch("/api/feedback", {
         method: "POST",
@@ -252,43 +315,47 @@ export default function NewFeedbackPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                ضمیمه تصویر (اختیاری)
+                ضمیمه تصویر (اختیاری - می‌توانید چند تصویر انتخاب کنید)
               </label>
-              {!imagePreview ? (
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
-                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-semibold">کلیک کنید</span> یا تصویر را اینجا بکشید
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PNG, JPG یا GIF (حداکثر 5MB)
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </label>
-              ) : (
-                <div className="relative">
-                  <div className="relative w-full h-64 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleRemoveImage}
-                    className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition"
-                  >
-                    <X size={20} />
-                  </button>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold">کلیک کنید</span> یا تصاویر را اینجا بکشید
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    PNG, JPG یا GIF (حداکثر 5MB برای هر تصویر)
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageChange}
+                />
+              </label>
+              {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative">
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                        <Image
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -317,4 +384,3 @@ export default function NewFeedbackPage() {
     </div>
   );
 }
-
