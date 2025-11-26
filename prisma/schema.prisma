@@ -1,0 +1,248 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum FeedbackStatus {
+  PENDING
+  REVIEWED
+  ARCHIVED
+  DEFERRED    // رسیدگی آینده
+  COMPLETED   // انجام شد
+}
+
+enum FeedbackType {
+  CRITICAL      // انتقادی
+  SUGGESTION    // پیشنهادی
+  SURVEY        // نظرسنجی
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FORWARDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  mobile        String    @unique
+  email         String?
+  name          String
+  password      String
+  avatar        String?   // تصویر پروفایل
+  role          UserRole  @default(EMPLOYEE)
+  isActive      Boolean   @default(true)
+  mustChangePassword Boolean @default(false) // تغییر رمز عبور اجباری در اولین ورود
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  feedbacks          Feedback[]
+  forwardedFeedbacks Feedback[]       @relation("ForwardedFeedbacks")
+  completedFeedbacks Feedback[]       @relation("CompletedFeedbacks")
+  assignedTasks      TaskAssignment[]
+  createdTasks       Task[]           @relation("TaskCreator")
+  announcements      Announcement[]
+  sentMessages       Message[]        @relation("MessageSender")
+
+  @@map("users")
+}
+
+model Department {
+  id                 String    @id @default(cuid())
+  name               String    @unique
+  description        String?
+  keywords           String[]  // کلیدواژه‌ها برای روتینگ خودکار
+  managerId          String?   // مدیر بخش
+  allowDirectFeedback Boolean   @default(false) // اجازه ارسال مستقیم فیدبک به مدیر
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  users         User[]
+  feedbacks     Feedback[]
+  tasks         Task[]
+  employees     Employee[]
+  announcements Announcement[]
+
+  @@map("departments")
+}
+
+model Feedback {
+  id             String         @id @default(cuid())
+  title          String
+  content        String
+  image          String?        // URL یا path تصویر ضمیمه شده
+  rating         Int?           // 1-5 rating (optional) - deprecated
+  type           FeedbackType   @default(SUGGESTION)
+  status         FeedbackStatus @default(PENDING)
+  isAnonymous    Boolean        @default(false)
+  departmentId   String
+  department     Department     @relation(fields: [departmentId], references: [id])
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+
+  // Forwarding fields
+  forwardedToId  String?
+  forwardedTo    User?          @relation("ForwardedFeedbacks", fields: [forwardedToId], references: [id])
+  forwardedAt    DateTime?
+
+  // Completion fields
+  completedById  String?
+  completedBy    User?          @relation("CompletedFeedbacks", fields: [completedById], references: [id])
+  completedAt    DateTime?
+  userResponse   String?        // پاسخ به کاربر هنگام تکمیل
+
+  // Archive fields
+  adminNotes     String?        // یادداشت‌های ادمین
+  managerNotes   String?        // یادداشت‌های مدیر
+
+  // Delete fields
+  deletedAt      DateTime?      // تاریخ حذف (soft delete)
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  task           Task?
+  checklistItems ChecklistItem[]
+  messages       Message[]
+
+  @@map("feedbacks")
+}
+
+model ChecklistItem {
+  id          String   @id @default(cuid())
+  feedbackId  String
+  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  title       String
+  isCompleted Boolean  @default(false)
+  order       Int      @default(0) // ترتیب نمایش
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("checklist_items")
+}
+
+model Employee {
+  id           String    @id @default(cuid())
+  name         String
+  position     String?   // سمت
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  taskAssignments TaskAssignment[]
+
+  @@map("employees")
+}
+
+model Task {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  status        TaskStatus  @default(PENDING)
+  priority      String?     // HIGH, MEDIUM, LOW
+  isPublic      Boolean     @default(false) // نمایش در بورد عمومی
+  completedAt   DateTime?
+  feedbackId    String?     @unique
+  feedback      Feedback?   @relation(fields: [feedbackId], references: [id])
+  departmentId  String
+  department    Department  @relation(fields: [departmentId], references: [id])
+  createdById   String
+  createdBy     User        @relation("TaskCreator", fields: [createdById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  assignedTo    TaskAssignment[]
+  comments      TaskComment[]
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id         String   @id @default(cuid())
+  taskId     String
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  assignedAt DateTime @default(now())
+
+  @@unique([taskId, employeeId])
+  @@unique([taskId, userId])
+  @@map("task_assignments")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("task_comments")
+}
+
+model Announcement {
+  id           String      @id @default(cuid())
+  title        String
+  content      String
+  priority     String?     // HIGH, MEDIUM, LOW
+  isActive     Boolean     @default(true) // وضعیت فعال/غیرفعال
+  scheduledAt  DateTime?   // زمان انتشار برنامه‌ریزی شده
+  publishedAt  DateTime?   // زمان انتشار واقعی
+  departmentId String?     // null = برای همه
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdById  String
+  createdBy    User        @relation(fields: [createdById], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("announcements")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  mobile    String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([mobile])
+  @@map("otps")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  feedbackId  String
+  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
+  content     String
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([feedbackId])
+  @@index([senderId])
+  @@map("messages")
+}
+

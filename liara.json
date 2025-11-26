@@ -1,0 +1,14 @@
+{
+  "platform": "nextjs",
+  "app": "feedbancur",
+  "build": {
+    "command": "npm run build"
+  },
+  "start": {
+    "command": "npm start"
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+
