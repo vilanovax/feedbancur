@@ -73,7 +73,7 @@ async function main() {
         mobile: "09123322111",
         email: "farzad@company.com",
         name: "فرزاد زارع",
-        password: "$2a$10$cbvq7mS7ZfB2UfPYTW9M7O9z.CDDzAqHBgUhlCS/ZHgSAl9uFbp.G",
+        password: "$2a$10$1wGkI6PMaLUAMzIebhuxhufVTEnzsvYtog2CsnWoaJ/fvHVJ7W.06",
         role: "MANAGER",
         isActive: true,
         mustChangePassword: false,
@@ -187,7 +187,7 @@ async function main() {
         where: { id: department.id },
         data: { managerId: manager.id },
       });
-      console.log(`✅ مدیر به بخش "${department.name}" اختصاص داده شد`);
+      console.log(`✅ مدیر به بخش "${dept.name}" اختصاص داده شد`);
     }
   }
 
@@ -208,6 +208,7 @@ async function main() {
           isAnonymous: false,
           departmentId: department.id,
           userId: user.id,
+          deletedAt: new Date("2025-11-26T10:42:04.703Z"),
           createdAt: new Date("2025-11-25T08:16:52.872Z"),
         },
       });
@@ -327,10 +328,200 @@ async function main() {
           userId: user.id,
           forwardedToId: forwardedTo?.id,
           forwardedAt: new Date("2025-11-25T08:20:16.308Z"),
+          deletedAt: new Date("2025-11-26T10:41:38.185Z"),
           createdAt: new Date("2025-11-25T08:20:16.417Z"),
         },
       });
       console.log(`✅ فیدبک "فیدبک ارجاع شده" ایجاد شد`);
+    }
+  }
+
+  {
+    const user = createdUsers.find((u) => u.mobile === "09121941532");
+    const department = createdDepartments.find((d) => d.name === "آشپزخانه");
+    if (user && department) {
+      const forwardedTo = null;
+      const completedBy = null;
+      await prisma.feedback.create({
+        data: {
+          title: "ادمین آشپزخانه ۱",
+          content: "محتوا ادمین آشپزخانه ",
+          image: "/uploads/feedback/feedback-1764151391212-2e9ejq.jpg",
+          type: "SUGGESTION",
+          status: "PENDING",
+          isAnonymous: false,
+          departmentId: department.id,
+          userId: user.id,
+          createdAt: new Date("2025-11-26T10:03:13.073Z"),
+        },
+      });
+      console.log(`✅ فیدبک "ادمین آشپزخانه ۱" ایجاد شد`);
+    }
+  }
+
+  {
+    const user = createdUsers.find((u) => u.mobile === "09121941532");
+    const department = createdDepartments.find((d) => d.name === "اداری");
+    if (user && department) {
+      const forwardedTo = createdUsers.find((u) => u.mobile === "09123322112");
+      const completedBy = null;
+      await prisma.feedback.create({
+        data: {
+          title: "عنوان ادمین اداری ۲",
+          content: "متن انتقادی ۲ ادمین ",
+          image: "[\"/uploads/feedback/feedback-1764157014321-0-nwjmqx.jpg\",\"/uploads/feedback/feedback-1764157014323-1-rl1gci.jpg\"]",
+          type: "CRITICAL",
+          status: "REVIEWED",
+          isAnonymous: false,
+          departmentId: department.id,
+          userId: user.id,
+          forwardedToId: forwardedTo?.id,
+          forwardedAt: new Date("2025-11-29T12:31:19.672Z"),
+          createdAt: new Date("2025-11-26T11:36:56.177Z"),
+        },
+      });
+      console.log(`✅ فیدبک "عنوان ادمین اداری ۲" ایجاد شد`);
+    }
+  }
+
+  {
+    const user = createdUsers.find((u) => u.mobile === "09123322111");
+    const department = createdDepartments.find((d) => d.name === "اداری");
+    if (user && department) {
+      const forwardedTo = null;
+      const completedBy = null;
+      await prisma.feedback.create({
+        data: {
+          title: "مدیر به اداری",
+          content: "محتوا مدیر به اداری",
+          image: "[\"/uploads/feedback/feedback-1764163773243-0-0p8px.jpg\"]",
+          type: "SUGGESTION",
+          status: "PENDING",
+          isAnonymous: false,
+          departmentId: department.id,
+          userId: user.id,
+          createdAt: new Date("2025-11-26T13:29:33.391Z"),
+        },
+      });
+      console.log(`✅ فیدبک "مدیر به اداری" ایجاد شد`);
+    }
+  }
+
+  {
+    const user = createdUsers.find((u) => u.mobile === "09121941532");
+    const department = createdDepartments.find((d) => d.name === "آشپزخانه");
+    if (user && department) {
+      const forwardedTo = createdUsers.find((u) => u.mobile === "09123322111");
+      const completedBy = null;
+      await prisma.feedback.create({
+        data: {
+          title: "شکایت آشپزخانه ",
+          content: "این متن شکایت آشپزخانه به صورت انتقادی است ",
+          type: "CRITICAL",
+          status: "REVIEWED",
+          isAnonymous: false,
+          departmentId: department.id,
+          userId: user.id,
+          forwardedToId: forwardedTo?.id,
+          forwardedAt: new Date("2025-11-29T13:40:44.454Z"),
+          createdAt: new Date("2025-11-29T12:49:32.025Z"),
+        },
+      });
+      console.log(`✅ فیدبک "شکایت آشپزخانه " ایجاد شد`);
+    }
+  }
+
+  {
+    const user = createdUsers.find((u) => u.mobile === "09123322111");
+    const department = createdDepartments.find((d) => d.name === "اداری");
+    if (user && department) {
+      const forwardedTo = null;
+      const completedBy = null;
+      await prisma.feedback.create({
+        data: {
+          title: "حقوق من فرزاد چی شد ؟",
+          content: "متن حثقوق مدیر فرزاد چی شذ با تصویز . انتقادی",
+          image: "[\"/uploads/feedback/feedback-1764422936935-0-ylthei.jpg\"]",
+          type: "CRITICAL",
+          status: "PENDING",
+          isAnonymous: false,
+          departmentId: department.id,
+          userId: user.id,
+          createdAt: new Date("2025-11-29T13:28:57.096Z"),
+        },
+      });
+      console.log(`✅ فیدبک "حقوق من فرزاد چی شد ؟" ایجاد شد`);
+    }
+  }
+
+  // ایجاد وظایف
+  {
+    const department = createdDepartments.find((d) => d.name === "اداری");
+    const createdBy = createdUsers.find((u) => u.mobile === "09121941532");
+    if (department && createdBy) {
+      const feedback = await prisma.feedback.findFirst({
+        where: { title: "عنوان ادمین اداری ۲" },
+      });
+      const createdTask = await prisma.task.create({
+        data: {
+          title: "ارجاع: عنوان ادمین اداری ۲",
+          description: "متن انتقادی ۲ ادمین \n\n---\nیادداشت ارجاع‌دهنده: این موضوغ را رسیدگی کنید . ",
+          status: "PENDING",
+          priority: "HIGH",
+          isPublic: false,
+          departmentId: department.id,
+          createdById: createdBy.id,
+          feedbackId: feedback?.id,
+        },
+      });
+      console.log(`✅ وظیفه "ارجاع: عنوان ادمین اداری ۲" ایجاد شد`);
+      // اختصاص وظایف
+      {
+        const user = createdUsers.find((u) => u.mobile === "09123322112");
+        if (user) {
+          await prisma.taskAssignment.create({
+            data: {
+              taskId: createdTask.id,
+              userId: user.id,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  {
+    const department = createdDepartments.find((d) => d.name === "IT");
+    const createdBy = createdUsers.find((u) => u.mobile === "09121941532");
+    if (department && createdBy) {
+      const feedback = await prisma.feedback.findFirst({
+        where: { title: "شکایت آشپزخانه " },
+      });
+      const createdTask = await prisma.task.create({
+        data: {
+          title: "ارجاع: شکایت آشپزخانه ",
+          description: "این متن شکایت آشپزخانه به صورت انتقادی است \n\n---\nیادداشت ارجاع‌دهنده: موضوع آشپزخانه را تو حل کن ",
+          status: "PENDING",
+          priority: "HIGH",
+          isPublic: false,
+          departmentId: department.id,
+          createdById: createdBy.id,
+          feedbackId: feedback?.id,
+        },
+      });
+      console.log(`✅ وظیفه "ارجاع: شکایت آشپزخانه " ایجاد شد`);
+      // اختصاص وظایف
+      {
+        const user = createdUsers.find((u) => u.mobile === "09123322111");
+        if (user) {
+          await prisma.taskAssignment.create({
+            data: {
+              taskId: createdTask.id,
+              userId: user.id,
+            },
+          });
+        }
+      }
     }
   }
 

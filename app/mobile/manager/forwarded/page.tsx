@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
-import { Star, Calendar, Building2, User, CheckCircle, Clock, Archive, MessageCircle, CheckSquare, FileText, X, Save, Plus, Trash2, Check } from "lucide-react";
+import { Star, Calendar, Building2, User, CheckCircle, Clock, Archive, MessageCircle, CheckSquare, FileText, X, Save, Plus, Trash2, Check, Send } from "lucide-react";
 import { format } from "date-fns";
+import { getStatusColor } from "@/lib/status-utils";
+import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
+import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 
 export default function ManagerForwardedFeedbacksPage() {
   const { data: session, status } = useSession();
@@ -26,6 +29,7 @@ export default function ManagerForwardedFeedbacksPage() {
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [newMessageTexts, setNewMessageTexts] = useState<Record<string, string>>({});
   const [messagesEndRef, setMessagesEndRef] = useState<HTMLDivElement | null>(null);
+  const { getStatusTextLocal } = useStatusTexts();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -310,39 +314,6 @@ export default function ManagerForwardedFeedbacksPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "REVIEWED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-      case "DEFERRED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "در انتظار";
-      case "REVIEWED":
-        return "بررسی شده";
-      case "ARCHIVED":
-        return "آرشیو شده";
-      case "DEFERRED":
-        return "رسیدگی آینده";
-      case "COMPLETED":
-        return "انجام شد";
-      default:
-        return status;
-    }
-  };
 
   if (status === "loading") {
     return (
@@ -431,7 +402,7 @@ export default function ManagerForwardedFeedbacksPage() {
                       feedback.status
                     )}`}
                   >
-                    {getStatusText(feedback.status)}
+                    {getStatusTextLocal(feedback.status)}
                   </span>
                 </div>
 
@@ -446,8 +417,18 @@ export default function ManagerForwardedFeedbacksPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar size={14} />
-                    <span>{format(new Date(feedback.createdAt), "yyyy/MM/dd")}</span>
+                    <span>
+                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                    </span>
                   </div>
+                  {feedback.forwardedAt && (
+                    <div className="flex items-center gap-2">
+                      <Send size={14} className="text-purple-600 dark:text-purple-400" />
+                      <span className="font-semibold text-purple-700 dark:text-purple-300">
+                        ارجاع شده: {getTimeAgo(feedback.forwardedAt)} پیش
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-3">
@@ -461,11 +442,11 @@ export default function ManagerForwardedFeedbacksPage() {
                     onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <option value="PENDING">در انتظار</option>
-                    <option value="REVIEWED">بررسی شده</option>
-                    <option value="DEFERRED">رسیدگی آینده</option>
-                    <option value="COMPLETED">انجام شد</option>
-                    <option value="ARCHIVED">آرشیو</option>
+                    <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
+                    <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
+                    <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
+                    <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
+                    <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
                   </select>
                 </div>
               </div>

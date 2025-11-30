@@ -166,99 +166,99 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      میانگین امتیاز
-                    </p>
-                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                      {analytics.averageRating?.toFixed(1) || "0.0"}
-                    </p>
-                  </div>
-                  <Star className="text-yellow-500" size={40} />
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  میانگین امتیاز
+                </p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {analytics.averageRating?.toFixed(1) || "0.0"}
+                </p>
               </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      کل فیدبک‌ها
-                    </p>
-                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                      {analytics.totalFeedbacks || 0}
-                    </p>
-                  </div>
-                  <BarChart3 className="text-blue-500" size={40} />
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      بخش‌های فعال
-                    </p>
-                    <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                      {analytics.activeDepartments || 0}
-                    </p>
-                  </div>
-                  <TrendingUp className="text-green-500" size={40} />
-                </div>
-              </div>
+              <Star className="text-yellow-500" size={40} />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                  فیدبک‌ها بر اساس بخش
-                </h2>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.feedbacksByDepartment || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  کل فیدبک‌ها
+                </p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {analytics.totalFeedbacks || 0}
+                </p>
               </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                  توزیع امتیازها
-                </h2>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={analytics.ratingDistribution || []}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) =>
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {(analytics.ratingDistribution || []).map(
-                        (entry: any, index: number) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={COLORS[index % COLORS.length]}
-                          />
-                        )
-                      )}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <BarChart3 className="text-blue-500" size={40} />
             </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  بخش‌های فعال
+                </p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {analytics.activeDepartments || 0}
+                </p>
+              </div>
+              <TrendingUp className="text-green-500" size={40} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              فیدبک‌ها بر اساس بخش
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={analytics.feedbacksByDepartment || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              توزیع امتیازها
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={analytics.ratingDistribution || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {(analytics.ratingDistribution || []).map(
+                    (entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    )
+                  )}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
           </>
         )}
         </div>

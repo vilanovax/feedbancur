@@ -87,6 +87,7 @@ export default function ManagerMobilePage() {
                     src={(session.user as any).avatar}
                     alt="پروفایل"
                     fill
+                    sizes="64px"
                     className="object-cover"
                   />
                 </div>
@@ -111,7 +112,10 @@ export default function ManagerMobilePage() {
             <p className="text-sm text-gray-600 dark:text-gray-400">فیدبک‌ها</p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+          <Link
+            href="/mobile/manager/forwarded"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-2">
               <Send className="w-8 h-8 text-purple-600" />
             </div>
@@ -121,7 +125,7 @@ export default function ManagerMobilePage() {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               ارجاع شده به من
             </p>
-          </div>
+          </Link>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm col-span-2">
             <div className="flex items-center justify-between mb-2">

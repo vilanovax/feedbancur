@@ -80,6 +80,7 @@ export default function EmployeeMobilePage() {
                     src={(session.user as any).avatar}
                     alt="پروفایل"
                     fill
+                    sizes="64px"
                     className="object-cover"
                   />
                 </div>

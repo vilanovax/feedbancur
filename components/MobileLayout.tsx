@@ -256,6 +256,7 @@ export default function MobileLayout({
                       src={(session?.user as any)?.avatar}
                       alt="پروفایل"
                       fill
+                      sizes="40px"
                       className="object-cover"
                     />
                   </div>

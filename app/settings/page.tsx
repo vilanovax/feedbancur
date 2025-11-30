@@ -55,6 +55,15 @@ export default function SettingsPage() {
     // تنظیمات نمایش
     itemsPerPage: 20,
     theme: "light",
+    
+    // تنظیمات تگ‌های وضعیت
+    statusTexts: {
+      PENDING: "در انتظار",
+      REVIEWED: "بررسی شده",
+      ARCHIVED: "آرشیو شده",
+      DEFERRED: "رسیدگی آینده",
+      COMPLETED: "انجام شد",
+    },
   });
 
   useEffect(() => {
@@ -75,10 +84,14 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          setSettings({ ...settings, ...data });
+          setSettings((prev) => ({ ...prev, ...data }));
           if (data.logoUrl) {
             setLogoUrl(data.logoUrl);
             localStorage.setItem("appLogo", data.logoUrl);
+          }
+          // Save status texts to localStorage
+          if (data.statusTexts) {
+            localStorage.setItem("statusTexts", JSON.stringify(data.statusTexts));
           }
         }
       }
@@ -159,8 +172,20 @@ export default function SettingsPage() {
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+        
+        // Save status texts to localStorage
+        if (settings.statusTexts) {
+          localStorage.setItem("statusTexts", JSON.stringify(settings.statusTexts));
+        }
+        
+        // Save logo to localStorage
+        if (settings.logoUrl) {
+          localStorage.setItem("appLogo", settings.logoUrl);
+        }
       } else {
-        alert("خطا در ذخیره تنظیمات");
+        const errorData = await res.json();
+        console.error("Error response:", errorData);
+        alert(errorData.message || errorData.error || "خطا در ذخیره تنظیمات");
       }
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -231,6 +256,7 @@ export default function SettingsPage() {
                           src={logoPreview || logoUrl}
                           alt="لوگو"
                           fill
+                          sizes="96px"
                           className="object-contain p-2"
                           onError={() => {
                             setLogoUrl("");
@@ -552,6 +578,122 @@ export default function SettingsPage() {
                     <option value="dark">تاریک</option>
                     <option value="auto">خودکار</option>
                   </select>
+                </div>
+              </div>
+            </div>
+
+            {/* تنظیمات تگ‌های وضعیت */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                <Database className="text-indigo-500" size={24} />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  مدیریت تگ‌های وضعیت فیدبک
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  در این بخش می‌توانید متن نمایشی تگ‌های وضعیت فیدبک را تغییر دهید.
+                </p>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    در انتظار (PENDING)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.statusTexts.PENDING}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        statusTexts: {
+                          ...settings.statusTexts,
+                          PENDING: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    بررسی شده (REVIEWED)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.statusTexts.REVIEWED}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        statusTexts: {
+                          ...settings.statusTexts,
+                          REVIEWED: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    آرشیو شده (ARCHIVED)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.statusTexts.ARCHIVED}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        statusTexts: {
+                          ...settings.statusTexts,
+                          ARCHIVED: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    رسیدگی آینده (DEFERRED)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.statusTexts.DEFERRED}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        statusTexts: {
+                          ...settings.statusTexts,
+                          DEFERRED: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    انجام شد (COMPLETED)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.statusTexts.COMPLETED}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        statusTexts: {
+                          ...settings.statusTexts,
+                          COMPLETED: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  />
                 </div>
               </div>
             </div>

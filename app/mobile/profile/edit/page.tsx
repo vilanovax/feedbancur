@@ -147,6 +147,7 @@ export default function EditProfilePage() {
                       src={avatarPreview}
                       alt="پروفایل"
                       fill
+                      sizes="80px"
                       className="object-cover"
                     />
                     <button

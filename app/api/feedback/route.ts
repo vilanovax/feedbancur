@@ -205,36 +205,36 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < imageCount; i++) {
           const imageFile = formData.get(`image_${i}`) as File | null;
           
-          if (imageFile && imageFile.size > 0) {
-            // بررسی نوع فایل
-            if (!imageFile.type.startsWith("image/")) {
-              return NextResponse.json(
-                { error: "فقط فایل‌های تصویری مجاز هستند" },
-                { status: 400 }
-              );
-            }
+      if (imageFile && imageFile.size > 0) {
+        // بررسی نوع فایل
+        if (!imageFile.type.startsWith("image/")) {
+          return NextResponse.json(
+            { error: "فقط فایل‌های تصویری مجاز هستند" },
+            { status: 400 }
+          );
+        }
 
-            // بررسی اندازه فایل (حداکثر 5MB)
-            if (imageFile.size > 5 * 1024 * 1024) {
-              return NextResponse.json(
+        // بررسی اندازه فایل (حداکثر 5MB)
+        if (imageFile.size > 5 * 1024 * 1024) {
+          return NextResponse.json(
                 { error: "حجم هر فایل نباید بیشتر از 5 مگابایت باشد" },
-                { status: 400 }
-              );
-            }
+            { status: 400 }
+          );
+        }
 
-            const bytes = await imageFile.arrayBuffer();
-            const buffer = Buffer.from(bytes);
+        const bytes = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
 
-            // نام فایل
-            const timestamp = Date.now();
-            const extension = imageFile.name.split(".").pop();
+        // نام فایل
+        const timestamp = Date.now();
+        const extension = imageFile.name.split(".").pop();
             const filename = `feedback-${timestamp}-${i}-${Math.random().toString(36).substring(7)}.${extension}`;
-            const filepath = join(uploadsDir, filename);
+        const filepath = join(uploadsDir, filename);
 
-            // ذخیره فایل
-            await writeFile(filepath, buffer);
+        // ذخیره فایل
+        await writeFile(filepath, buffer);
 
-            // URL فایل
+        // URL فایل
             imageUrls.push(`/uploads/feedback/${filename}`);
           }
         }

@@ -246,3 +246,28 @@ model Message {
   @@map("messages")
 }
 
+model Settings {
+  id                 String    @id @default(cuid())
+  siteName           String
+  siteDescription    String?
+  language           String    @default("fa")
+  timezone           String    @default("Asia/Tehran")
+  logoUrl            String?
+  emailNotifications Boolean   @default(true)
+  smsNotifications   Boolean   @default(false)
+  pushNotifications  Boolean   @default(true)
+  requirePasswordChange Boolean @default(false)
+  sessionTimeout     Int       @default(30)
+  twoFactorAuth      Boolean   @default(false)
+  allowAnonymous     Boolean   @default(true)
+  autoArchiveDays    Int       @default(90)
+  maxFeedbackLength  Int       @default(5000)
+  itemsPerPage       Int       @default(20)
+  theme              String    @default("light")
+  statusTexts        Json?     // Store customizable status texts as JSON
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("settings")
+}
+

@@ -138,6 +138,18 @@ export async function POST(
       },
     });
 
+    // اگر توضیحات ارجاع وجود داشت، آن را به عنوان پیام چت ذخیره کن
+    if (data.notes && data.notes.trim()) {
+      await prisma.message.create({
+        data: {
+          feedbackId: params.id,
+          senderId: session.user.id,
+          content: data.notes.trim(),
+          isRead: false,
+        },
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "فیدبک با موفقیت ارجاع داده شد",

@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import { Star, Calendar, Building2, User, Send, ArrowUpDown, CheckCircle, Clock, Archive, Grid3x3, List, Plus, Trash2, CheckSquare, X, MessageCircle, Check, FileText, Save } from "lucide-react";
 import { format } from "date-fns";
+import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
+import { getStatusColor } from "@/lib/status-utils";
+import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 
 type SortOption = "date-desc" | "date-asc" | "priority" | "status";
 type ViewMode = "grid" | "list";
@@ -15,10 +18,14 @@ export default function ManagerTasksPage() {
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [quickFilter, setQuickFilter] = useState<"all" | "active" | "completed">(() => {
+  const [quickFilter, setQuickFilter] = useState<"all" | "forwarded" | "completed">(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("managerTasksQuickFilter") as "all" | "active" | "completed";
-      if (saved && ["all", "active", "completed"].includes(saved)) {
+      const saved = localStorage.getItem("managerTasksQuickFilter") as "all" | "forwarded" | "completed";
+      // Migrate old "active" to "forwarded" for backward compatibility
+      if (saved === "active") {
+        return "forwarded";
+      }
+      if (saved && ["all", "forwarded", "completed"].includes(saved)) {
         return saved;
       }
     }
@@ -57,6 +64,7 @@ export default function ManagerTasksPage() {
   const [notesLoading, setNotesLoading] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
+  const { getStatusTextLocal } = useStatusTexts();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -131,39 +139,6 @@ export default function ManagerTasksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "REVIEWED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-      case "DEFERRED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "در انتظار";
-      case "REVIEWED":
-        return "بررسی شده";
-      case "ARCHIVED":
-        return "آرشیو شده";
-      case "DEFERRED":
-        return "رسیدگی آینده";
-      case "COMPLETED":
-        return "انجام شد";
-      default:
-        return status;
-    }
-  };
 
   const getPriorityValue = (type?: string) => {
     switch (type) {
@@ -183,16 +158,19 @@ export default function ManagerTasksPage() {
     // اعمال quick filter
     let filtered = [...feedbacks];
     
-    if (quickFilter === "active") {
-      // تسک‌های فعال: PENDING, REVIEWED, DEFERRED (نه COMPLETED و نه ARCHIVED)
-      filtered = filtered.filter(
-        (f) => f.status !== "COMPLETED" && f.status !== "ARCHIVED"
+    if (quickFilter === "all") {
+      // فیدبک‌های ارجاع شده به این مدیر و فیدبک‌های انجام شده
+      filtered = filtered.filter((f) => 
+        (f.forwardedToId && f.forwardedToId === session?.user.id) || 
+        f.status === "COMPLETED"
       );
+    } else if (quickFilter === "forwarded") {
+      // فقط فیدبک‌های ارجاع شده به این مدیر
+      filtered = filtered.filter((f) => f.forwardedToId && f.forwardedToId === session?.user.id);
     } else if (quickFilter === "completed") {
       // تسک‌های اجرا شده: COMPLETED
       filtered = filtered.filter((f) => f.status === "COMPLETED");
     }
-    // اگر "all" باشد، همه را نشان می‌دهیم
     
     const sorted = filtered.sort((a, b) => {
       switch (sortOption) {
@@ -538,14 +516,14 @@ export default function ManagerTasksPage() {
               همه
             </button>
             <button
-              onClick={() => setQuickFilter("active")}
+              onClick={() => setQuickFilter("forwarded")}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                quickFilter === "active"
+                quickFilter === "forwarded"
                   ? "bg-blue-600 text-white shadow-sm"
                   : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
               }`}
             >
-              فعال
+              ارجاع شده
             </button>
             <button
               onClick={() => setQuickFilter("completed")}
@@ -685,7 +663,7 @@ export default function ManagerTasksPage() {
                       feedback.status
                     )}`}
                   >
-                    {getStatusText(feedback.status)}
+                    {getStatusTextLocal(feedback.status)}
                   </span>
                 </div>
 
@@ -700,8 +678,18 @@ export default function ManagerTasksPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar size={14} />
-                    <span>{format(new Date(feedback.createdAt), "yyyy/MM/dd")}</span>
+                    <span>
+                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                    </span>
                   </div>
+                  {feedback.forwardedAt && (
+                    <div className="flex items-center gap-2">
+                      <Send size={14} className="text-purple-600 dark:text-purple-400" />
+                      <span className="font-semibold text-purple-700 dark:text-purple-300">
+                        ارجاع شده: {getTimeAgo(feedback.forwardedAt)} پیش
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-3 mb-4">
@@ -715,11 +703,11 @@ export default function ManagerTasksPage() {
                     onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <option value="PENDING">در انتظار</option>
-                    <option value="REVIEWED">بررسی شده</option>
-                    <option value="DEFERRED">رسیدگی آینده</option>
-                    <option value="COMPLETED">انجام شد</option>
-                    <option value="ARCHIVED">آرشیو</option>
+                    <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
+                    <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
+                    <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
+                    <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
+                    <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
                   </select>
                 </div>
               </div>
@@ -790,7 +778,7 @@ export default function ManagerTasksPage() {
                       feedback.status
                     )}`}
                   >
-                    {getStatusText(feedback.status)}
+                    {getStatusTextLocal(feedback.status)}
                   </span>
                 </div>
 
@@ -805,8 +793,18 @@ export default function ManagerTasksPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar size={12} />
-                    <span>{format(new Date(feedback.createdAt), "yyyy/MM/dd")}</span>
+                    <span>
+                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                    </span>
                   </div>
+                  {feedback.forwardedAt && (
+                    <div className="flex items-center gap-1">
+                      <Send size={12} className="text-purple-600 dark:text-purple-400" />
+                      <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs">
+                        ارجاع: {getTimeAgo(feedback.forwardedAt)} پیش
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-xs line-clamp-2 mb-3 flex-grow">
@@ -820,11 +818,11 @@ export default function ManagerTasksPage() {
                     onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
                     className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <option value="PENDING">در انتظار</option>
-                    <option value="REVIEWED">بررسی شده</option>
-                    <option value="DEFERRED">رسیدگی آینده</option>
-                    <option value="COMPLETED">انجام شد</option>
-                    <option value="ARCHIVED">آرشیو</option>
+                    <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
+                    <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
+                    <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
+                    <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
+                    <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
                   </select>
                 </div>
               </div>

@@ -101,6 +101,7 @@ export default function AppHeader() {
                 src={logoUrl}
                 alt="لوگو"
                 fill
+                sizes="40px"
                 className="object-contain p-1"
                 onError={() => {
                   setLogoUrl("");

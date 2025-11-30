@@ -9,11 +9,13 @@ import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
+import { getStatusText, getStatusColor, loadStatusTextsFromStorage } from "@/lib/status-utils";
 import Image from "next/image";
 
 export default function FeedbacksPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [allFeedbacks, setAllFeedbacks] = useState<any[]>([]); // همه فیدبک‌ها برای محاسبه تعداد
   const [feedbacks, setFeedbacks] = useState<any[]>(() => {
     // بارگذاری از cache در صورت وجود (فقط برای حالت بدون فیلتر)
     if (typeof window !== "undefined") {
@@ -24,7 +26,9 @@ export default function FeedbacksPage() {
         // Cache برای 2 دقیقه معتبر است (چون فیدبک‌ها بیشتر تغییر می‌کنند)
         if (timeDiff < 2 * 60 * 1000) {
           try {
-            return JSON.parse(cached);
+            const parsed = JSON.parse(cached);
+            setAllFeedbacks(parsed); // ذخیره همه فیدبک‌ها
+            return parsed;
           } catch (e) {
             localStorage.removeItem("feedbacks_cache");
             localStorage.removeItem("feedbacks_cache_time");
@@ -55,7 +59,17 @@ export default function FeedbacksPage() {
   });
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [quickFilter, setQuickFilter] = useState<"all" | "active" | "forwarded" | "archived" | "deferred" | "completed">("all");
+  const [quickFilter, setQuickFilter] = useState<"all" | "active" | "forwarded" | "archived" | "deferred" | "completed">(() => {
+    // Load from localStorage for admin
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("admin_feedback_quick_filter");
+      if (saved && ["all", "active", "forwarded", "archived", "deferred", "completed"].includes(saved)) {
+        return saved as typeof quickFilter;
+      }
+    }
+    return "all";
+  });
+  const [statusTexts, setStatusTexts] = useState<Record<string, string> | null>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"date" | "rating" | "status">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -94,7 +108,19 @@ export default function FeedbacksPage() {
   useEffect(() => {
     fetchDepartments();
     fetchManagers();
+    // Load status texts from localStorage
+    const texts = loadStatusTextsFromStorage();
+    if (texts) {
+      setStatusTexts(texts);
+    }
   }, []);
+
+  // Save quick filter to localStorage when changed (only for admin)
+  useEffect(() => {
+    if (session?.user.role === "ADMIN" && typeof window !== "undefined") {
+      localStorage.setItem("admin_feedback_quick_filter", quickFilter);
+    }
+  }, [quickFilter, session?.user.role]);
 
   // دریافت تعداد پیام‌های خوانده نشده برای همه فیدبک‌ها
   useEffect(() => {
@@ -190,6 +216,7 @@ export default function FeedbacksPage() {
             try {
               const cachedData = JSON.parse(cached);
               setFeedbacks(cachedData);
+              setAllFeedbacks(cachedData); // ذخیره همه فیدبک‌ها برای محاسبه تعداد
               setLoading(false);
               // در پس‌زمینه به‌روزرسانی کن
               fetchFeedbacksFromAPI();
@@ -274,6 +301,9 @@ export default function FeedbacksPage() {
 
         setFeedbacks(filteredData);
         
+        // ذخیره همه فیدبک‌ها برای محاسبه تعداد
+        setAllFeedbacks(data);
+        
         // ذخیره در cache فقط اگر فیلترها خالی باشند
         if (!selectedDepartment && !selectedStatus && quickFilter === "all") {
           if (typeof window !== "undefined") {
@@ -293,39 +323,23 @@ export default function FeedbacksPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "REVIEWED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-      case "DEFERRED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  // Use utility functions for status
+  const getStatusTextLocal = (status: string) => {
+    return getStatusText(status, statusTexts || undefined);
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "در انتظار";
-      case "REVIEWED":
-        return "بررسی شده";
-      case "ARCHIVED":
-        return "آرشیو شده";
-      case "DEFERRED":
-        return "رسیدگی آینده";
-      case "COMPLETED":
-        return "انجام شد";
-      default:
-        return status;
-    }
-  };
+  // محاسبه تعداد فیدبک‌های فعال
+  const activeCount = allFeedbacks.filter(
+    (f: any) => 
+      !f.forwardedToId && 
+      (f.status === "PENDING" || f.status === "REVIEWED") &&
+      f.status !== "ARCHIVED"
+  ).length;
+
+  // محاسبه تعداد فیدبک‌های ارجاع شده
+  const forwardedCount = allFeedbacks.filter(
+    (f: any) => f.forwardedToId && f.status !== "ARCHIVED"
+  ).length;
 
   const sortFeedbacks = (feedbacksToSort: any[]) => {
     const sorted = [...feedbacksToSort].sort((a, b) => {
@@ -564,16 +578,6 @@ export default function FeedbacksPage() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      PENDING: "در انتظار",
-      REVIEWED: "بررسی شده",
-      ARCHIVED: "آرشیو شده",
-      DEFERRED: "رسیدگی آینده",
-      COMPLETED: "انجام شد",
-    };
-    return labels[status] || status;
-  };
 
   // توابع مدیریت چت
   const fetchUnreadCount = async (feedbackId: string) => {
@@ -719,6 +723,11 @@ export default function FeedbacksPage() {
             >
               <CheckCircle size={16} />
               فعال
+              {activeCount > 0 && (
+                <span className="bg-white/20 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {activeCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => {
@@ -733,6 +742,11 @@ export default function FeedbacksPage() {
             >
               <SendIcon size={16} />
               ارجاع شده
+              {forwardedCount > 0 && (
+                <span className="bg-white/20 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs font-bold">
+                  {forwardedCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => {
@@ -811,11 +825,11 @@ export default function FeedbacksPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">همه وضعیت‌ها</option>
-                <option value="PENDING">در انتظار</option>
-                <option value="REVIEWED">بررسی شده</option>
-                <option value="DEFERRED">رسیدگی آینده</option>
-                <option value="COMPLETED">انجام شد</option>
-                <option value="ARCHIVED">آرشیو شده</option>
+                <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
+                <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
+                <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
+                <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
+                <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
               </select>
             </div>
           </div>
@@ -871,7 +885,7 @@ export default function FeedbacksPage() {
                 <div className="flex justify-between items-start mb-3">
                   <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
                   <div className="h-8 w-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
-                </div>
+            </div>
                 <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded-full w-20 mb-3"></div>
                 <div className="space-y-2 mb-3">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
@@ -956,7 +970,7 @@ export default function FeedbacksPage() {
                       feedback.status
                     )}`}
                   >
-                    {getStatusText(feedback.status)}
+                    {getStatusTextLocal(feedback.status)}
                   </span>
                 </div>
 
@@ -985,17 +999,17 @@ export default function FeedbacksPage() {
                   <div className="space-y-2">
                     {/* Status Dropdown - فقط برای مدیر */}
                     {session?.user.role === "MANAGER" && (
-                      <select
-                        value={feedback.status}
-                        onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        <option value="PENDING">در انتظار</option>
-                        <option value="REVIEWED">بررسی شده</option>
-                        <option value="DEFERRED">رسیدگی آینده</option>
-                        <option value="COMPLETED">انجام شد</option>
-                        <option value="ARCHIVED">آرشیو</option>
-                      </select>
+                    <select
+                      value={feedback.status}
+                      onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    >
+                      <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
+                      <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
+                      <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
+                      <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
+                      <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
+                    </select>
                     )}
 
                     <div className="flex gap-2">

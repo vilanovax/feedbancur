@@ -249,43 +249,44 @@ export default function NewFeedbackMobilePage() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               ضمیمه تصویر (اختیاری - می‌توانید چند تصویر انتخاب کنید)
             </label>
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
-                <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ImageIcon className="w-10 h-10 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
                   <span className="font-semibold">کلیک کنید</span> یا تصاویر را اینجا بکشید
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                   PNG, JPG یا GIF (حداکثر 5MB برای هر تصویر)
-                </p>
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
                 multiple
-                onChange={handleImageChange}
-              />
-            </label>
+                  onChange={handleImageChange}
+                />
+              </label>
             {imagePreviews.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-4">
                 {imagePreviews.map((preview, index) => (
                   <div key={index} className="relative">
                     <div className="relative w-full h-48 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                      <Image
+                  <Image
                         src={preview}
                         alt={`Preview ${index + 1}`}
-                        fill
+                    fill
+                        sizes="100vw"
                         className="object-cover"
-                      />
-                    </div>
-                    <button
-                      type="button"
+                  />
+                </div>
+                <button
+                  type="button"
                       onClick={() => handleRemoveImage(index)}
-                      className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition"
-                    >
+                  className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition"
+                >
                       <X size={18} />
-                    </button>
+                </button>
                   </div>
                 ))}
               </div>

@@ -7,6 +7,8 @@ import MobileLayout from "@/components/MobileLayout";
 import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { getStatusColor } from "@/lib/status-utils";
+import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 
 type SortOption = "date-desc" | "date-asc" | "rating-desc" | "rating-asc" | "status";
 
@@ -29,6 +31,7 @@ export default function MobileFeedbacksPage() {
     return "date-desc";
   });
   const [showFilters, setShowFilters] = useState(false);
+  const { getStatusTextLocal } = useStatusTexts();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -129,39 +132,6 @@ export default function MobileFeedbacksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStatus, selectedDepartment, session]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "REVIEWED":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
-      case "ARCHIVED":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
-      case "DEFERRED":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "در انتظار";
-      case "REVIEWED":
-        return "بررسی شده";
-      case "ARCHIVED":
-        return "آرشیو شده";
-      case "DEFERRED":
-        return "رسیدگی آینده";
-      case "COMPLETED":
-        return "انجام شد";
-      default:
-        return status;
-    }
-  };
 
   if (status === "loading") {
     return (
@@ -355,7 +325,7 @@ export default function MobileFeedbacksPage() {
                       feedback.status
                     )}`}
                   >
-                    {getStatusText(feedback.status)}
+                    {getStatusTextLocal(feedback.status)}
                   </span>
                 </div>
 
