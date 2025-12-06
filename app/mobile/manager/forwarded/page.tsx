@@ -29,7 +29,7 @@ export default function ManagerForwardedFeedbacksPage() {
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [newMessageTexts, setNewMessageTexts] = useState<Record<string, string>>({});
   const [messagesEndRef, setMessagesEndRef] = useState<HTMLDivElement | null>(null);
-  const { getStatusTextLocal } = useStatusTexts();
+  const { getStatusTextLocal, refreshStatusTexts, getStatusTextsOrder } = useStatusTexts();
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -41,9 +41,11 @@ export default function ManagerForwardedFeedbacksPage() {
 
   useEffect(() => {
     if (session?.user.role === "MANAGER") {
+      // به‌روزرسانی تنظیمات از API برای اطمینان از به‌روز بودن
+      refreshStatusTexts();
       fetchForwardedFeedbacks();
     }
-  }, [session]);
+  }, [session, refreshStatusTexts]);
 
   // دریافت تعداد پیام‌های خوانده نشده
   useEffect(() => {
@@ -361,10 +363,18 @@ export default function ManagerForwardedFeedbacksPage() {
                     {/* ایکون‌های چت، چک لیست و یادداشت */}
                     <button
                       onClick={() => openChatModal(feedback.id)}
-                      className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition relative"
+                      className={`p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition relative ${
+                        (feedback._count?.messages > 0 || messages[feedback.id]?.length > 0)
+                          ? "text-green-700 dark:text-green-500"
+                          : "text-green-600 dark:text-green-400"
+                      }`}
                       title="چت با ادمین"
                     >
-                      <MessageCircle size={18} />
+                      <MessageCircle 
+                        size={18} 
+                        fill={(feedback._count?.messages > 0 || messages[feedback.id]?.length > 0) ? "currentColor" : "none"}
+                        strokeWidth={(feedback._count?.messages > 0 || messages[feedback.id]?.length > 0) ? 2 : 1.5}
+                      />
                       {unreadCounts[feedback.id] > 0 && (
                         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                           {unreadCounts[feedback.id]}
@@ -442,11 +452,11 @@ export default function ManagerForwardedFeedbacksPage() {
                     onChange={(e) => handleStatusChange(feedback.id, e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
-                    <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
-                    <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
-                    <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
-                    <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
+                    {getStatusTextsOrder().map((status) => (
+                      <option key={status.key} value={status.key}>
+                        {status.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

@@ -18,6 +18,11 @@ import {
   Palette,
   Upload,
   Image as ImageIcon,
+  Plus,
+  Trash2,
+  Edit,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -29,6 +34,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [activeTab, setActiveTab] = useState<"general" | "feedback">("general");
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -56,14 +62,21 @@ export default function SettingsPage() {
     itemsPerPage: 20,
     theme: "light",
     
-    // تنظیمات تگ‌های وضعیت
-    statusTexts: {
-      PENDING: "در انتظار",
-      REVIEWED: "بررسی شده",
-      ARCHIVED: "آرشیو شده",
-      DEFERRED: "رسیدگی آینده",
-      COMPLETED: "انجام شد",
-    },
+    // تنظیمات تگ‌های وضعیت (به صورت array برای حفظ ترتیب)
+    statusTexts: [
+      { key: "PENDING", label: "در انتظار" },
+      { key: "REVIEWED", label: "بررسی شده" },
+      { key: "ARCHIVED", label: "آرشیو شده" },
+      { key: "DEFERRED", label: "رسیدگی آینده" },
+      { key: "COMPLETED", label: "انجام شد" },
+    ],
+    
+    // تنظیمات انواع فیدبک
+    feedbackTypes: [
+      { key: "SUGGESTION", label: "پیشنهادی" },
+      { key: "CRITICAL", label: "انتقادی" },
+      { key: "SURVEY", label: "نظرسنجی" },
+    ],
   });
 
   useEffect(() => {
@@ -91,7 +104,21 @@ export default function SettingsPage() {
           }
           // Save status texts to localStorage
           if (data.statusTexts) {
-            localStorage.setItem("statusTexts", JSON.stringify(data.statusTexts));
+            // تبدیل object به array اگر لازم باشد
+            let statusTextsArray = data.statusTexts;
+            if (!Array.isArray(data.statusTexts)) {
+              // تبدیل object به array با ترتیب پیش‌فرض
+              const order = ["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"];
+              statusTextsArray = order.map((key) => ({
+                key,
+                label: data.statusTexts[key] || "",
+              }));
+            }
+            setSettings((prev) => ({ ...prev, statusTexts: statusTextsArray }));
+            const statusTextsJson = JSON.stringify(statusTextsArray);
+            localStorage.setItem("statusTexts", statusTextsJson);
+            // Dispatch custom event برای به‌روزرسانی در همان تب
+            window.dispatchEvent(new CustomEvent("statusTextsUpdated", { detail: statusTextsJson }));
           }
         }
       }
@@ -161,21 +188,44 @@ export default function SettingsPage() {
     setSaved(false);
     
     try {
+      // تبدیل statusTexts array به object برای API
+      const settingsToSave = { ...settings };
+      if (Array.isArray(settingsToSave.statusTexts)) {
+        settingsToSave.statusTexts = settingsToSave.statusTexts.reduce((acc, item) => {
+          acc[item.key] = item.label;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+      
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(settingsToSave),
       });
 
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
         
-        // Save status texts to localStorage
+        // Save status texts to localStorage (به صورت array)
         if (settings.statusTexts) {
-          localStorage.setItem("statusTexts", JSON.stringify(settings.statusTexts));
+          const statusTextsArray = Array.isArray(settings.statusTexts) 
+            ? settings.statusTexts 
+            : Object.entries(settings.statusTexts).map(([key, label]) => ({ key, label }));
+          const statusTextsJson = JSON.stringify(statusTextsArray);
+          localStorage.setItem("statusTexts", statusTextsJson);
+          // Dispatch custom event برای به‌روزرسانی در همان تب
+          window.dispatchEvent(new CustomEvent("statusTextsUpdated", { detail: statusTextsJson }));
+        }
+        
+        // Save feedback types to localStorage
+        if (settings.feedbackTypes) {
+          const feedbackTypesJson = JSON.stringify(settings.feedbackTypes);
+          localStorage.setItem("feedbackTypes", feedbackTypesJson);
+          // Dispatch custom event برای به‌روزرسانی در همان تب
+          window.dispatchEvent(new CustomEvent("feedbackTypesUpdated", { detail: feedbackTypesJson }));
         }
         
         // Save logo to localStorage
@@ -232,7 +282,36 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {/* تب‌های تنظیمات */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex space-x-8 space-x-reverse">
+              <button
+                onClick={() => setActiveTab("general")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "general"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                تنظیمات عمومی
+              </button>
+              <button
+                onClick={() => setActiveTab("feedback")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "feedback"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                مدیریت فیدبک
+              </button>
+            </nav>
+          </div>
+
           <div className="space-y-6">
+            {/* محتوای تب تنظیمات عمومی */}
+            {activeTab === "general" && (
+              <>
             {/* تنظیمات عمومی */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-2 space-x-reverse mb-6">
@@ -581,7 +660,12 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
+              </>
+            )}
 
+            {/* محتوای تب مدیریت فیدبک */}
+            {activeTab === "feedback" && (
+              <>
             {/* تنظیمات تگ‌های وضعیت */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-2 space-x-reverse mb-6">
@@ -593,110 +677,225 @@ export default function SettingsPage() {
 
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  در این بخش می‌توانید متن نمایشی تگ‌های وضعیت فیدبک را تغییر دهید.
+                  در این بخش می‌توانید متن نمایشی تگ‌های وضعیت فیدبک را تغییر دهید و ترتیب نمایش آنها را تنظیم کنید.
                 </p>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    در انتظار (PENDING)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.statusTexts.PENDING}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        statusTexts: {
-                          ...settings.statusTexts,
-                          PENDING: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
+                {Array.isArray(settings.statusTexts) ? (
+                  settings.statusTexts.map((status, index) => (
+                    <div
+                      key={status.key}
+                      className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    >
+                      {/* دکمه‌های جابجایی */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => {
+                            if (index > 0) {
+                              const newStatuses = [...settings.statusTexts];
+                              [newStatuses[index - 1], newStatuses[index]] = [newStatuses[index], newStatuses[index - 1]];
+                              setSettings({ ...settings, statusTexts: newStatuses });
+                            }
+                          }}
+                          disabled={index === 0}
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="جابجایی به بالا"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (index < settings.statusTexts.length - 1) {
+                              const newStatuses = [...settings.statusTexts];
+                              [newStatuses[index], newStatuses[index + 1]] = [newStatuses[index + 1], newStatuses[index]];
+                              setSettings({ ...settings, statusTexts: newStatuses });
+                            }
+                          }}
+                          disabled={index === settings.statusTexts.length - 1}
+                          className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="جابجایی به پایین"
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    بررسی شده (REVIEWED)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.statusTexts.REVIEWED}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        statusTexts: {
-                          ...settings.statusTexts,
-                          REVIEWED: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    آرشیو شده (ARCHIVED)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.statusTexts.ARCHIVED}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        statusTexts: {
-                          ...settings.statusTexts,
-                          ARCHIVED: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    رسیدگی آینده (DEFERRED)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.statusTexts.DEFERRED}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        statusTexts: {
-                          ...settings.statusTexts,
-                          DEFERRED: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    انجام شد (COMPLETED)
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.statusTexts.COMPLETED}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        statusTexts: {
-                          ...settings.statusTexts,
-                          COMPLETED: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  />
-                </div>
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            کلید (Key)
+                          </label>
+                          <input
+                            type="text"
+                            value={status.key}
+                            readOnly
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-100 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-400 cursor-not-allowed"
+                            placeholder="PENDING"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            متن نمایشی (Label)
+                          </label>
+                          <input
+                            type="text"
+                            value={status.label}
+                            onChange={(e) => {
+                              const newStatuses = [...settings.statusTexts];
+                              newStatuses[index].label = e.target.value;
+                              setSettings({ ...settings, statusTexts: newStatuses });
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="در انتظار"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  // Fallback برای حالت قدیمی (object)
+                  Object.entries(settings.statusTexts || {}).map(([key, label]) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        {key}
+                      </label>
+                      <input
+                        type="text"
+                        value={label as string}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            statusTexts: {
+                              ...settings.statusTexts,
+                              [key]: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
+
+            {/* تنظیمات انواع فیدبک */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                <Mail className="text-blue-500" size={24} />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  مدیریت انواع فیدبک
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  در این بخش می‌توانید انواع فیدبک را مدیریت کنید. می‌توانید انواع جدید اضافه کنید، متن آنها را ویرایش کنید یا حذف کنید.
+                </p>
+
+                {settings.feedbackTypes.map((type, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
+                    {/* دکمه‌های جابجایی */}
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => {
+                          if (index > 0) {
+                            const newTypes = [...settings.feedbackTypes];
+                            [newTypes[index - 1], newTypes[index]] = [newTypes[index], newTypes[index - 1]];
+                            setSettings({ ...settings, feedbackTypes: newTypes });
+                          }
+                        }}
+                        disabled={index === 0}
+                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="جابجایی به بالا"
+                      >
+                        <ArrowUp size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (index < settings.feedbackTypes.length - 1) {
+                            const newTypes = [...settings.feedbackTypes];
+                            [newTypes[index], newTypes[index + 1]] = [newTypes[index + 1], newTypes[index]];
+                            setSettings({ ...settings, feedbackTypes: newTypes });
+                          }
+                        }}
+                        disabled={index === settings.feedbackTypes.length - 1}
+                        className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="جابجایی به پایین"
+                      >
+                        <ArrowDown size={16} />
+                      </button>
+                    </div>
+
+                    <div className="flex-1 grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          کلید (Key)
+                        </label>
+                        <input
+                          type="text"
+                          value={type.key}
+                          onChange={(e) => {
+                            const newTypes = [...settings.feedbackTypes];
+                            newTypes[index].key = e.target.value.toUpperCase().trim();
+                            setSettings({ ...settings, feedbackTypes: newTypes });
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          placeholder="SUGGESTION"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          متن نمایشی (Label)
+                        </label>
+                        <input
+                          type="text"
+                          value={type.label}
+                          onChange={(e) => {
+                            const newTypes = [...settings.feedbackTypes];
+                            newTypes[index].label = e.target.value;
+                            setSettings({ ...settings, feedbackTypes: newTypes });
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          placeholder="پیشنهادی"
+                        />
+                      </div>
+                    </div>
+                    {settings.feedbackTypes.length > 1 && (
+                      <button
+                        onClick={() => {
+                          if (confirm("آیا مطمئن هستید که می‌خواهید این نوع فیدبک را حذف کنید؟")) {
+                            const newTypes = settings.feedbackTypes.filter((_, i) => i !== index);
+                            setSettings({ ...settings, feedbackTypes: newTypes });
+                          }
+                        }}
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                        title="حذف"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => {
+                    const newTypes = [
+                      ...settings.feedbackTypes,
+                      { key: "NEW_TYPE", label: "نوع جدید" },
+                    ];
+                    setSettings({ ...settings, feedbackTypes: newTypes });
+                  }}
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  <Plus size={18} />
+                  <span>افزودن نوع جدید</span>
+                </button>
+              </div>
+            </div>
+              </>
+            )}
 
             {/* دکمه ذخیره */}
             <div className="flex justify-end">

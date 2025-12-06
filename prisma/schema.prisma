@@ -24,11 +24,6 @@ enum FeedbackStatus {
   COMPLETED   // انجام شد
 }
 
-enum FeedbackType {
-  CRITICAL      // انتقادی
-  SUGGESTION    // پیشنهادی
-  SURVEY        // نظرسنجی
-}
 
 enum TaskStatus {
   PENDING
@@ -88,7 +83,7 @@ model Feedback {
   content        String
   image          String?        // URL یا path تصویر ضمیمه شده
   rating         Int?           // 1-5 rating (optional) - deprecated
-  type           FeedbackType   @default(SUGGESTION)
+  type           String         @default("SUGGESTION")
   status         FeedbackStatus @default(PENDING)
   isAnonymous    Boolean        @default(false)
   departmentId   String
@@ -265,6 +260,7 @@ model Settings {
   itemsPerPage       Int       @default(20)
   theme              String    @default("light")
   statusTexts        Json?     // Store customizable status texts as JSON
+  feedbackTypes      Json?     // Store customizable feedback types as JSON array: [{key: string, label: string}]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

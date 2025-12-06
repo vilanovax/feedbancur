@@ -10,7 +10,7 @@ import { existsSync, mkdirSync } from "fs";
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
   content: z.string().min(1, "محتوا الزامی است"),
-  type: z.enum(['CRITICAL', 'SUGGESTION', 'SURVEY']).default('SUGGESTION'),
+  type: z.string().min(1, "نوع فیدبک الزامی است").default('SUGGESTION'),
   isAnonymous: z.boolean().default(false),
   departmentId: z.string().min(1, "بخش الزامی است"),
   image: z.string().optional().nullable(),
@@ -102,6 +102,11 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
+          _count: {
+            select: {
+              messages: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -140,6 +145,11 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            _count: {
+              select: {
+                messages: true,
               },
             },
           },

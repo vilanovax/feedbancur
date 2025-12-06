@@ -43,13 +43,23 @@ export function getStatusColor(status: string) {
 
 /**
  * Load status texts from localStorage
+ * پشتیبانی از هر دو فرمت: array و object
  */
 export function loadStatusTextsFromStorage(): Record<string, string> | null {
   if (typeof window === "undefined") return null;
   try {
     const stored = localStorage.getItem("statusTexts");
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // اگر array است، به object تبدیل کن
+      if (Array.isArray(parsed)) {
+        return parsed.reduce((acc, item) => {
+          acc[item.key] = item.label;
+          return acc;
+        }, {} as Record<string, string>);
+      }
+      // اگر object است، همان را برگردان
+      return parsed;
     }
   } catch (e) {
     console.error("Error loading status texts from storage:", e);
@@ -64,8 +74,51 @@ export function saveStatusTextsToStorage(texts: Record<string, string>) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem("statusTexts", JSON.stringify(texts));
+    // Dispatch event برای به‌روزرسانی در سایر کامپوننت‌ها
+    window.dispatchEvent(new CustomEvent("statusTextsUpdated", { 
+      detail: JSON.stringify(texts) 
+    }));
   } catch (e) {
     console.error("Error saving status texts to storage:", e);
+  }
+}
+
+/**
+ * Load status texts order from localStorage
+ * ترتیب statusTexts را از localStorage برمی‌گرداند
+ */
+export function loadStatusTextsOrderFromStorage(): Array<{ key: string; label: string }> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = localStorage.getItem("statusTexts");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // اگر array است، همان را برگردان (ترتیب حفظ شده)
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+      // اگر object است، به array تبدیل کن با ترتیب پیش‌فرض
+      const order = ["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"];
+      return order.map((key) => ({
+        key,
+        label: parsed[key] || DEFAULT_STATUS_TEXTS[key] || key,
+      }));
+    }
+  } catch (e) {
+    console.error("Error loading status texts order from storage:", e);
+  }
+  return null;
+}
+
+/**
+ * Clear status texts from localStorage
+ */
+export function clearStatusTextsFromStorage() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("statusTexts");
+  } catch (e) {
+    console.error("Error clearing status texts from storage:", e);
   }
 }
 

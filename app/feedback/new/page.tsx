@@ -7,17 +7,19 @@ import { ArrowRight, Image as ImageIcon, X } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import Image from "next/image";
+import { useFeedbackTypes } from "@/lib/hooks/useFeedbackTypes";
 
 export default function NewFeedbackPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { feedbackTypes } = useFeedbackTypes();
   const [departments, setDepartments] = useState<any[]>([]);
   const DEPARTMENTS_CACHE_KEY = "feedback-departments-cache";
   const DEPARTMENTS_CACHE_TTL = 10 * 60 * 1000; // 10 دقیقه
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    type: "SUGGESTION" as "CRITICAL" | "SUGGESTION" | "SURVEY",
+    type: "",
     isAnonymous: false,
     departmentId: "",
   });
@@ -25,6 +27,13 @@ export default function NewFeedbackPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Set default type when feedbackTypes are loaded
+  useEffect(() => {
+    if (feedbackTypes.length > 0 && !formData.type) {
+      setFormData((prev) => ({ ...prev, type: feedbackTypes[0].key }));
+    }
+  }, [feedbackTypes, formData.type]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -284,14 +293,16 @@ export default function NewFeedbackPage() {
                 id="type"
                 value={formData.type}
                 onChange={(e) =>
-                  setFormData({ ...formData, type: e.target.value as any })
+                  setFormData({ ...formData, type: e.target.value })
                 }
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
-                <option value="SUGGESTION">پیشنهادی</option>
-                <option value="CRITICAL">انتقادی</option>
-                <option value="SURVEY">نظرسنجی</option>
+                {feedbackTypes.map((type) => (
+                  <option key={type.key} value={type.key}>
+                    {type.label}
+                  </option>
+                ))}
               </select>
             </div>
 

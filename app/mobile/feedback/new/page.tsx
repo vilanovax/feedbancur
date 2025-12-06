@@ -6,18 +6,27 @@ import { useSession } from "next-auth/react";
 import MobileLayout from "@/components/MobileLayout";
 import { ArrowRight, Image as ImageIcon, X } from "lucide-react";
 import Image from "next/image";
+import { useFeedbackTypes } from "@/lib/hooks/useFeedbackTypes";
 
 export default function NewFeedbackMobilePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [departments, setDepartments] = useState<any[]>([]);
+  const { feedbackTypes } = useFeedbackTypes();
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    type: "SUGGESTION" as "CRITICAL" | "SUGGESTION" | "SURVEY",
+    type: "",
     isAnonymous: false,
     departmentId: "",
   });
+  
+  // Set default type when feedbackTypes are loaded
+  useEffect(() => {
+    if (feedbackTypes.length > 0 && !formData.type) {
+      setFormData((prev) => ({ ...prev, type: feedbackTypes[0].key }));
+    }
+  }, [feedbackTypes, formData.type]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -216,14 +225,16 @@ export default function NewFeedbackMobilePage() {
             <select
               value={formData.type}
               onChange={(e) =>
-                setFormData({ ...formData, type: e.target.value as any })
+                setFormData({ ...formData, type: e.target.value })
               }
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
-              <option value="SUGGESTION">پیشنهادی</option>
-              <option value="CRITICAL">انتقادی</option>
-              <option value="SURVEY">نظرسنجی</option>
+              {feedbackTypes.map((type) => (
+                <option key={type.key} value={type.key}>
+                  {type.label}
+                </option>
+              ))}
             </select>
           </div>
 

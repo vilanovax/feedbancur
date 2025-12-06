@@ -259,10 +259,18 @@ export default function ForwardedFeedbacksPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openChatModal(feedback.id)}
-                        className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition relative"
+                        className={`p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition relative ${
+                          (feedback._count?.messages > 0 || messages[feedback.id]?.length > 0)
+                            ? "text-green-700 dark:text-green-500"
+                            : "text-green-600 dark:text-green-400"
+                        }`}
                         title="چت با مدیر"
                       >
-                        <MessageCircle size={18} />
+                        <MessageCircle 
+                          size={18} 
+                          fill={(feedback._count?.messages > 0 || messages[feedback.id]?.length > 0) ? "currentColor" : "none"}
+                          strokeWidth={(feedback._count?.messages > 0 || messages[feedback.id]?.length > 0) ? 2 : 1.5}
+                        />
                         {unreadCounts[feedback.id] > 0 && (
                           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                             {unreadCounts[feedback.id]}

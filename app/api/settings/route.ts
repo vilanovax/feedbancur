@@ -12,6 +12,13 @@ const DEFAULT_STATUS_TEXTS = {
   COMPLETED: "انجام شد",
 };
 
+// Default feedback types
+const DEFAULT_FEEDBACK_TYPES = [
+  { key: "SUGGESTION", label: "پیشنهادی" },
+  { key: "CRITICAL", label: "انتقادی" },
+  { key: "SURVEY", label: "نظرسنجی" },
+];
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -59,12 +66,40 @@ export async function GET() {
       logoUrl: dbSettings?.logoUrl || "/logo.png",
       siteName: dbSettings?.siteName || "سیستم فیدبک کارمندان",
       statusTexts: dbSettings?.statusTexts 
-        ? (typeof dbSettings.statusTexts === 'object' 
-            ? dbSettings.statusTexts 
+        ? (Array.isArray(dbSettings.statusTexts)
+            ? dbSettings.statusTexts
+            : typeof dbSettings.statusTexts === 'object' 
+            ? (() => {
+                // تبدیل object به array با ترتیب پیش‌فرض
+                const order = ["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"];
+                return order.map((key) => ({
+                  key,
+                  label: dbSettings.statusTexts[key] || DEFAULT_STATUS_TEXTS[key] || key,
+                }));
+              })()
             : typeof dbSettings.statusTexts === 'string'
             ? JSON.parse(dbSettings.statusTexts)
-            : DEFAULT_STATUS_TEXTS)
-        : DEFAULT_STATUS_TEXTS,
+            : (() => {
+                // تبدیل DEFAULT_STATUS_TEXTS به array
+                return Object.entries(DEFAULT_STATUS_TEXTS).map(([key, label]) => ({
+                  key,
+                  label,
+                }));
+              })())
+        : (() => {
+            // تبدیل DEFAULT_STATUS_TEXTS به array
+            return Object.entries(DEFAULT_STATUS_TEXTS).map(([key, label]) => ({
+              key,
+              label,
+            }));
+          })(),
+      feedbackTypes: dbSettings?.feedbackTypes
+        ? (Array.isArray(dbSettings.feedbackTypes)
+            ? dbSettings.feedbackTypes
+            : typeof dbSettings.feedbackTypes === 'string'
+            ? JSON.parse(dbSettings.feedbackTypes)
+            : DEFAULT_FEEDBACK_TYPES)
+        : DEFAULT_FEEDBACK_TYPES,
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -164,23 +199,59 @@ export async function POST(request: NextRequest) {
     }
 
     // ذخیره statusTexts
-    if (body.statusTexts && typeof body.statusTexts === 'object' && !Array.isArray(body.statusTexts)) {
-      // Validate status texts
-      const validStatuses: Array<keyof typeof DEFAULT_STATUS_TEXTS> = ["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"];
-      const statusTexts: Record<string, string> = {};
+    if (body.statusTexts) {
+      if (Array.isArray(body.statusTexts)) {
+        // اگر array است، همان را ذخیره کن (ترتیب حفظ می‌شود)
+        updateData.statusTexts = body.statusTexts;
+      } else if (typeof body.statusTexts === 'object' && !Array.isArray(body.statusTexts)) {
+        // اگر object است، به array تبدیل کن با ترتیب پیش‌فرض
+        const validStatuses: Array<keyof typeof DEFAULT_STATUS_TEXTS> = ["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"];
+        const statusTextsArray = validStatuses.map((status) => ({
+          key: status,
+          label: body.statusTexts[status] && typeof body.statusTexts[status] === "string" 
+            ? body.statusTexts[status] 
+            : DEFAULT_STATUS_TEXTS[status],
+        }));
+        updateData.statusTexts = statusTextsArray;
+      }
+    } else if (!existingSettings) {
+      // تبدیل DEFAULT_STATUS_TEXTS به array
+      const defaultArray = Object.entries(DEFAULT_STATUS_TEXTS).map(([key, label]) => ({
+        key,
+        label,
+      }));
+      updateData.statusTexts = defaultArray;
+    }
+
+    // ذخیره feedbackTypes
+    if (body.feedbackTypes && Array.isArray(body.feedbackTypes)) {
+      // اعتبارسنجی ساختار feedbackTypes
+      const validFeedbackTypes: Array<{ key: string; label: string }> = [];
       
-      for (const status of validStatuses) {
-        if (body.statusTexts[status] && typeof body.statusTexts[status] === "string") {
-          statusTexts[status] = body.statusTexts[status].trim();
-        } else {
-          statusTexts[status] = DEFAULT_STATUS_TEXTS[status];
+      for (const item of body.feedbackTypes) {
+        if (
+          item &&
+          typeof item === 'object' &&
+          typeof item.key === 'string' &&
+          typeof item.label === 'string' &&
+          item.key.trim() !== '' &&
+          item.label.trim() !== ''
+        ) {
+          validFeedbackTypes.push({
+            key: item.key.trim().toUpperCase(),
+            label: item.label, // حفظ فاصله‌ها در label
+          });
         }
       }
 
-      // ذخیره به صورت Json (Prisma به صورت خودکار تبدیل می‌کند)
-      updateData.statusTexts = statusTexts;
+      // حداقل یک نوع باید وجود داشته باشد
+      if (validFeedbackTypes.length > 0) {
+        updateData.feedbackTypes = validFeedbackTypes;
+      } else if (!existingSettings) {
+        updateData.feedbackTypes = DEFAULT_FEEDBACK_TYPES;
+      }
     } else if (!existingSettings) {
-      updateData.statusTexts = DEFAULT_STATUS_TEXTS;
+      updateData.feedbackTypes = DEFAULT_FEEDBACK_TYPES;
     }
 
     // ذخیره سایر فیلدها
@@ -218,7 +289,14 @@ export async function POST(request: NextRequest) {
         siteName: updateData.siteName || "سیستم فیدبک کارمندان",
         siteDescription: updateData.siteDescription || null,
         logoUrl: updateData.logoUrl || null,
-        statusTexts: updateData.statusTexts || DEFAULT_STATUS_TEXTS,
+        statusTexts: updateData.statusTexts || (() => {
+          // تبدیل DEFAULT_STATUS_TEXTS به array
+          return Object.entries(DEFAULT_STATUS_TEXTS).map(([key, label]) => ({
+            key,
+            label,
+          }));
+        })(),
+        feedbackTypes: updateData.feedbackTypes || DEFAULT_FEEDBACK_TYPES,
         language: updateData.language || "fa",
         timezone: updateData.timezone || "Asia/Tehran",
         emailNotifications: updateData.emailNotifications !== undefined ? updateData.emailNotifications : true,
