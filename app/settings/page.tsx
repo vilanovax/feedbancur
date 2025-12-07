@@ -34,7 +34,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications">("general");
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -77,6 +77,12 @@ export default function SettingsPage() {
       { key: "CRITICAL", label: "انتقادی" },
       { key: "SURVEY", label: "نظرسنجی" },
     ],
+    
+    // تنظیمات نوتیفیکیشن
+    notificationSettings: {
+      directFeedbackToManager: true, // نوتیفیکیشن برای فیدبک مستقیم به مدیر
+      feedbackCompletedByManager: true, // نوتیفیکیشن برای فیدبک انجام شده توسط مدیر
+    },
   });
 
   useEffect(() => {
@@ -304,6 +310,16 @@ export default function SettingsPage() {
                 }`}
               >
                 مدیریت فیدبک
+              </button>
+              <button
+                onClick={() => setActiveTab("notifications")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "notifications"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                نوتیفیکیشن‌ها
               </button>
             </nav>
           </div>
@@ -894,6 +910,84 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+              </>
+            )}
+
+            {/* محتوای تب نوتیفیکیشن */}
+            {activeTab === "notifications" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Bell className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات نوتیفیکیشن
+                    </h2>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    انتخاب کنید که برای کدام رویدادها نوتیفیکیشن دریافت کنید.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* فیدبک مستقیم به مدیر */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                          فیدبک مستقیم به مدیر
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          زمانی که یک فیدبک به صورت مستقیم از طرف کارمند یا مدیر به بخشی ارسال می‌شود
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settings.notificationSettings?.directFeedbackToManager ?? true}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              notificationSettings: {
+                                ...settings.notificationSettings,
+                                directFeedbackToManager: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {/* فیدبک انجام شده توسط مدیر */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                          فیدبک انجام شده توسط مدیر
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          زمانی که یک مدیر وضعیت فیدبک را به "انجام شد" تغییر می‌دهد
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settings.notificationSettings?.feedbackCompletedByManager ?? true}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              notificationSettings: {
+                                ...settings.notificationSettings,
+                                feedbackCompletedByManager: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 

@@ -143,34 +143,47 @@ export async function PATCH(
         }
       }
 
-      // ارسال نوتیفیکیشن به همه ادمین‌ها وقتی مدیر وضعیت را به COMPLETED تغییر می‌دهد
+      // ارسال نوتیفیکیشن به همه ادمین‌ها وقتی مدیر وضعیت را به COMPLETED تغییر می‌دهد (بر اساس تنظیمات)
       if (session.user.role === "MANAGER") {
         try {
-          // پیدا کردن همه ادمین‌ها
-          const admins = await prisma.user.findMany({
-            where: {
-              role: "ADMIN",
-              isActive: true,
-            },
-            select: {
-              id: true,
-            },
-          });
+          // بررسی تنظیمات نوتیفیکیشن
+          const settings = await prisma.settings.findFirst();
+          const notificationSettings = settings?.notificationSettings
+            ? (typeof settings.notificationSettings === 'string'
+                ? JSON.parse(settings.notificationSettings)
+                : settings.notificationSettings)
+            : { feedbackCompletedByManager: true };
 
-          // ایجاد نوتیفیکیشن برای هر ادمین
-          const notificationPromises = admins.map((admin) =>
-            prisma.notification.create({
-              data: {
-                userId: admin.id,
-                feedbackId: id,
-                title: "فیدبک تکمیل شد",
-                content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
-                type: "INFO",
+          // اگر تنظیمات اجازه می‌دهد، نوتیفیکیشن ایجاد کن
+          if (notificationSettings.feedbackCompletedByManager !== false) {
+            // پیدا کردن همه ادمین‌ها
+            const admins = await prisma.user.findMany({
+              where: {
+                role: "ADMIN",
+                isActive: true,
               },
-            })
-          );
+              select: {
+                id: true,
+              },
+            });
 
-          await Promise.all(notificationPromises);
+            // ایجاد نوتیفیکیشن برای هر ادمین
+            const notificationPromises = admins.map((admin) =>
+              prisma.notification.create({
+                data: {
+                  userId: admin.id,
+                  feedbackId: id,
+                  title: "فیدبک تکمیل شد",
+                  content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
+                  type: "INFO",
+                },
+              })
+            );
+
+            await Promise.all(notificationPromises);
+          } else {
+            console.log("Admin notification disabled for feedback completed by manager in settings");
+          }
         } catch (error) {
           console.error("Error creating admin notifications:", error);
           // ادامه می‌دهیم حتی اگر خطا رخ دهد

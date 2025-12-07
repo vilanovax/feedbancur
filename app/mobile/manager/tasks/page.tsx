@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
-import { Star, Calendar, Building2, User, Send, ArrowUpDown, CheckCircle, Clock, Archive, Grid3x3, List, Plus, Trash2, CheckSquare, X, MessageCircle, Check, FileText, Save } from "lucide-react";
+import { Star, Calendar, Building2, User, Send, ArrowUpDown, CheckCircle, Clock, Archive, Grid3x3, List, Plus, Trash2, CheckSquare, X, MessageCircle, Check, FileText, Save, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 import { getStatusColor } from "@/lib/status-utils";
@@ -16,7 +16,26 @@ type ViewMode = "grid" | "list";
 export default function ManagerTasksPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>(() => {
+    // بارگذاری از cache در صورت وجود
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("managerTasksFeedbacks_cache");
+      const cacheTime = localStorage.getItem("managerTasksFeedbacks_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        // Cache برای 2 دقیقه معتبر است
+        if (timeDiff < 2 * 60 * 1000) {
+          try {
+            return JSON.parse(cached);
+          } catch (e) {
+            localStorage.removeItem("managerTasksFeedbacks_cache");
+            localStorage.removeItem("managerTasksFeedbacks_cache_time");
+          }
+        }
+      }
+    }
+    return [];
+  });
   const [loading, setLoading] = useState(true);
   const [quickFilter, setQuickFilter] = useState<"all" | "forwarded" | "completed">(() => {
     if (typeof window !== "undefined") {
@@ -53,6 +72,9 @@ export default function ManagerTasksPage() {
   const [selectedFeedbackForChecklist, setSelectedFeedbackForChecklist] = useState<string | null>(null);
   const [checklists, setChecklists] = useState<Record<string, any[]>>({});
   const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({});
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTexts, setEditingTexts] = useState<Record<string, string>>({});
+  const inputRef = useRef<HTMLInputElement>(null);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedFeedbackForChat, setSelectedFeedbackForChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, any[]>>({});
@@ -82,11 +104,38 @@ export default function ManagerTasksPage() {
     if (session?.user.role === "MANAGER") {
       // به‌روزرسانی تنظیمات از API برای اطمینان از به‌روز بودن
       refreshStatusTexts();
-      fetchFeedbacks();
+      // استفاده از cache برای نمایش سریع‌تر
+      fetchFeedbacks(true);
     }
   }, [session, refreshStatusTexts]);
 
-  const fetchFeedbacks = async () => {
+  const fetchFeedbacks = async (useCache = true) => {
+    // اگر cache معتبر وجود دارد و useCache true است، از آن استفاده کن
+    if (useCache && typeof window !== "undefined") {
+      const cached = localStorage.getItem("managerTasksFeedbacks_cache");
+      const cacheTime = localStorage.getItem("managerTasksFeedbacks_cache_time");
+      if (cached && cacheTime) {
+        const timeDiff = Date.now() - parseInt(cacheTime);
+        if (timeDiff < 2 * 60 * 1000) {
+          try {
+            const cachedData = JSON.parse(cached);
+            setFeedbacks(cachedData);
+            setLoading(false);
+            // در پس‌زمینه به‌روزرسانی کن
+            fetchFeedbacksFromAPI();
+            return;
+          } catch (e) {
+            // اگر parse نشد، ادامه بده و از API بگیر
+          }
+        }
+      }
+    }
+
+    // اگر cache وجود ندارد یا منقضی شده، از API بگیر
+    await fetchFeedbacksFromAPI();
+  };
+
+  const fetchFeedbacksFromAPI = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -96,6 +145,11 @@ export default function ManagerTasksPage() {
       if (res.ok) {
         const data = await res.json();
         setFeedbacks(data);
+        // ذخیره در cache
+        if (typeof window !== "undefined") {
+          localStorage.setItem("managerTasksFeedbacks_cache", JSON.stringify(data));
+          localStorage.setItem("managerTasksFeedbacks_cache_time", Date.now().toString());
+        }
       }
     } catch (error) {
       console.error("Error fetching received feedbacks:", error);
@@ -137,10 +191,10 @@ export default function ManagerTasksPage() {
     }
   }, [quickFilter]);
 
-  // به‌روزرسانی فیدبک‌ها هنگام تغییر session
+  // به‌روزرسانی فیدبک‌ها هنگام تغییر session (بدون cache)
   useEffect(() => {
-    if (session?.user.role === "MANAGER") {
-      fetchFeedbacks();
+    if (session?.user.role === "MANAGER" && !isFirstRender.current) {
+      fetchFeedbacks(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
@@ -233,7 +287,7 @@ export default function ManagerTasksPage() {
 
       if (res.ok) {
         alert("وضعیت فیدبک با موفقیت تغییر کرد");
-        fetchFeedbacks();
+        fetchFeedbacksFromAPI();
       } else {
         const error = await res.json();
         alert(error.error || "خطا در تغییر وضعیت");
@@ -266,7 +320,7 @@ export default function ManagerTasksPage() {
         setSelectedFeedbackForCompleted(null);
         setUserResponse("");
         setAdminNotes("");
-        fetchFeedbacks();
+        fetchFeedbacksFromAPI();
       } else {
         const error = await res.json();
         alert(error.error || "خطا در تغییر وضعیت");
@@ -315,6 +369,27 @@ export default function ManagerTasksPage() {
     const text = newItemTexts[feedbackId]?.trim();
     if (!text) return;
 
+    // Optimistic update: اضافه کردن فوری به UI
+    const tempId = `temp-${Date.now()}`;
+    const optimisticItem = {
+      id: tempId,
+      title: text,
+      isCompleted: false,
+      order: (checklists[feedbackId] || []).length,
+      createdAt: new Date(),
+    };
+
+    setChecklists((prev) => ({
+      ...prev,
+      [feedbackId]: [...(prev[feedbackId] || []), optimisticItem],
+    }));
+    setNewItemTexts((prev) => ({ ...prev, [feedbackId]: "" }));
+
+    // Focus را به input برگردان
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/checklist`, {
         method: "POST",
@@ -324,14 +399,33 @@ export default function ManagerTasksPage() {
 
       if (res.ok) {
         const newItem = await res.json();
+        // جایگزین کردن آیتم موقت با آیتم واقعی
         setChecklists((prev) => ({
           ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newItem],
+          [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
+            item.id === tempId ? newItem : item
+          ),
         }));
-        setNewItemTexts((prev) => ({ ...prev, [feedbackId]: "" }));
+      } else {
+        // در صورت خطا، آیتم موقت را حذف کن
+        setChecklists((prev) => ({
+          ...prev,
+          [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== tempId),
+        }));
+        // متن را برگردان
+        setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
+        alert("خطا در اضافه کردن آیتم");
       }
     } catch (error) {
       console.error("Error adding checklist item:", error);
+      // در صورت خطا، آیتم موقت را حذف کن
+      setChecklists((prev) => ({
+        ...prev,
+        [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== tempId),
+      }));
+      // متن را برگردان
+      setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
+      alert("خطا در اضافه کردن آیتم");
     }
   };
 
@@ -393,6 +487,61 @@ export default function ManagerTasksPage() {
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
+    }
+  };
+
+  const startEditingItem = (itemId: string, currentTitle: string) => {
+    setEditingItemId(itemId);
+    setEditingTexts((prev) => ({ ...prev, [itemId]: currentTitle }));
+  };
+
+  const cancelEditingItem = () => {
+    setEditingItemId(null);
+    setEditingTexts({});
+  };
+
+  const saveEditingItem = async (itemId: string, feedbackId: string) => {
+    const newTitle = editingTexts[itemId]?.trim();
+    if (!newTitle) {
+      alert("عنوان آیتم نمی‌تواند خالی باشد");
+      return;
+    }
+
+    // Optimistic update
+    setChecklists((prev) => ({
+      ...prev,
+      [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
+        item.id === itemId ? { ...item, title: newTitle } : item
+      ),
+    }));
+    setEditingItemId(null);
+    setEditingTexts({});
+
+    try {
+      const res = await fetch(`/api/feedback/checklist/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (res.ok) {
+        const updatedItem = await res.json();
+        setChecklists((prev) => ({
+          ...prev,
+          [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
+            item.id === itemId ? updatedItem : item
+          ),
+        }));
+      } else {
+        // در صورت خطا، تغییرات را برگردان
+        fetchChecklist(feedbackId);
+        alert("خطا در ویرایش آیتم");
+      }
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+      // در صورت خطا، تغییرات را برگردان
+      fetchChecklist(feedbackId);
+      alert("خطا در ویرایش آیتم");
     }
   };
 
@@ -718,7 +867,7 @@ export default function ManagerTasksPage() {
                   </div>
                 )}
 
-                <div className="mb-3">
+                <div className="mb-3 flex items-center gap-2 flex-wrap">
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                       feedback.status
@@ -726,6 +875,11 @@ export default function ManagerTasksPage() {
                   >
                     {getStatusTextLocal(feedback.status)}
                   </span>
+                  {feedback.department?.allowDirectFeedback && feedback.forwardedToId && (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      مستقیم
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -841,7 +995,7 @@ export default function ManagerTasksPage() {
                   </div>
                 )}
 
-                <div className="mb-2">
+                <div className="mb-2 flex items-center gap-2 flex-wrap">
                   <span
                     className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
                       feedback.status
@@ -849,6 +1003,11 @@ export default function ManagerTasksPage() {
                   >
                     {getStatusTextLocal(feedback.status)}
                   </span>
+                  {feedback.department?.allowDirectFeedback && feedback.forwardedToId && (
+                    <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      مستقیم
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 mb-3 flex-grow">
@@ -940,24 +1099,78 @@ export default function ManagerTasksPage() {
                             ? "bg-green-500 border-green-500 text-white"
                             : "border-gray-300 dark:border-gray-600"
                         }`}
+                        disabled={editingItemId === item.id}
                       >
                         {item.isCompleted && <CheckCircle size={16} />}
                       </button>
-                      <span
-                        className={`flex-1 text-sm ${
-                          item.isCompleted
-                            ? "line-through text-gray-400 dark:text-gray-500"
-                            : "text-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        {item.title}
-                      </span>
-                      <button
-                        onClick={() => deleteChecklistItem(item.id, selectedFeedbackForChecklist)}
-                        className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {editingItemId === item.id ? (
+                        <input
+                          type="text"
+                          value={editingTexts[item.id] || ""}
+                          onChange={(e) =>
+                            setEditingTexts((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              saveEditingItem(item.id, selectedFeedbackForChecklist);
+                            } else if (e.key === "Escape") {
+                              cancelEditingItem();
+                            }
+                          }}
+                          className="flex-1 px-2 py-1.5 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-blue-600 dark:text-white"
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className={`flex-1 text-sm ${
+                            item.isCompleted
+                              ? "line-through text-gray-400 dark:text-gray-500"
+                              : "text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {item.title}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        {editingItemId === item.id ? (
+                          <>
+                            <button
+                              onClick={() => saveEditingItem(item.id, selectedFeedbackForChecklist)}
+                              className="flex-shrink-0 p-1.5 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition"
+                              title="ذخیره"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              onClick={cancelEditingItem}
+                              className="flex-shrink-0 p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                              title="لغو"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => startEditingItem(item.id, item.title)}
+                              className="flex-shrink-0 p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
+                              title="ویرایش"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              onClick={() => deleteChecklistItem(item.id, selectedFeedbackForChecklist)}
+                              className="flex-shrink-0 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
+                              title="حذف"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -969,6 +1182,7 @@ export default function ManagerTasksPage() {
                 {/* Add New Item */}
                 <div className="flex items-center gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <input
+                    ref={inputRef}
                     type="text"
                     value={newItemTexts[selectedFeedbackForChecklist] || ""}
                     onChange={(e) =>
@@ -989,6 +1203,7 @@ export default function ManagerTasksPage() {
                   <button
                     onClick={() => addChecklistItem(selectedFeedbackForChecklist)}
                     className="flex-shrink-0 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    title="افزودن"
                   >
                     <Plus size={18} />
                   </button>

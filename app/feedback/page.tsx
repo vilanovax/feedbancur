@@ -996,7 +996,7 @@ export default function FeedbacksPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 space-x-reverse mb-3">
+                <div className="flex items-center space-x-2 space-x-reverse mb-3 flex-wrap gap-2">
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                       feedback.status
@@ -1004,6 +1004,11 @@ export default function FeedbacksPage() {
                   >
                     {getStatusTextLocal(feedback.status)}
                   </span>
+                  {feedback.department?.allowDirectFeedback && feedback.forwardedToId && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      مستقیم
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-3">

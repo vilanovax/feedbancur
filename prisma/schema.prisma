@@ -283,6 +283,7 @@ model Settings {
   theme              String    @default("light")
   statusTexts        Json?     // Store customizable status texts as JSON
   feedbackTypes      Json?     // Store customizable feedback types as JSON array: [{key: string, label: string}]
+  notificationSettings Json?   // Store notification preferences as JSON: {directFeedbackToManager: boolean, feedbackCompletedByManager: boolean, ...}
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

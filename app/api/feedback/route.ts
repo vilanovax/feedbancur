@@ -39,24 +39,9 @@ export async function GET(request: NextRequest) {
     
     // اگر مدیر می‌خواهد فیدبک‌های دریافتی (ارجاع شده + مستقیم به بخش) را ببیند
     if (receivedFeedbacks && session.user.role === "MANAGER") {
-      const orConditions: any[] = [
-        { 
-          forwardedToId: session.user.id,
-          status: { not: "ARCHIVED" }, // فیدبک‌های ارجاع شده (غیر آرشیو)
-        },
-      ];
-      
-      // اگر مدیر بخش دارد، فیدبک‌های مستقیم به بخش را هم اضافه کن
-      if (session.user.departmentId) {
-        orConditions.push({
-          departmentId: session.user.departmentId,
-          forwardedToId: null, // فیدبک‌های مستقیم به بخش (بدون ارجاع)
-          userId: { not: session.user.id }, // به جز فیدبک‌های خود مدیر
-          status: { not: "ARCHIVED" }, // غیر آرشیو
-        });
-      }
-      
-      where.OR = orConditions;
+      // فیدبک‌هایی که به این مدیر ارجاع شده‌اند (شامل ارجاع دستی و مستقیم)
+      where.forwardedToId = session.user.id;
+      where.status = { not: "ARCHIVED" }; // غیر آرشیو
     }
     // اگر مدیر می‌خواهد فیدبک‌های ارجاع شده به خودش را ببیند
     else if (forwardedToMe && session.user.role === "MANAGER") {
@@ -75,46 +60,51 @@ export async function GET(request: NextRequest) {
 
     console.log("Fetching feedbacks with where:", JSON.stringify(where, null, 2));
 
+    // بهینه‌سازی: تعریف include config یکبار
+    const includeConfig = {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          mobile: true,
+        },
+      },
+      department: {
+        select: {
+          id: true,
+          name: true,
+          allowDirectFeedback: true,
+        },
+      },
+      forwardedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      completedBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      _count: {
+        select: {
+          messages: true,
+        },
+      },
+    };
+
     let feedbacks;
     try {
       feedbacks = await prisma.feedback.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              mobile: true,
-            },
-          },
-          department: {
-            select: {
-              id: true,
-              name: true,
-              allowDirectFeedback: true,
-            },
-          },
-          forwardedTo: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          completedBy: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              messages: true,
-            },
-          },
-        },
+        include: includeConfig,
         orderBy: {
           createdAt: "desc",
         },
+        // محدود کردن تعداد نتایج برای مدیر (می‌تواند بعداً pagination اضافه شود)
+        ...(receivedFeedbacks && session.user.role === "MANAGER" ? { take: 100 } : {}),
       });
       console.log("Found", feedbacks.length, "feedbacks");
     } catch (error: any) {
@@ -125,41 +115,11 @@ export async function GET(request: NextRequest) {
         delete where.deletedAt;
         feedbacks = await prisma.feedback.findMany({
           where,
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                mobile: true,
-              },
-            },
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            forwardedTo: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            completedBy: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            _count: {
-              select: {
-                messages: true,
-              },
-            },
-          },
+          include: includeConfig,
           orderBy: {
             createdAt: "desc",
           },
+          ...(receivedFeedbacks && session.user.role === "MANAGER" ? { take: 100 } : {}),
         });
         console.log("Found", feedbacks.length, "feedbacks (without deletedAt filter)");
       } else {
@@ -277,20 +237,44 @@ export async function POST(request: NextRequest) {
     // بررسی بخش و مدیر آن
     const department = await prisma.department.findUnique({
       where: { id: validatedData.departmentId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        allowDirectFeedback: true,
+        managerId: true,
         users: {
           where: {
             role: "MANAGER",
           },
           take: 1,
+          select: {
+            id: true,
+          },
         },
       },
     });
 
     // اگر بخش اجازه ارسال مستقیم دارد و مدیر دارد، فیدبک را مستقیم به مدیر ارسال کن
     let forwardedToId = null;
-    if (department?.allowDirectFeedback && department.users.length > 0) {
-      forwardedToId = department.users[0].id;
+    let isDirectFeedback = false;
+    
+    if (department?.allowDirectFeedback) {
+      // اول از managerId استفاده کن، اگر نبود از users
+      if (department.managerId) {
+        forwardedToId = department.managerId;
+        isDirectFeedback = true;
+      } else if (department.users.length > 0) {
+        forwardedToId = department.users[0].id;
+        isDirectFeedback = true;
+      }
+      
+      console.log("Direct feedback check:", {
+        allowDirectFeedback: department.allowDirectFeedback,
+        managerId: department.managerId,
+        usersCount: department.users.length,
+        forwardedToId,
+        isDirectFeedback,
+      });
     }
 
     const feedback = await prisma.feedback.create({
@@ -329,6 +313,73 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // اگر فیدبک مستقیم به بخش ارسال شد، نوتیفیکیشن برای ادمین ایجاد کن (بر اساس تنظیمات)
+    if (isDirectFeedback && forwardedToId) {
+      try {
+        // بررسی تنظیمات نوتیفیکیشن
+        const settings = await prisma.settings.findFirst();
+        const notificationSettings = settings?.notificationSettings
+          ? (typeof settings.notificationSettings === 'string'
+              ? JSON.parse(settings.notificationSettings)
+              : settings.notificationSettings)
+          : { directFeedbackToManager: true };
+
+        // اگر تنظیمات اجازه می‌دهد، نوتیفیکیشن ایجاد کن
+        if (notificationSettings.directFeedbackToManager !== false) {
+          console.log("Creating admin notifications for direct feedback:", {
+            feedbackId: feedback.id,
+            feedbackTitle: feedback.title,
+            departmentName: feedback.department.name,
+          });
+
+          // پیدا کردن همه ادمین‌ها
+          const admins = await prisma.user.findMany({
+            where: {
+              role: "ADMIN",
+              isActive: true,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          console.log("Found admins:", admins.length);
+
+          if (admins.length === 0) {
+            console.warn("No active admins found to send notification");
+          } else {
+            // ایجاد نوتیفیکیشن برای هر ادمین
+            const notificationPromises = admins.map((admin) =>
+              prisma.notification.create({
+                data: {
+                  userId: admin.id,
+                  feedbackId: feedback.id,
+                  title: "فیدبک مستقیم به بخش",
+                  content: `فیدبک "${feedback.title}" به صورت مستقیم به بخش ${feedback.department.name} ارسال شد.`,
+                  type: "INFO",
+                },
+              })
+            );
+
+            const createdNotifications = await Promise.all(notificationPromises);
+            console.log("Created notifications:", createdNotifications.length);
+          }
+        } else {
+          console.log("Admin notification disabled for direct feedback in settings");
+        }
+      } catch (error) {
+        console.error("Error creating admin notifications for direct feedback:", error);
+        console.error("Error details:", error instanceof Error ? error.stack : String(error));
+        // ادامه می‌دهیم حتی اگر خطا رخ دهد
+      }
+    } else {
+      console.log("Skipping admin notification:", {
+        isDirectFeedback,
+        forwardedToId,
+        allowDirectFeedback: department?.allowDirectFeedback,
+      });
+    }
 
     return NextResponse.json(feedback, { status: 201 });
   } catch (error) {

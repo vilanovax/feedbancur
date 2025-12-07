@@ -97,6 +97,14 @@ export async function GET() {
             ? JSON.parse(dbSettings.feedbackTypes)
             : DEFAULT_FEEDBACK_TYPES)
         : DEFAULT_FEEDBACK_TYPES,
+      notificationSettings: dbSettings?.notificationSettings
+        ? (typeof dbSettings.notificationSettings === 'string'
+            ? JSON.parse(dbSettings.notificationSettings)
+            : dbSettings.notificationSettings)
+        : {
+            directFeedbackToManager: true,
+            feedbackCompletedByManager: true,
+          },
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -255,6 +263,23 @@ export async function POST(request: NextRequest) {
       }
     } else if (!existingSettings) {
       updateData.feedbackTypes = DEFAULT_FEEDBACK_TYPES;
+    }
+
+    // ذخیره notificationSettings
+    if (body.notificationSettings && typeof body.notificationSettings === 'object') {
+      updateData.notificationSettings = {
+        directFeedbackToManager: body.notificationSettings.directFeedbackToManager !== undefined 
+          ? Boolean(body.notificationSettings.directFeedbackToManager)
+          : true,
+        feedbackCompletedByManager: body.notificationSettings.feedbackCompletedByManager !== undefined
+          ? Boolean(body.notificationSettings.feedbackCompletedByManager)
+          : true,
+      };
+    } else if (!existingSettings) {
+      updateData.notificationSettings = {
+        directFeedbackToManager: true,
+        feedbackCompletedByManager: true,
+      };
     }
 
     // ذخیره سایر فیلدها
