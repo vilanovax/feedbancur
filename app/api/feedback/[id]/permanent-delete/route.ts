@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // DELETE - حذف کامل فیدبک از سطل آشغال
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,9 +20,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         task: true,
       },
@@ -52,7 +53,7 @@ export async function DELETE(
 
     // حذف کامل فیدبک
     await prisma.feedback.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

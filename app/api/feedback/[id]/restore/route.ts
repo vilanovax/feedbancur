@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // POST - بازگرداندن فیدبک از سطل آشغال
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,9 +20,10 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!feedback) {
@@ -42,7 +43,7 @@ export async function POST(
 
     // بازگرداندن فیدبک
     const restoredFeedback = await prisma.feedback.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         deletedAt: null,
       },

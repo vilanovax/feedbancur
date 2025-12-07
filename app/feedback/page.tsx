@@ -1018,7 +1018,7 @@ export default function FeedbacksPage() {
                   <div className="flex items-center space-x-1 space-x-reverse">
                     <Calendar size={14} />
                     <span>
-                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                      {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
                 </div>

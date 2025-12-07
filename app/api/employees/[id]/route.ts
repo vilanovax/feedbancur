@@ -13,7 +13,7 @@ const updateEmployeeSchema = z.object({
 // GET - مشاهده جزئیات یک کارمند
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,8 +22,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const employee = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         department: true,
         taskAssignments: {
@@ -62,7 +63,7 @@ export async function GET(
 // PATCH - ویرایش کارمند
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -75,12 +76,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = updateEmployeeSchema.parse(body);
 
     // بررسی وجود کارمند
     const existingEmployee = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingEmployee) {
@@ -122,7 +124,7 @@ export async function PATCH(
 
     // بروزرسانی کارمند
     const updatedEmployee = await prisma.employee.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         department: true,
@@ -149,7 +151,7 @@ export async function PATCH(
 // DELETE - حذف کارمند
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -166,9 +168,10 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
     // بررسی وجود کارمند
     const employee = await prisma.employee.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -197,7 +200,7 @@ export async function DELETE(
 
     // حذف کارمند
     await prisma.employee.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

@@ -428,7 +428,7 @@ export default function ManagerForwardedFeedbacksPage() {
                   <div className="flex items-center gap-2">
                     <Calendar size={14} />
                     <span>
-                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                      {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
                   {feedback.forwardedAt && (

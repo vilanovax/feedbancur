@@ -3,12 +3,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import MobileLayout from "@/components/MobileLayout";
 import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X } from "lucide-react";
-import { format } from "date-fns";
-import Link from "next/link";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
+import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 
 type SortOption = "date-desc" | "date-asc" | "rating-desc" | "rating-asc" | "status";
 
@@ -340,7 +340,9 @@ export default function MobileFeedbacksPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar size={14} />
-                    <span>{format(new Date(feedback.createdAt), "yyyy/MM/dd")}</span>
+                    <span>
+                      {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
+                    </span>
                   </div>
                 </div>
 

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // POST - لغو ارجاع فیدبک
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,9 +20,10 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         task: {
           include: {
@@ -75,7 +76,7 @@ export async function POST(
 
     // لغو ارجاع و بازگشت وضعیت به PENDING
     const updatedFeedback = await prisma.feedback.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "PENDING",
         forwardedToId: null,

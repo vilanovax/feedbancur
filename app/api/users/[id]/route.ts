@@ -18,7 +18,7 @@ const updateUserSchema = z.object({
 // GET - مشاهده جزئیات یک کاربر
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,8 +31,9 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         mobile: true,
@@ -80,7 +81,7 @@ export async function GET(
 // PATCH - ویرایش کاربر
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,12 +94,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = updateUserSchema.parse(body);
 
     // بررسی وجود کاربر
     const existingUser = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingUser) {
@@ -184,7 +186,7 @@ export async function PATCH(
 
     // بروزرسانی کاربر
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       select: {
         id: true,
@@ -235,7 +237,7 @@ export async function PATCH(
 // DELETE - حذف کاربر
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -252,9 +254,10 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
     // بررسی وجود کاربر
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!user) {
@@ -282,7 +285,7 @@ export async function DELETE(
 
     // حذف کاربر
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

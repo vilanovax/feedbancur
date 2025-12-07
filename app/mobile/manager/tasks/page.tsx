@@ -740,7 +740,7 @@ export default function ManagerTasksPage() {
                   <div className="flex items-center gap-2">
                     <Calendar size={14} />
                     <span>
-                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                      {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
                   {feedback.forwardedAt && (
@@ -863,7 +863,7 @@ export default function ManagerTasksPage() {
                   <div className="flex items-center gap-1">
                     <Calendar size={12} />
                     <span>
-                      {formatPersianDate(feedback.createdAt)} (• {getTimeAgo(feedback.createdAt)})
+                      {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
                   {feedback.forwardedAt && (

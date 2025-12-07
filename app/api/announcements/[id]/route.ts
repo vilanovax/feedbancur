@@ -16,7 +16,7 @@ const updateAnnouncementSchema = z.object({
 // GET - مشاهده جزئیات یک اعلان
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -25,8 +25,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const announcement = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         createdBy: {
           select: {
@@ -75,7 +76,7 @@ export async function GET(
 // PATCH - ویرایش اعلان
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -88,12 +89,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = updateAnnouncementSchema.parse(body);
 
     // بررسی وجود اعلان
     const existingAnnouncement = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingAnnouncement) {
@@ -161,7 +163,7 @@ export async function PATCH(
 
     // بروزرسانی اعلان
     const updatedAnnouncement = await prisma.announcement.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         createdBy: {
@@ -200,7 +202,7 @@ export async function PATCH(
 // DELETE - حذف اعلان
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -213,9 +215,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود اعلان
     const announcement = await prisma.announcement.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!announcement) {
@@ -239,7 +242,7 @@ export async function DELETE(
 
     // حذف اعلان
     await prisma.announcement.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

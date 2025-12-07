@@ -14,7 +14,7 @@ const updateDepartmentSchema = z.object({
 // GET - مشاهده جزئیات یک بخش
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,8 +23,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
     const department = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -56,7 +57,7 @@ export async function GET(
 // PATCH - ویرایش بخش
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -69,12 +70,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = updateDepartmentSchema.parse(body);
 
     // بررسی وجود بخش
     const existingDepartment = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingDepartment) {
@@ -129,7 +131,7 @@ export async function PATCH(
 
     // بروزرسانی بخش
     const updatedDepartment = await prisma.department.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -156,7 +158,7 @@ export async function PATCH(
 // DELETE - حذف بخش
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -173,9 +175,10 @@ export async function DELETE(
       );
     }
 
+    const { id } = await params;
     // بررسی وجود بخش
     const department = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -215,7 +218,7 @@ export async function DELETE(
 
     // حذف بخش
     await prisma.department.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({

@@ -27,6 +27,8 @@ const nextConfig = {
     // Temporarily ignore build errors for type checking
     ignoreBuildErrors: true,
   },
+  // تنظیمات برای سازگاری با Next.js 16 و Turbopack
+  turbopack: {},
   // تنظیمات برای سازگاری با مرورگر داخلی Cursor
   async headers() {
     return [

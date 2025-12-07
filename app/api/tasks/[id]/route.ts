@@ -19,7 +19,7 @@ const updateTaskSchema = z.object({
 // دریافت جزئیات یک تسک
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -28,8 +28,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const task = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         department: true,
         createdBy: {
@@ -103,7 +104,7 @@ export async function GET(
 // بروزرسانی تسک
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -112,11 +113,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = updateTaskSchema.parse(body);
 
     const existingTask = await prisma.task.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { assignedTo: true },
     });
 
@@ -140,7 +142,7 @@ export async function PATCH(
     // Forward کردن تسک به بخش دیگر
     if (data.forwardToDepartmentId && (isManager || isAdmin)) {
       await prisma.task.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           departmentId: data.forwardToDepartmentId,
           status: 'FORWARDED',
@@ -150,7 +152,7 @@ export async function PATCH(
       if (data.comment) {
         await prisma.taskComment.create({
           data: {
-            taskId: params.id,
+            taskId: id,
             content: `فوروارد شد: ${data.comment}`,
           },
         });
@@ -174,7 +176,7 @@ export async function PATCH(
     if (typeof data.isPublic !== 'undefined') updateData.isPublic = data.isPublic;
 
     const updatedTask = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         department: true,
@@ -197,7 +199,7 @@ export async function PATCH(
     if (data.comment) {
       await prisma.taskComment.create({
         data: {
-          taskId: params.id,
+          taskId: id,
           content: data.comment,
         },
       });
@@ -207,14 +209,14 @@ export async function PATCH(
     if (data.assignedEmployeeIds || data.assignedUserIds) {
       // حذف تخصیص‌های قبلی
       await prisma.taskAssignment.deleteMany({
-        where: { taskId: params.id },
+        where: { taskId: id },
       });
 
       // ایجاد تخصیص‌های جدید
       if (data.assignedEmployeeIds && data.assignedEmployeeIds.length > 0) {
         await prisma.taskAssignment.createMany({
           data: data.assignedEmployeeIds.map((employeeId) => ({
-            taskId: params.id,
+            taskId: id,
             employeeId,
           })),
         });
@@ -223,7 +225,7 @@ export async function PATCH(
       if (data.assignedUserIds && data.assignedUserIds.length > 0) {
         await prisma.taskAssignment.createMany({
           data: data.assignedUserIds.map((userId) => ({
-            taskId: params.id,
+            taskId: id,
             userId,
           })),
         });
@@ -250,7 +252,7 @@ export async function PATCH(
 // حذف تسک
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -264,8 +266,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { id } = await params;
     await prisma.task.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: 'تسک حذف شد' });

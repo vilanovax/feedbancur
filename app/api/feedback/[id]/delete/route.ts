@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // DELETE - حذف فیدبک (soft delete)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,9 +20,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!feedback) {
@@ -45,7 +46,7 @@ export async function DELETE(
     let deletedFeedback;
     try {
       deletedFeedback = await (prisma.feedback.update as any)({
-        where: { id: params.id },
+        where: { id },
         data: {
           deletedAt: new Date(),
         },
@@ -82,7 +83,7 @@ export async function DELETE(
         console.warn("deletedAt field not found, using status instead");
         // استفاده از status برای حذف (آرشیو کردن)
         deletedFeedback = await prisma.feedback.update({
-          where: { id: params.id },
+          where: { id },
           data: {
             status: "ARCHIVED",
           },

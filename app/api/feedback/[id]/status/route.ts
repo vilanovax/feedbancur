@@ -13,7 +13,7 @@ const statusUpdateSchema = z.object({
 // PATCH - تغییر وضعیت فیدبک
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -27,12 +27,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = statusUpdateSchema.parse(body);
 
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         department: true,
         user: true,
@@ -74,7 +75,7 @@ export async function PATCH(
 
     // بروزرسانی فیدبک
     const updatedFeedback = await prisma.feedback.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         user: {
@@ -113,7 +114,7 @@ export async function PATCH(
           await prisma.notification.create({
             data: {
               userId: feedback.userId,
-              feedbackId: params.id,
+              feedbackId: id,
               title: "فیدبک شما تکمیل شد",
               content: data.userResponse.trim(),
               type: "SUCCESS",
@@ -130,7 +131,7 @@ export async function PATCH(
         try {
           await prisma.message.create({
             data: {
-              feedbackId: params.id,
+              feedbackId: id,
               senderId: session.user.id,
               content: `[یادداشت ادمین]: ${data.adminNotes.trim()}`,
               isRead: false,
@@ -161,7 +162,7 @@ export async function PATCH(
             prisma.notification.create({
               data: {
                 userId: admin.id,
-                feedbackId: params.id,
+                feedbackId: id,
                 title: "فیدبک تکمیل شد",
                 content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
                 type: "INFO",

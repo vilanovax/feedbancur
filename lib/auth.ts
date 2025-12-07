@@ -92,6 +92,28 @@ export const authOptions: NextAuthOptions = {
         // و باعث خطای 431 (Request Header Fields Too Large) می‌شود
       }
       
+      // وقتی update() فراخوانی می‌شود، اطلاعات کاربر را از دیتابیس بخوان
+      if (trigger === "update" && token.id) {
+        try {
+          const updatedUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            include: { department: true },
+          });
+          
+          if (updatedUser) {
+            token.name = updatedUser.name;
+            token.mobile = updatedUser.mobile;
+            token.email = updatedUser.email ?? undefined;
+            token.role = updatedUser.role;
+            token.departmentId = updatedUser.departmentId ?? null;
+            token.mustChangePassword = updatedUser.mustChangePassword ?? false;
+            console.log("JWT callback - updated from DB:", { name: updatedUser.name, mobile: updatedUser.mobile, role: updatedUser.role });
+          }
+        } catch (error) {
+          console.error("Error updating JWT token from DB:", error);
+        }
+      }
+      
       // avatar را از JWT token حذف می‌کنیم
       if (token.avatar) {
         delete token.avatar;
@@ -104,7 +126,9 @@ export const authOptions: NextAuthOptions = {
         console.log("Session callback - token.mustChangePassword:", token.mustChangePassword);
         if (session.user) {
           session.user.id = token.id as string;
+          session.user.name = (token.name as string) || session.user.name;
           session.user.mobile = token.mobile as string;
+          session.user.email = (token.email as string) || session.user.email;
           session.user.role = token.role as string;
           session.user.departmentId = token.departmentId as string | null;
           session.user.mustChangePassword = token.mustChangePassword ?? false;
@@ -114,13 +138,15 @@ export const authOptions: NextAuthOptions = {
             try {
               const user = await prisma.user.findUnique({
                 where: { id: token.id as string },
-                select: { avatar: true, mustChangePassword: true },
+                select: { avatar: true, mustChangePassword: true, name: true, email: true },
               });
               (session.user as any).avatar = user?.avatar ?? undefined;
-              // به‌روزرسانی mustChangePassword از دیتابیس
+              // به‌روزرسانی اطلاعات از دیتابیس
               if (user) {
+                session.user.name = user.name;
+                session.user.email = user.email ?? undefined;
                 session.user.mustChangePassword = user.mustChangePassword ?? false;
-                console.log("Session callback - updated mustChangePassword from DB:", user.mustChangePassword);
+                console.log("Session callback - updated from DB:", { name: user.name, email: user.email, mustChangePassword: user.mustChangePassword });
               }
             } catch (dbError) {
               console.error("Error fetching user in session callback:", dbError);

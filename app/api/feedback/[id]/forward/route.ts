@@ -12,7 +12,7 @@ const forwardSchema = z.object({
 // POST - ارجاع فیدبک به مدیر
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,12 +26,13 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     const body = await req.json();
     const data = forwardSchema.parse(body);
 
     // بررسی وجود فیدبک
     const feedback = await prisma.feedback.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         department: true,
         user: true,
@@ -80,7 +81,7 @@ export async function POST(
 
     // بررسی اینکه آیا قبلا برای این فیدبک تسک ایجاد شده است
     const existingTask = await prisma.task.findUnique({
-      where: { feedbackId: params.id },
+      where: { feedbackId: id },
     });
 
     if (existingTask) {
@@ -130,7 +131,7 @@ export async function POST(
 
     // بروزرسانی وضعیت فیدبک به REVIEWED و ذخیره اطلاعات ارجاع
     await prisma.feedback.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: "REVIEWED",
         forwardedToId: data.managerId,
@@ -142,7 +143,7 @@ export async function POST(
     if (data.notes && data.notes.trim()) {
       await prisma.message.create({
         data: {
-          feedbackId: params.id,
+          feedbackId: id,
           senderId: session.user.id,
           content: data.notes.trim(),
           isRead: false,

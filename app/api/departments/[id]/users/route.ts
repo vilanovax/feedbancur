@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET - دریافت لیست کاربران یک بخش
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,9 +19,10 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const { id } = await params;
     // بررسی وجود بخش
     const department = await prisma.department.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!department) {
@@ -34,7 +35,7 @@ export async function GET(
     // MANAGER فقط می‌تواند کاربران بخش خودش را ببیند
     if (
       session.user.role === "MANAGER" &&
-      params.id !== session.user.departmentId
+      id !== session.user.departmentId
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -42,7 +43,7 @@ export async function GET(
     // دریافت کاربران بخش
     const users = await prisma.user.findMany({
       where: {
-        departmentId: params.id,
+        departmentId: id,
       },
       select: {
         id: true,
