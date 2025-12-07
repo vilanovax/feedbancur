@@ -193,64 +193,65 @@ export default function TrashPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {feedbacks.map((feedback) => (
                 <div
                   key={feedback.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow p-6"
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                          {feedback.title}
-                        </h3>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            feedback.status
-                          )}`}
-                        >
-                          {getStatusText(feedback.status)}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-300 mb-4">
-                        {feedback.content}
-                      </p>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center gap-2">
-                          <Building2 size={16} />
-                          <span>{feedback.department?.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <User size={16} />
-                          <span>{feedback.user?.name || "ناشناس"}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar size={16} />
-                          <span>
-                            حذف شده:{" "}
-                            {feedback.deletedAt
-                              ? format(new Date(feedback.deletedAt), "yyyy/MM/dd HH:mm")
-                              : "-"}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2 flex-1">
+                      {feedback.title}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center space-x-2 space-x-reverse mb-3 flex-wrap gap-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        feedback.status
+                      )}`}
+                    >
+                      {getStatusText(feedback.status)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <div className="flex items-center space-x-1 space-x-reverse">
+                      <Building2 size={14} />
+                      <span>{feedback.department?.name}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 space-x-reverse">
+                      <User size={14} />
+                      <span>{feedback.user?.name || "ناشناس"}</span>
+                    </div>
+                    <div className="flex items-center space-x-1 space-x-reverse">
+                      <Calendar size={14} />
+                      <span>
+                        {feedback.deletedAt
+                          ? format(new Date(feedback.deletedAt), "yyyy/MM/dd")
+                          : "-"}
+                      </span>
                     </div>
                   </div>
+
+                  <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-3 mb-4 flex-grow">
+                    {feedback.content}
+                  </p>
+
                   <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => handleRestore(feedback.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
                     >
-                      <RotateCcw size={18} />
+                      <RotateCcw size={16} />
                       بازگرداندن
                     </button>
                     <button
                       onClick={() => openDeleteModal(feedback)}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
                     >
-                      <X size={18} />
-                      حذف کامل
+                      <X size={16} />
+                      حذف
                     </button>
                   </div>
                 </div>

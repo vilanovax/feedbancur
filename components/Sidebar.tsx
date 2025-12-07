@@ -34,6 +34,10 @@ export default function Sidebar() {
       const [basePath] = path.split("?");
       return pathname === basePath || pathname.startsWith(basePath);
     }
+    // برای داشبورد (/) فقط وقتی دقیقاً "/" باشد active شود
+    if (path === "/") {
+      return pathname === "/";
+    }
     return pathname === path || pathname.startsWith(path);
   };
 
@@ -56,7 +60,7 @@ export default function Sidebar() {
       name: "ثبت فیدبک",
       href: "/feedback/new",
       icon: MessageSquare,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+      roles: ["MANAGER", "EMPLOYEE"], // حذف ADMIN از اینجا
     },
     {
       name: "فیدبک‌ها",
@@ -89,12 +93,6 @@ export default function Sidebar() {
           roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
         },
       ],
-    },
-    {
-      name: "تسک‌ها",
-      href: "/tasks",
-      icon: CheckSquare,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
     },
     {
       name: "اعلانات",

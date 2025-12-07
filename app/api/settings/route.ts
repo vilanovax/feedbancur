@@ -26,11 +26,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // فقط ADMIN و MANAGER می‌توانند تنظیمات را ببینند
-    // MANAGER فقط می‌تواند statusTexts را ببیند
-    if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // همه کاربران می‌توانند feedbackTypes را ببینند (برای فرم ثبت فیدبک)
+    // اما فقط ADMIN و MANAGER می‌توانند تنظیمات کامل را ببینند
 
     // Check if Prisma client is properly initialized
     if (!prisma) {
@@ -103,13 +100,19 @@ export async function GET() {
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
-    // اگر MANAGER است، فقط statusTexts را برگردان
+    // اگر MANAGER است، statusTexts و feedbackTypes را برگردان
+    // اگر EMPLOYEE است، فقط feedbackTypes را برگردان
     if (session.user.role === "ADMIN") {
       return NextResponse.json(settings);
-    } else {
-      // MANAGER: فقط statusTexts را برگردان
+    } else if (session.user.role === "MANAGER") {
       return NextResponse.json({
         statusTexts: settings.statusTexts,
+        feedbackTypes: settings.feedbackTypes,
+      });
+    } else {
+      // EMPLOYEE: فقط feedbackTypes را برگردان
+      return NextResponse.json({
+        feedbackTypes: settings.feedbackTypes,
       });
     }
   } catch (error) {

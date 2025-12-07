@@ -26,7 +26,17 @@ export function useFeedbackTypes() {
     if (!hasFetchedRef.current) {
       hasFetchedRef.current = true;
       fetch("/api/settings")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            // اگر خطا بود (مثلاً 403)، از localStorage یا default استفاده کن
+            const stored = loadFeedbackTypesFromStorage();
+            if (stored) {
+              setFeedbackTypes(stored);
+            }
+            return null;
+          }
+          return res.json();
+        })
         .then((data) => {
           if (data?.feedbackTypes && Array.isArray(data.feedbackTypes)) {
             // مقایسه با localStorage - اگر متفاوت بود، به‌روز کن
@@ -42,10 +52,21 @@ export function useFeedbackTypes() {
                 detail: JSON.stringify(newTypes) 
               }));
             }
+          } else {
+            // اگر feedbackTypes در پاسخ نبود، از localStorage استفاده کن
+            const stored = loadFeedbackTypesFromStorage();
+            if (stored) {
+              setFeedbackTypes(stored);
+            }
           }
         })
         .catch((error) => {
           console.error("Error fetching feedback types:", error);
+          // در صورت خطا، از localStorage استفاده کن
+          const stored = loadFeedbackTypesFromStorage();
+          if (stored) {
+            setFeedbackTypes(stored);
+          }
         });
     }
   }, []);

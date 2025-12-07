@@ -206,15 +206,6 @@ export default function MobileLayout({
       href: "/mobile/feedback",
       icon: MessageSquare,
     },
-    ...(role === "MANAGER"
-      ? [
-          {
-            name: "تسک‌ها",
-            href: "/mobile/manager/tasks",
-            icon: CheckSquare,
-          },
-        ]
-      : []),
     {
       name: "اعلانات",
       href: "/mobile/announcements",

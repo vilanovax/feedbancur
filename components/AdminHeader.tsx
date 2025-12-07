@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { Settings, Trash2, MessageCircle, Bell, X } from "lucide-react";
+import { Settings, Trash2, MessageCircle, Bell, X, Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { formatPersianDate } from "@/lib/date-utils";
@@ -95,6 +95,77 @@ export default function AppHeader() {
       setHasUnreadMessages(false);
     }
   }, [session]);
+
+  // دریافت تعداد نوتیفیکیشن‌های خوانده نشده
+  useEffect(() => {
+    if (session?.user) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await fetch("/api/notifications?unreadOnly=true");
+          if (res.ok) {
+            const data = await res.json();
+            setUnreadCount(data.unreadCount || 0);
+          }
+        } catch (error) {
+          console.error("Error fetching notifications:", error);
+        }
+      };
+
+      fetchNotifications();
+      // بررسی هر 30 ثانیه یکبار
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session]);
+
+  // دریافت همه نوتیفیکیشن‌ها وقتی مودال باز است
+  useEffect(() => {
+    if (notificationsOpen && session?.user) {
+      const fetchAllNotifications = async () => {
+        try {
+          const res = await fetch("/api/notifications");
+          if (res.ok) {
+            const data = await res.json();
+            setNotifications(data.notifications || []);
+          }
+        } catch (error) {
+          console.error("Error fetching all notifications:", error);
+        }
+      };
+
+      fetchAllNotifications();
+    }
+  }, [notificationsOpen, session]);
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+      });
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId ? { ...n, isRead: true } : n
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch("/api/notifications/all/read", {
+        method: "PUT",
+      });
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 lg:right-64 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-30 flex items-center justify-between px-4 sm:px-6 shadow-sm">
@@ -222,6 +293,13 @@ export default function AppHeader() {
 
         {session?.user?.role === "ADMIN" && (
           <>
+            <Link
+              href="/feedback/new"
+              className="flex items-center justify-center p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="ثبت فیدبک جدید"
+            >
+              <Plus size={20} />
+            </Link>
             <Link
               href="/feedback/with-chat"
               className="relative flex items-center justify-center p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
