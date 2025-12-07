@@ -62,6 +62,10 @@ export default function ManagerTasksPage() {
   const [selectedFeedbackForNotes, setSelectedFeedbackForNotes] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notesLoading, setNotesLoading] = useState<Record<string, boolean>>({});
+  const [completedModalOpen, setCompletedModalOpen] = useState(false);
+  const [selectedFeedbackForCompleted, setSelectedFeedbackForCompleted] = useState<string | null>(null);
+  const [userResponse, setUserResponse] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
   const { getStatusTextLocal, refreshStatusTexts, getStatusTextsOrder } = useStatusTexts();
@@ -167,8 +171,12 @@ export default function ManagerTasksPage() {
         f.status === "COMPLETED"
       );
     } else if (quickFilter === "forwarded") {
-      // فقط فیدبک‌های ارجاع شده به این مدیر
-      filtered = filtered.filter((f) => f.forwardedToId && f.forwardedToId === session?.user.id);
+      // فقط فیدبک‌های ارجاع شده به این مدیر (بدون فیدبک‌های انجام شده)
+      filtered = filtered.filter((f) => 
+        f.forwardedToId && 
+        f.forwardedToId === session?.user.id && 
+        f.status !== "COMPLETED"
+      );
     } else if (quickFilter === "completed") {
       // تسک‌های اجرا شده: COMPLETED
       filtered = filtered.filter((f) => f.status === "COMPLETED");
@@ -204,6 +212,16 @@ export default function ManagerTasksPage() {
   }, [feedbacks, sortOption, quickFilter]);
 
   const handleStatusChange = async (feedbackId: string, newStatus: string) => {
+    // اگر وضعیت COMPLETED است، مودال را باز کن
+    if (newStatus === "COMPLETED") {
+      setSelectedFeedbackForCompleted(feedbackId);
+      setUserResponse("");
+      setAdminNotes("");
+      setCompletedModalOpen(true);
+      return;
+    }
+
+    // برای سایر وضعیت‌ها، مستقیماً تغییر بده
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/status`, {
         method: "PATCH",
@@ -222,6 +240,39 @@ export default function ManagerTasksPage() {
       }
     } catch (error) {
       console.error("Error changing status:", error);
+      alert("خطا در تغییر وضعیت");
+    }
+  };
+
+  const handleCompleteFeedback = async () => {
+    if (!selectedFeedbackForCompleted) return;
+
+    try {
+      const res = await fetch(`/api/feedback/${selectedFeedbackForCompleted}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          status: "COMPLETED",
+          userResponse: userResponse.trim() || undefined,
+          adminNotes: adminNotes.trim() || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        alert("وضعیت فیدبک با موفقیت به انجام شد تغییر کرد");
+        setCompletedModalOpen(false);
+        setSelectedFeedbackForCompleted(null);
+        setUserResponse("");
+        setAdminNotes("");
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        alert(error.error || "خطا در تغییر وضعیت");
+      }
+    } catch (error) {
+      console.error("Error completing feedback:", error);
       alert("خطا در تغییر وضعیت");
     }
   };
@@ -1035,6 +1086,91 @@ export default function ManagerTasksPage() {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
                 >
                   ارسال
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Completed Feedback Modal */}
+        {completedModalOpen && selectedFeedbackForCompleted && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    تکمیل فیدبک
+                  </h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setCompletedModalOpen(false);
+                    setSelectedFeedbackForCompleted(null);
+                    setUserResponse("");
+                    setAdminNotes("");
+                  }}
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    پیام برای کاربر (اختیاری)
+                  </label>
+                  <textarea
+                    value={userResponse}
+                    onChange={(e) => setUserResponse(e.target.value)}
+                    placeholder="پیامی برای کاربری که فیدبک را ایجاد کرده است..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+                    rows={4}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    این پیام به عنوان یک پیام در چت فیدبک اضافه می‌شود
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    یادداشت برای ادمین (اختیاری)
+                  </label>
+                  <textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="یادداشتی برای ادمین..."
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none"
+                    rows={4}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    این یادداشت به عنوان یک پیام در چت فیدبک اضافه می‌شود
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    setCompletedModalOpen(false);
+                    setSelectedFeedbackForCompleted(null);
+                    setUserResponse("");
+                    setAdminNotes("");
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                >
+                  انصراف
+                </button>
+                <button
+                  onClick={handleCompleteFeedback}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+                >
+                  <CheckCircle size={16} />
+                  تکمیل فیدبک
                 </button>
               </div>
             </div>

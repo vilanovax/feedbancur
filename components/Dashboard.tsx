@@ -16,7 +16,10 @@ import {
   Building2,
   CheckSquare,
   Bell,
-  Trophy
+  Trophy,
+  CheckCircle,
+  Clock,
+  Archive
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -26,6 +29,9 @@ export default function Dashboard() {
     totalFeedbacks: 0,
     pendingFeedbacks: 0,
     departments: 0,
+    completedFeedbacks: 0,
+    deferredFeedbacks: 0,
+    archivedFeedbacks: 0,
   });
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function Dashboard() {
       <AppHeader />
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -96,12 +102,48 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های انجام شده</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.completedFeedbacks}
+                </p>
+              </div>
+              <CheckCircle className="text-green-500" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های برای آینده</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.deferredFeedbacks}
+                </p>
+              </div>
+              <Clock className="text-orange-500" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های آرشیو شده</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.archivedFeedbacks}
+                </p>
+              </div>
+              <Archive className="text-gray-500" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">بخش‌ها</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
                   {stats.departments}
                 </p>
               </div>
-              <Building2 className="text-green-500" size={40} />
+              <Building2 className="text-purple-500" size={40} />
             </div>
           </div>
         </div>

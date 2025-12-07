@@ -10,16 +10,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [totalFeedbacks, pendingFeedbacks, departments] = await Promise.all([
-      prisma.feedback.count(),
-      prisma.feedback.count({ where: { status: "PENDING" } }),
+    const [totalFeedbacks, pendingFeedbacks, departments, completedFeedbacks, deferredFeedbacks, archivedFeedbacks] = await Promise.all([
+      prisma.feedback.count({ where: { deletedAt: null } }),
+      prisma.feedback.count({ where: { status: "PENDING", deletedAt: null } }),
       prisma.department.count(),
+      prisma.feedback.count({ where: { status: "COMPLETED", deletedAt: null } }),
+      prisma.feedback.count({ where: { status: "DEFERRED", deletedAt: null } }),
+      prisma.feedback.count({ where: { status: "ARCHIVED", deletedAt: null } }),
     ]);
 
     return NextResponse.json({
       totalFeedbacks,
       pendingFeedbacks,
       departments,
+      completedFeedbacks,
+      deferredFeedbacks,
+      archivedFeedbacks,
     });
   } catch (error: any) {
     console.error("Error fetching stats:", error);
@@ -31,6 +37,9 @@ export async function GET() {
         totalFeedbacks: 0,
         pendingFeedbacks: 0,
         departments: 0,
+        completedFeedbacks: 0,
+        deferredFeedbacks: 0,
+        archivedFeedbacks: 0,
       });
     }
     

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +20,7 @@ import {
   Settings,
   Edit,
 } from "lucide-react";
+import { formatPersianDate } from "@/lib/date-utils";
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -42,6 +43,10 @@ export default function MobileLayout({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasNewAnnouncements, setHasNewAnnouncements] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => pathname === path;
   
@@ -59,6 +64,98 @@ export default function MobileLayout({
       router.push(backHref);
     } else {
       router.push(homePath);
+    }
+  };
+
+  // دریافت نوتیفیکیشن‌ها
+  useEffect(() => {
+    if (session?.user) {
+      const fetchNotifications = async () => {
+        try {
+          const res = await fetch("/api/notifications?unreadOnly=true");
+          if (res.ok) {
+            const data = await res.json();
+            setUnreadCount(data.unreadCount);
+          }
+        } catch (error) {
+          console.error("Error fetching notifications:", error);
+        }
+      };
+
+      fetchNotifications();
+      // بررسی هر 30 ثانیه یکبار
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session]);
+
+  // دریافت همه نوتیفیکیشن‌ها وقتی مودال باز است
+  useEffect(() => {
+    if (notificationsOpen && session?.user) {
+      const fetchAllNotifications = async () => {
+        try {
+          const res = await fetch("/api/notifications");
+          if (res.ok) {
+            const data = await res.json();
+            setNotifications(data.notifications || []);
+            setUnreadCount(data.unreadCount || 0);
+          }
+        } catch (error) {
+          console.error("Error fetching notifications:", error);
+        }
+      };
+
+      fetchAllNotifications();
+      // به‌روزرسانی هر 10 ثانیه یکبار
+      const interval = setInterval(fetchAllNotifications, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [notificationsOpen, session]);
+
+  // بستن مودال با کلیک خارج از آن
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    if (notificationsOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [notificationsOpen]);
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+      });
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId ? { ...n, isRead: true } : n
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch("/api/notifications/all/read", {
+        method: "PUT",
+      });
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
+      );
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
     }
   };
 
@@ -135,7 +232,7 @@ export default function MobileLayout({
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {shouldShowBack && (
               <button
                 onClick={handleBack}
@@ -160,7 +257,103 @@ export default function MobileLayout({
           <h1 className="text-lg font-bold text-gray-800 dark:text-white flex-1 text-center">
             {title || (role === "EMPLOYEE" ? "پنل کارمند" : "پنل مدیر")}
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {/* آیکون نوتیفیکیشن */}
+            <div className="relative" ref={notificationsRef}>
+              <button
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="اعلانات"
+              >
+                <Bell className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+
+              {/* باتن شیت نوتیفیکیشن‌ها */}
+              {notificationsOpen && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50"
+                    onClick={() => setNotificationsOpen(false)}
+                  ></div>
+                  <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                        اعلانات
+                      </h2>
+                      <div className="flex items-center gap-1">
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            همه را خوانده شده علامت بزن
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setNotificationsOpen(false)}
+                          className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto p-4">
+                      {notifications.length > 0 ? (
+                        <div className="space-y-3">
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              onClick={() => {
+                                if (!notification.isRead) {
+                                  markAsRead(notification.id);
+                                }
+                              }}
+                              className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                                notification.isRead
+                                  ? "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
+                                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                                    {notification.title}
+                                  </h3>
+                                  <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+                                    {notification.content}
+                                  </p>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {formatPersianDate(
+                                        new Date(notification.createdAt)
+                                      )}
+                                    </span>
+                                    {!notification.isRead && (
+                                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                          اعلانی وجود ندارد
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => router.push("/mobile/settings")}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"

@@ -40,7 +40,10 @@ export async function GET(request: NextRequest) {
     // اگر مدیر می‌خواهد فیدبک‌های دریافتی (ارجاع شده + مستقیم به بخش) را ببیند
     if (receivedFeedbacks && session.user.role === "MANAGER") {
       const orConditions: any[] = [
-        { forwardedToId: session.user.id }, // فیدبک‌های ارجاع شده
+        { 
+          forwardedToId: session.user.id,
+          status: { not: "ARCHIVED" }, // فیدبک‌های ارجاع شده (غیر آرشیو)
+        },
       ];
       
       // اگر مدیر بخش دارد، فیدبک‌های مستقیم به بخش را هم اضافه کن
@@ -49,16 +52,17 @@ export async function GET(request: NextRequest) {
           departmentId: session.user.departmentId,
           forwardedToId: null, // فیدبک‌های مستقیم به بخش (بدون ارجاع)
           userId: { not: session.user.id }, // به جز فیدبک‌های خود مدیر
+          status: { not: "ARCHIVED" }, // غیر آرشیو
         });
       }
       
       where.OR = orConditions;
-      // فیلتر کردن فیدبک‌های آرشیو شده
-      where.status = { not: "ARCHIVED" };
     }
     // اگر مدیر می‌خواهد فیدبک‌های ارجاع شده به خودش را ببیند
     else if (forwardedToMe && session.user.role === "MANAGER") {
       where.forwardedToId = session.user.id;
+      // حذف فیدبک‌های انجام شده از نتایج ارجاع شده
+      where.status = { not: "COMPLETED" };
     } 
     // کارمند فقط فیدبک‌های خودش را می‌بیند
     else if (session.user.role === "EMPLOYEE") {

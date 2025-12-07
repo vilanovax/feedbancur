@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight } from "lucide-react";
+import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
@@ -81,6 +81,7 @@ export default function FeedbacksPage() {
   const [selectedManager, setSelectedManager] = useState("");
   const [forwardNotes, setForwardNotes] = useState("");
   const [forwardingFeedback, setForwardingFeedback] = useState(false);
+  const [cancelingForward, setCancelingForward] = useState<string | null>(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveAdminNotes, setArchiveAdminNotes] = useState("");
   const [archiveUserResponse, setArchiveUserResponse] = useState("");
@@ -277,8 +278,12 @@ export default function FeedbacksPage() {
               );
               break;
             case "forwarded":
-              // فیدبک‌های ارجاع شده
-              filteredData = data.filter((f: any) => f.forwardedToId && f.status !== "ARCHIVED");
+              // فیدبک‌های ارجاع شده (بدون انجام شده و آرشیو شده)
+              filteredData = data.filter((f: any) => 
+                f.forwardedToId && 
+                f.status !== "ARCHIVED" && 
+                f.status !== "COMPLETED"
+              );
               break;
             case "archived":
             case "deferred":
@@ -365,6 +370,32 @@ export default function FeedbacksPage() {
     setSelectedFeedback(null);
     setSelectedManager("");
     setForwardNotes("");
+  };
+
+  const handleCancelForward = async (feedbackId: string) => {
+    if (!confirm("آیا از لغو ارجاع این فیدبک اطمینان دارید؟")) {
+      return;
+    }
+
+    setCancelingForward(feedbackId);
+    try {
+      const res = await fetch(`/api/feedback/${feedbackId}/cancel-forward`, {
+        method: "POST",
+      });
+
+      if (res.ok) {
+        alert("ارجاع فیدبک با موفقیت لغو شد");
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        alert(error.error || "خطا در لغو ارجاع");
+      }
+    } catch (error) {
+      console.error("Error canceling forward:", error);
+      alert("خطا در لغو ارجاع");
+    } finally {
+      setCancelingForward(null);
+    }
   };
 
   const handleForwardFeedback = async () => {
@@ -1013,22 +1044,45 @@ export default function FeedbacksPage() {
                     </select>
                     )}
 
-                    <div className="flex gap-2">
-                      {/* Forward Button */}
-                      <button
-                        onClick={() => openForwardModal(feedback)}
-                        disabled={feedback.status === "ARCHIVED" || feedback.status === "COMPLETED"}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Send size={14} />
-                        ارجاع
-                      </button>
+                    <div className="flex gap-2 flex-wrap">
+                      {/* Cancel Forward Button - فقط برای فیدبک‌های ارجاع شده */}
+                      {feedback.forwardedToId && session?.user?.role === "ADMIN" && (
+                        <button
+                          onClick={() => handleCancelForward(feedback.id)}
+                          disabled={cancelingForward === feedback.id}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                        >
+                          {cancelingForward === feedback.id ? (
+                            <>
+                              <RefreshCw size={14} className="animate-spin" />
+                              در حال لغو...
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={14} />
+                              لغو ارجاع
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Forward Button - فقط برای فیدبک‌های ارجاع نشده */}
+                      {!feedback.forwardedToId && (
+                        <button
+                          onClick={() => openForwardModal(feedback)}
+                          disabled={feedback.status === "ARCHIVED" || feedback.status === "COMPLETED"}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                        >
+                          <Send size={14} />
+                          ارجاع
+                        </button>
+                      )}
 
                       {/* Archive Button */}
                       <button
                         onClick={() => openArchiveModal(feedback)}
                         disabled={feedback.status === "ARCHIVED"}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
                       >
                         <Archive size={14} />
                         آرشیو
@@ -1041,7 +1095,7 @@ export default function FeedbacksPage() {
                             setSelectedFeedback(feedback);
                             setShowDeleteModal(true);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm min-w-[120px]"
                         >
                           <Trash2 size={14} />
                           حذف

@@ -52,8 +52,10 @@ export default function ForwardedFeedbacksPage() {
       const res = await fetch("/api/feedback");
       if (res.ok) {
         const data = await res.json();
-        // فقط فیدبک‌های ارجاع شده
-        const forwardedOnly = data.filter((f: any) => f.forwardedToId !== null);
+        // فقط فیدبک‌های ارجاع شده که وضعیت آنها "انجام شد" نیست
+        const forwardedOnly = data.filter((f: any) => 
+          f.forwardedToId !== null && f.status !== "COMPLETED"
+        );
         setFeedbacks(forwardedOnly);
       }
     } catch (error) {

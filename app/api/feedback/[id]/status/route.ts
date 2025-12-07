@@ -7,6 +7,7 @@ import { z } from "zod";
 const statusUpdateSchema = z.object({
   status: z.enum(["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"]),
   userResponse: z.string().optional(), // برای وضعیت COMPLETED
+  adminNotes: z.string().optional(), // برای وضعیت COMPLETED
 });
 
 // PATCH - تغییر وضعیت فیدبک
@@ -35,6 +36,7 @@ export async function PATCH(
       include: {
         department: true,
         user: true,
+        forwardedTo: true,
       },
     });
 
@@ -102,6 +104,78 @@ export async function PATCH(
         },
       },
     });
+
+    // اگر وضعیت COMPLETED است و پیام‌هایی وجود دارد
+    if (data.status === "COMPLETED") {
+      // ارسال نوتیفیکیشن برای کاربر (اگر پیام وجود داشته باشد)
+      if (data.userResponse && data.userResponse.trim()) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: feedback.userId,
+              feedbackId: params.id,
+              title: "فیدبک شما تکمیل شد",
+              content: data.userResponse.trim(),
+              type: "SUCCESS",
+            },
+          });
+        } catch (error) {
+          console.error("Error creating user notification:", error);
+          // ادامه می‌دهیم حتی اگر خطا رخ دهد
+        }
+      }
+
+      // ارسال یادداشت برای ادمین در چت (اگر فیدبک ارجاع شده باشد)
+      if (data.adminNotes && data.adminNotes.trim() && feedback.forwardedToId) {
+        try {
+          await prisma.message.create({
+            data: {
+              feedbackId: params.id,
+              senderId: session.user.id,
+              content: `[یادداشت ادمین]: ${data.adminNotes.trim()}`,
+              isRead: false,
+            },
+          });
+        } catch (error) {
+          console.error("Error creating admin notes message:", error);
+          // ادامه می‌دهیم حتی اگر خطا رخ دهد
+        }
+      }
+
+      // ارسال نوتیفیکیشن به همه ادمین‌ها وقتی مدیر وضعیت را به COMPLETED تغییر می‌دهد
+      if (session.user.role === "MANAGER") {
+        try {
+          // پیدا کردن همه ادمین‌ها
+          const admins = await prisma.user.findMany({
+            where: {
+              role: "ADMIN",
+              isActive: true,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          // ایجاد نوتیفیکیشن برای هر ادمین
+          const notificationPromises = admins.map((admin) =>
+            prisma.notification.create({
+              data: {
+                userId: admin.id,
+                feedbackId: params.id,
+                title: "فیدبک تکمیل شد",
+                content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
+                type: "INFO",
+              },
+            })
+          );
+
+          await Promise.all(notificationPromises);
+        } catch (error) {
+          console.error("Error creating admin notifications:", error);
+          // ادامه می‌دهیم حتی اگر خطا رخ دهد
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
