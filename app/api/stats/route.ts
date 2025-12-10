@@ -10,13 +10,76 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [totalFeedbacks, pendingFeedbacks, departments, completedFeedbacks, deferredFeedbacks, archivedFeedbacks] = await Promise.all([
+    // تاریخ 24 ساعت قبل برای تشخیص موارد جدید
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+    const [
+      totalFeedbacks,
+      pendingFeedbacks,
+      departments,
+      completedFeedbacks,
+      deferredFeedbacks,
+      archivedFeedbacks,
+      // آمار اعلانات
+      totalAnnouncements,
+      activeAnnouncements,
+      newAnnouncements,
+      // آمار نظرسنجی‌ها
+      totalPolls,
+      activePolls,
+      newPolls,
+    ] = await Promise.all([
       prisma.feedback.count({ where: { deletedAt: null } }),
       prisma.feedback.count({ where: { status: "PENDING", deletedAt: null } }),
       prisma.department.count(),
       prisma.feedback.count({ where: { status: "COMPLETED", deletedAt: null } }),
       prisma.feedback.count({ where: { status: "DEFERRED", deletedAt: null } }),
       prisma.feedback.count({ where: { status: "ARCHIVED", deletedAt: null } }),
+      // اعلانات
+      prisma.announcement.count(),
+      prisma.announcement.count({
+        where: {
+          isActive: true,
+          OR: [
+            { scheduledAt: null },
+            { scheduledAt: { lte: new Date() } },
+          ],
+        }
+      }),
+      prisma.announcement.count({
+        where: {
+          createdAt: { gte: oneDayAgo },
+          isActive: true,
+        }
+      }),
+      // نظرسنجی‌ها
+      prisma.poll.count(),
+      prisma.poll.count({
+        where: {
+          isActive: true,
+          AND: [
+            {
+              OR: [
+                { scheduledAt: null },
+                { scheduledAt: { lte: new Date() } },
+              ],
+            },
+            {
+              OR: [
+                { closedAt: null },
+                { closedAt: { gt: new Date() } },
+              ],
+            },
+          ],
+        }
+      }),
+      prisma.poll.count({
+        where: {
+          createdAt: { gte: oneDayAgo },
+          isActive: true,
+        }
+      }),
     ]);
 
     return NextResponse.json({
@@ -26,6 +89,14 @@ export async function GET() {
       completedFeedbacks,
       deferredFeedbacks,
       archivedFeedbacks,
+      // اعلانات
+      totalAnnouncements,
+      activeAnnouncements,
+      newAnnouncements,
+      // نظرسنجی‌ها
+      totalPolls,
+      activePolls,
+      newPolls,
     });
   } catch (error: any) {
     console.error("Error fetching stats:", error);
@@ -40,6 +111,12 @@ export async function GET() {
         completedFeedbacks: 0,
         deferredFeedbacks: 0,
         archivedFeedbacks: 0,
+        totalAnnouncements: 0,
+        activeAnnouncements: 0,
+        newAnnouncements: 0,
+        totalPolls: 0,
+        activePolls: 0,
+        newPolls: 0,
       });
     }
     

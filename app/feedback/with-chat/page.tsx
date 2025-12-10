@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, Calendar, Building2, User, MessageCircle, X, Check } from "lucide-react";
+import { Star, Calendar, Building2, User, MessageCircle, X, Check, Image as ImageIcon, Download, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
+import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 
@@ -18,6 +19,10 @@ export default function FeedbacksWithChatPage() {
   const [selectedFeedbackForChat, setSelectedFeedbackForChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, any[]>>({});
   const [newMessageTexts, setNewMessageTexts] = useState<Record<string, string>>({});
+  const [messageImages, setMessageImages] = useState<Record<string, File | null>>({});
+  const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,13 +91,22 @@ export default function FeedbacksWithChatPage() {
 
   const sendMessage = async (feedbackId: string) => {
     const text = newMessageTexts[feedbackId]?.trim();
-    if (!text) return;
+    const image = messageImages[feedbackId];
+    
+    if (!text && !image) return;
 
     try {
+      const formData = new FormData();
+      if (text) {
+        formData.append("content", text);
+      }
+      if (image) {
+        formData.append("image", image);
+      }
+
       const res = await fetch(`/api/feedback/${feedbackId}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text }),
+        body: formData,
       });
 
       if (res.ok) {
@@ -102,6 +116,12 @@ export default function FeedbacksWithChatPage() {
           [feedbackId]: [...(prev[feedbackId] || []), newMessage],
         }));
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
+        setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
+        setImagePreviews((prev) => {
+          const newPreviews = { ...prev };
+          delete newPreviews[feedbackId];
+          return newPreviews;
+        });
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
@@ -109,10 +129,52 @@ export default function FeedbacksWithChatPage() {
         setTimeout(() => {
           fetchMessages(feedbackId);
         }, 500);
+      } else {
+        const error = await res.json();
+        alert(error.error || "خطا در ارسال پیام");
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      alert("خطا در ارسال پیام");
     }
+  };
+
+  const handleImageSelect = (feedbackId: string, file: File | null) => {
+    if (!file) {
+      setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
+      setImagePreviews((prev) => {
+        const newPreviews = { ...prev };
+        delete newPreviews[feedbackId];
+        return newPreviews;
+      });
+      return;
+    }
+
+    // بررسی حجم فایل (از تنظیمات)
+    const maxSize = 5 * 1024 * 1024; // 5MB پیش‌فرض
+    if (file.size > maxSize) {
+      alert(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
+      return;
+    }
+
+    // بررسی فرمت فایل
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
+      return;
+    }
+
+    setMessageImages((prev) => ({ ...prev, [feedbackId]: file }));
+    
+    // ایجاد preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreviews((prev) => ({
+        ...prev,
+        [feedbackId]: reader.result as string,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   if (status === "loading") {
@@ -279,7 +341,33 @@ export default function FeedbacksWithChatPage() {
                         <div className="text-xs mb-1 opacity-75">
                           {message.sender.name} ({message.sender.role === "ADMIN" ? "ادمین" : "مدیر"})
                         </div>
-                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                        {message.content && (
+                          <div className="text-sm whitespace-pre-wrap mb-2">{message.content}</div>
+                        )}
+                        {message.image && (
+                          <div className="mb-2 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity" onClick={() => {
+                            setSelectedImageUrl(message.image);
+                            setImageModalOpen(true);
+                          }}>
+                            <img
+                              src={
+                                message.image.includes("liara.space")
+                                  ? `/api/image-proxy?url=${encodeURIComponent(message.image)}`
+                                  : message.image
+                              }
+                              alt="ضمیمه"
+                              className="max-w-full h-auto rounded-lg"
+                              onError={(e) => {
+                                console.error("Error loading image:", message.image);
+                                console.error("Error event:", e);
+                                console.error("Image URL:", message.image);
+                              }}
+                              onLoad={() => {
+                                console.log("Image loaded successfully:", message.image);
+                              }}
+                            />
+                          </div>
+                        )}
                         <div className="flex items-center justify-end gap-1 text-xs mt-1 opacity-75">
                           <span>{format(new Date(message.createdAt), "HH:mm")}</span>
                           {isMyMessage && (
@@ -302,32 +390,137 @@ export default function FeedbacksWithChatPage() {
             </div>
 
             {/* Message Input */}
-            <div className="flex items-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-              <input
-                type="text"
-                value={newMessageTexts[selectedFeedbackForChat] || ""}
-                onChange={(e) =>
-                  setNewMessageTexts((prev) => ({
-                    ...prev,
-                    [selectedFeedbackForChat]: e.target.value,
-                  }))
-                }
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage(selectedFeedbackForChat);
+            <div className="flex flex-col gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+              {/* Image Preview */}
+              {imagePreviews[selectedFeedbackForChat] && (
+                <div className="relative inline-block max-w-xs">
+                  <img
+                    src={imagePreviews[selectedFeedbackForChat]}
+                    alt="Preview"
+                    className="max-w-full h-auto rounded-lg border border-gray-300 dark:border-gray-600"
+                  />
+                  <button
+                    onClick={() => handleImageSelect(selectedFeedbackForChat, null)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2">
+                <label className="flex-shrink-0 cursor-pointer p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                  <ImageIcon size={20} />
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      handleImageSelect(selectedFeedbackForChat, file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <input
+                  type="text"
+                  value={newMessageTexts[selectedFeedbackForChat] || ""}
+                  onChange={(e) =>
+                    setNewMessageTexts((prev) => ({
+                      ...prev,
+                      [selectedFeedbackForChat]: e.target.value,
+                    }))
                   }
-                }}
-                placeholder="پیام خود را بنویسید..."
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(selectedFeedbackForChat);
+                    }
+                  }}
+                  placeholder="پیام خود را بنویسید..."
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
+                />
+                <button
+                  onClick={() => sendMessage(selectedFeedbackForChat)}
+                  disabled={!newMessageTexts[selectedFeedbackForChat]?.trim() && !messageImages[selectedFeedbackForChat]}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                >
+                  ارسال
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {imageModalOpen && selectedImageUrl && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setImageModalOpen(false)}>
+          <div className="relative w-full h-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header with close and download buttons */}
+            <div className="flex items-center justify-between p-4 bg-black/50 rounded-t-lg">
+              <div className="flex items-center gap-2">
+                <Maximize2 size={20} className="text-white" />
+                <span className="text-white text-sm">نمایش تصویر</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      let imageUrl: string;
+                      if (selectedImageUrl.includes("liara.space")) {
+                        // برای تصاویر لیارا از proxy استفاده می‌کنیم
+                        imageUrl = `/api/image-proxy?url=${encodeURIComponent(selectedImageUrl)}`;
+                      } else {
+                        // برای تصاویر محلی
+                        imageUrl = selectedImageUrl.startsWith("http") 
+                          ? selectedImageUrl 
+                          : `${window.location.origin}${selectedImageUrl}`;
+                      }
+                      
+                      // دریافت تصویر و دانلود
+                      const response = await fetch(imageUrl);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = `image-${Date.now()}.${selectedImageUrl.split('.').pop() || 'jpg'}`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error("Error downloading image:", error);
+                      alert("خطا در دانلود تصویر");
+                    }
+                  }}
+                  className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                  title="دانلود تصویر"
+                >
+                  <Download size={18} />
+                  <span className="text-sm">دانلود</span>
+                </button>
+                <button
+                  onClick={() => setImageModalOpen(false)}
+                  className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                  title="بستن"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            
+            {/* Image */}
+            <div className="flex-1 flex items-center justify-center overflow-hidden">
+              <img
+                src={
+                  selectedImageUrl.includes("liara.space")
+                    ? `/api/image-proxy?url=${encodeURIComponent(selectedImageUrl)}`
+                    : selectedImageUrl
+                }
+                alt="تصویر بزرگ"
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
               />
-              <button
-                onClick={() => sendMessage(selectedFeedbackForChat)}
-                disabled={!newMessageTexts[selectedFeedbackForChat]?.trim()}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
-              >
-                ارسال
-              </button>
             </div>
           </div>
         </div>

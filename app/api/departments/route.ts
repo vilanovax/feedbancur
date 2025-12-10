@@ -9,6 +9,10 @@ const departmentSchema = z.object({
   description: z.string().optional(),
   keywords: z.string().optional(),
   allowDirectFeedback: z.boolean().optional().default(false),
+  canCreateAnnouncement: z.boolean().optional().default(false),
+  allowedAnnouncementDepartments: z.array(z.string()).optional().default([]),
+  canCreatePoll: z.boolean().optional().default(false),
+  allowedPollDepartments: z.array(z.string()).optional().default([]),
 });
 
 export async function GET() {
@@ -71,6 +75,10 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         keywords: keywordsArray,
         allowDirectFeedback: validatedData.allowDirectFeedback || false,
+        canCreateAnnouncement: validatedData.canCreateAnnouncement || false,
+        allowedAnnouncementDepartments: validatedData.allowedAnnouncementDepartments || [],
+        canCreatePoll: validatedData.canCreatePoll || false,
+        allowedPollDepartments: validatedData.allowedPollDepartments || [],
       },
     });
 

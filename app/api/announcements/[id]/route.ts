@@ -3,6 +3,21 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { uploadToLiara } from "@/lib/liara-storage";
+
+// بررسی نوع فایل مجاز
+function isAllowedFileType(fileType: string): boolean {
+  const allowedTypes = [
+    'image/',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/zip',
+    'application/x-rar-compressed',
+  ];
+  
+  return allowedTypes.some(type => fileType.startsWith(type));
+}
 
 const updateAnnouncementSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است").optional(),
@@ -90,8 +105,108 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await req.json();
-    const data = updateAnnouncementSchema.parse(body);
+    
+    // بررسی اینکه آیا FormData است یا JSON
+    const contentType = req.headers.get('content-type') || '';
+    let data: any;
+    let newAttachments: Array<{ url: string; name: string }> = [];
+    let existingAttachments: Array<{ url: string; name: string }> = [];
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      
+      // فقط ADMIN می‌تواند فایل اضافه کند
+      if (session.user.role === 'ADMIN') {
+        // دریافت فایل‌های موجود (که باید نگه داشته شوند)
+        const existingAttachmentsStr = formData.get('existingAttachments') as string;
+        if (existingAttachmentsStr) {
+          try {
+            existingAttachments = JSON.parse(existingAttachmentsStr);
+          } catch (e) {
+            console.error('Error parsing existing attachments:', e);
+          }
+        }
+
+        // دریافت تنظیمات Object Storage
+        const settings = await prisma.settings.findFirst();
+        const objectStorageSettings = settings?.objectStorageSettings
+          ? (typeof settings.objectStorageSettings === 'string'
+              ? JSON.parse(settings.objectStorageSettings)
+              : settings.objectStorageSettings)
+          : { enabled: false };
+
+        if (!objectStorageSettings.enabled) {
+          return NextResponse.json(
+            { error: 'Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید.' },
+            { status: 400 }
+          );
+        }
+
+        // پردازش فایل‌های جدید
+        const fileCount = parseInt(formData.get('fileCount') as string) || 0;
+        
+        for (let i = 0; i < fileCount; i++) {
+          const file = formData.get(`attachment_${i}`) as File | null;
+          
+          if (file && file.size > 0) {
+            if (!isAllowedFileType(file.type)) {
+              return NextResponse.json(
+                { error: `نوع فایل "${file.name}" مجاز نیست` },
+                { status: 400 }
+              );
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+              return NextResponse.json(
+                { error: `حجم فایل "${file.name}" نباید بیشتر از 10 مگابایت باشد` },
+                { status: 400 }
+              );
+            }
+
+            const bytes = await file.arrayBuffer();
+            const buffer = Buffer.from(bytes);
+            const timestamp = Date.now();
+            const randomString = Math.random().toString(36).substring(2, 15);
+            const fileExtension = file.name.split('.').pop() || 'bin';
+            const fileName = `announcement-${timestamp}-${i}-${randomString}.${fileExtension}`;
+
+            try {
+              const fileUrl = await uploadToLiara(
+                buffer,
+                fileName,
+                file.type,
+                objectStorageSettings,
+                'announcements'
+              );
+              newAttachments.push({
+                url: fileUrl,
+                name: file.name,
+              });
+            } catch (uploadError: any) {
+              console.error('Error uploading attachment:', uploadError);
+              return NextResponse.json(
+                { error: `خطا در آپلود فایل "${file.name}"` },
+                { status: 500 }
+              );
+            }
+          }
+        }
+      }
+
+      // استخراج داده‌های فرم
+      const departmentIdValue = formData.get('departmentId') as string | null;
+      data = {
+        title: formData.get('title') as string,
+        content: formData.get('content') as string,
+        priority: formData.get('priority') as string,
+        departmentId: departmentIdValue && departmentIdValue.trim() !== '' ? departmentIdValue : null,
+        isActive: formData.get('isActive') === 'true',
+        scheduledAt: formData.get('scheduledAt') as string || null,
+      };
+    } else {
+      const body = await req.json();
+      data = updateAnnouncementSchema.parse(body);
+    }
 
     // بررسی وجود اعلان
     const existingAnnouncement = await prisma.announcement.findUnique({
@@ -159,6 +274,12 @@ export async function PATCH(
     }
     if (data.scheduledAt !== undefined) {
       updateData.scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
+    }
+
+    // بروزرسانی فایل‌های ضمیمه (فقط برای ADMIN)
+    if (session.user.role === 'ADMIN' && (newAttachments.length > 0 || existingAttachments.length >= 0)) {
+      const allAttachments = [...existingAttachments, ...newAttachments];
+      updateData.attachments = allAttachments.length > 0 ? allAttachments : null;
     }
 
     // بروزرسانی اعلان

@@ -3,9 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync, mkdirSync } from "fs";
+import { uploadToLiara } from "@/lib/liara-storage";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -19,7 +17,7 @@ const feedbackSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,6 +30,7 @@ export async function GET(request: NextRequest) {
     const where: any = {};
     
     // فقط فیدبک‌های حذف نشده
+    // Note: اگر فیلد deletedAt در دیتابیس وجود نداشته باشد، در catch block حذف می‌شود
     where.deletedAt = null;
     
     if (departmentId) where.departmentId = departmentId;
@@ -108,13 +107,23 @@ export async function GET(request: NextRequest) {
       });
       console.log("Found", feedbacks.length, "feedbacks");
     } catch (error: any) {
-      console.error("Error fetching feedbacks:", error);
+      console.error("Error fetching feedbacks (inner catch):", error);
+      console.error("Error message:", error?.message);
+      console.error("Error code:", error?.code);
       // اگر مشکل از deletedAt است، بدون آن query بزن
-      if (error?.message?.includes("deletedAt") || error?.code === "P2009" || error?.code === "P2011") {
+      if (
+        error?.message?.includes("deletedAt") || 
+        error?.message?.includes("Unknown field") ||
+        error?.message?.includes("Unknown column") ||
+        error?.code === "P2009" || 
+        error?.code === "P2011" ||
+        error?.code === "P2021"
+      ) {
         console.warn("deletedAt field error, trying without it");
-        delete where.deletedAt;
+        const whereWithoutDeleted = { ...where };
+        delete whereWithoutDeleted.deletedAt;
         feedbacks = await prisma.feedback.findMany({
-          where,
+          where: whereWithoutDeleted,
           include: includeConfig,
           orderBy: {
             createdAt: "desc",
@@ -123,6 +132,7 @@ export async function GET(request: NextRequest) {
         });
         console.log("Found", feedbacks.length, "feedbacks (without deletedAt filter)");
       } else {
+        // اگر خطای دیگری است، آن را throw کن تا catch block بیرونی آن را بگیرد
         throw error;
       }
     }
@@ -143,10 +153,18 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(processedFeedbacks);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching feedbacks:", error);
+    console.error("Error details:", error?.message);
+    console.error("Error code:", error?.code);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : String(error),
+        code: error?.code
+      },
       { status: 500 }
     );
   }
@@ -170,46 +188,68 @@ export async function POST(request: NextRequest) {
       
       // آپلود تصاویر اگر وجود داشته باشند
       if (imageCount > 0) {
-        // ایجاد پوشه uploads اگر وجود نداشته باشد
-        const uploadsDir = join(process.cwd(), "public", "uploads", "feedback");
-        if (!existsSync(uploadsDir)) {
-          mkdirSync(uploadsDir, { recursive: true });
+        // دریافت تنظیمات Object Storage
+        const settings = await prisma.settings.findFirst();
+        const objectStorageSettings = settings?.objectStorageSettings
+          ? (typeof settings.objectStorageSettings === 'string'
+              ? JSON.parse(settings.objectStorageSettings)
+              : settings.objectStorageSettings)
+          : { enabled: false };
+
+        // بررسی فعال بودن Object Storage
+        if (!objectStorageSettings.enabled) {
+          return NextResponse.json(
+            { error: "Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید." },
+            { status: 400 }
+          );
         }
 
         for (let i = 0; i < imageCount; i++) {
           const imageFile = formData.get(`image_${i}`) as File | null;
           
-      if (imageFile && imageFile.size > 0) {
-        // بررسی نوع فایل
-        if (!imageFile.type.startsWith("image/")) {
-          return NextResponse.json(
-            { error: "فقط فایل‌های تصویری مجاز هستند" },
-            { status: 400 }
-          );
-        }
+          if (imageFile && imageFile.size > 0) {
+            // بررسی نوع فایل
+            if (!imageFile.type.startsWith("image/")) {
+              return NextResponse.json(
+                { error: "فقط فایل‌های تصویری مجاز هستند" },
+                { status: 400 }
+              );
+            }
 
-        // بررسی اندازه فایل (حداکثر 5MB)
-        if (imageFile.size > 5 * 1024 * 1024) {
-          return NextResponse.json(
+            // بررسی اندازه فایل (حداکثر 5MB)
+            if (imageFile.size > 5 * 1024 * 1024) {
+              return NextResponse.json(
                 { error: "حجم هر فایل نباید بیشتر از 5 مگابایت باشد" },
-            { status: 400 }
-          );
-        }
+                { status: 400 }
+              );
+            }
 
-        const bytes = await imageFile.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+            const bytes = await imageFile.arrayBuffer();
+            const buffer = Buffer.from(bytes);
 
-        // نام فایل
-        const timestamp = Date.now();
-        const extension = imageFile.name.split(".").pop();
+            // نام فایل
+            const timestamp = Date.now();
+            const extension = imageFile.name.split(".").pop();
             const filename = `feedback-${timestamp}-${i}-${Math.random().toString(36).substring(7)}.${extension}`;
-        const filepath = join(uploadsDir, filename);
 
-        // ذخیره فایل
-        await writeFile(filepath, buffer);
-
-        // URL فایل
-            imageUrls.push(`/uploads/feedback/${filename}`);
+            try {
+              // آپلود به لیارا
+              const imageUrl = await uploadToLiara(
+                buffer,
+                filename,
+                imageFile.type,
+                objectStorageSettings,
+                "feedback"
+              );
+              imageUrls.push(imageUrl);
+              console.log("Feedback image uploaded to Liara:", imageUrl);
+            } catch (uploadError: any) {
+              console.error("Error uploading feedback image to Liara:", uploadError);
+              return NextResponse.json(
+                { error: `خطا در آپلود تصویر: ${uploadError.message || "خطای نامشخص"}` },
+                { status: 500 }
+              );
+            }
           }
         }
       }

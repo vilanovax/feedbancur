@@ -32,6 +32,12 @@ export default function Dashboard() {
     completedFeedbacks: 0,
     deferredFeedbacks: 0,
     archivedFeedbacks: 0,
+    totalAnnouncements: 0,
+    activeAnnouncements: 0,
+    newAnnouncements: 0,
+    totalPolls: 0,
+    activePolls: 0,
+    newPolls: 0,
   });
 
   useEffect(() => {
@@ -146,6 +152,91 @@ export default function Dashboard() {
               <Building2 className="text-purple-500" size={40} />
             </div>
           </div>
+        </div>
+
+        {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* اعلانات فعال */}
+          <Link href="/announcements" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">اعلانات فعال</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.activeAnnouncements}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  از {stats.totalAnnouncements} کل
+                </p>
+              </div>
+              <div className="relative">
+                <Bell className="text-yellow-500" size={40} />
+                {stats.newAnnouncements > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                    {stats.newAnnouncements}
+                  </span>
+                )}
+              </div>
+            </div>
+            {stats.newAnnouncements > 0 && (
+              <div className="mt-3 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-2 py-1 inline-block">
+                {stats.newAnnouncements} اعلان جدید در ۲۴ ساعت گذشته
+              </div>
+            )}
+          </Link>
+
+          {/* نظرسنجی‌های فعال */}
+          <Link href="/polls" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow relative">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">نظرسنجی‌های فعال</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.activePolls}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  از {stats.totalPolls} کل
+                </p>
+              </div>
+              <div className="relative">
+                <CheckSquare className="text-indigo-500" size={40} />
+                {stats.newPolls > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+                    {stats.newPolls}
+                  </span>
+                )}
+              </div>
+            </div>
+            {stats.newPolls > 0 && (
+              <div className="mt-3 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-2 py-1 inline-block">
+                {stats.newPolls} نظرسنجی جدید در ۲۴ ساعت گذشته
+              </div>
+            )}
+          </Link>
+
+          {/* کل اعلانات */}
+          <Link href="/announcements/manage" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">کل اعلانات</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.totalAnnouncements}
+                </p>
+              </div>
+              <Bell className="text-gray-400" size={40} />
+            </div>
+          </Link>
+
+          {/* کل نظرسنجی‌ها */}
+          <Link href="/polls/manage" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">کل نظرسنجی‌ها</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {stats.totalPolls}
+                </p>
+              </div>
+              <CheckSquare className="text-gray-400" size={40} />
+            </div>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

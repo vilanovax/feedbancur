@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import Image from "next/image";
-import { MessageSquare, CheckSquare, Trophy, User } from "lucide-react";
+import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 export default function EmployeeMobilePage() {
@@ -14,6 +14,10 @@ export default function EmployeeMobilePage() {
   const [stats, setStats] = useState({
     myFeedbacks: 0,
     myTasks: 0,
+    activeAnnouncements: 0,
+    newAnnouncements: 0,
+    activePolls: 0,
+    newPolls: 0,
   });
 
   useEffect(() => {
@@ -32,9 +36,10 @@ export default function EmployeeMobilePage() {
 
   const fetchStats = async () => {
     try {
-      const [feedbacksRes, tasksRes] = await Promise.all([
+      const [feedbacksRes, tasksRes, statsRes] = await Promise.all([
         fetch("/api/feedback"),
         fetch("/api/tasks"),
+        fetch("/api/stats"),
       ]);
 
       if (feedbacksRes.ok) {
@@ -45,6 +50,17 @@ export default function EmployeeMobilePage() {
       if (tasksRes.ok) {
         const tasks = await tasksRes.json();
         setStats((prev) => ({ ...prev, myTasks: tasks.length }));
+      }
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats((prev) => ({
+          ...prev,
+          activeAnnouncements: statsData.activeAnnouncements || 0,
+          newAnnouncements: statsData.newAnnouncements || 0,
+          activePolls: statsData.activePolls || 0,
+          newPolls: statsData.newPolls || 0,
+        }));
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -114,6 +130,58 @@ export default function EmployeeMobilePage() {
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">تسک‌های من</p>
           </div>
+
+          {/* اعلانات فعال */}
+          <Link
+            href="/mobile/announcements"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="relative">
+                <Bell className="w-8 h-8 text-yellow-600" />
+                {stats.newAnnouncements > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {stats.newAnnouncements}
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+              {stats.activeAnnouncements}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">اعلانات فعال</p>
+            {stats.newAnnouncements > 0 && (
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                {stats.newAnnouncements} جدید
+              </p>
+            )}
+          </Link>
+
+          {/* نظرسنجی‌های فعال */}
+          <Link
+            href="/mobile/polls"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="relative">
+                <BarChart3 className="w-8 h-8 text-indigo-600" />
+                {stats.newPolls > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                    {stats.newPolls}
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+              {stats.activePolls}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">نظرسنجی‌ها</p>
+            {stats.newPolls > 0 && (
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                {stats.newPolls} جدید
+              </p>
+            )}
+          </Link>
         </div>
 
         {/* Quick Actions */}

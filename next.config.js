@@ -21,7 +21,25 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.storage.*.liara.space',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.liara.space',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.iran.liara.space',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.c2.liara.space',
+      },
+    ],
+    unoptimized: false,
   },
   typescript: {
     // Temporarily ignore build errors for type checking

@@ -212,6 +212,11 @@ export default function MobileLayout({
       icon: Bell,
     },
     {
+      name: "نظرسنجی‌ها",
+      href: "/mobile/polls",
+      icon: CheckSquare,
+    },
+    {
       name: "بورد افتخارات",
       href: "/mobile/public-board",
       icon: Trophy,

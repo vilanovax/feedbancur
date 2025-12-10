@@ -43,6 +43,10 @@ export default function DepartmentsPage() {
     description: "",
     keywords: "",
     allowDirectFeedback: false,
+    canCreateAnnouncement: false,
+    allowedAnnouncementDepartments: [] as string[],
+    canCreatePoll: false,
+    allowedPollDepartments: [] as string[],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -123,7 +127,7 @@ export default function DepartmentsPage() {
 
       if (res.ok) {
         setShowModal(false);
-        setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+        setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false, canCreateAnnouncement: false, allowedAnnouncementDepartments: [], canCreatePoll: false, allowedPollDepartments: [] });
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
           localStorage.removeItem("departments_cache");
@@ -153,13 +157,17 @@ export default function DepartmentsPage() {
       const payload: any = {
         name: formData.name,
         allowDirectFeedback: formData.allowDirectFeedback || false,
+        canCreateAnnouncement: formData.canCreateAnnouncement || false,
+        allowedAnnouncementDepartments: formData.allowedAnnouncementDepartments || [],
+        canCreatePoll: formData.canCreatePoll || false,
+        allowedPollDepartments: formData.allowedPollDepartments || [],
       };
-      
+
       // فقط فیلدهایی که مقدار دارند را اضافه می‌کنیم
       if (formData.description !== undefined) {
         payload.description = formData.description.trim() || null;
       }
-      
+
       if (formData.keywords !== undefined) {
         payload.keywords = formData.keywords.trim() || "";
       }
@@ -177,7 +185,7 @@ export default function DepartmentsPage() {
       if (res.ok) {
         setShowEditModal(false);
         setSelectedDepartment(null);
-        setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+        setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false, canCreateAnnouncement: false, allowedAnnouncementDepartments: [], canCreatePoll: false, allowedPollDepartments: [] });
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
           localStorage.removeItem("departments_cache");
@@ -236,6 +244,10 @@ export default function DepartmentsPage() {
       description: dept.description || "",
       keywords: Array.isArray(dept.keywords) ? dept.keywords.join(', ') : (dept.keywords || ""),
       allowDirectFeedback: dept.allowDirectFeedback || false,
+      canCreateAnnouncement: dept.canCreateAnnouncement || false,
+      allowedAnnouncementDepartments: Array.isArray(dept.allowedAnnouncementDepartments) ? dept.allowedAnnouncementDepartments : [],
+      canCreatePoll: dept.canCreatePoll || false,
+      allowedPollDepartments: Array.isArray(dept.allowedPollDepartments) ? dept.allowedPollDepartments : [],
     });
     setShowEditModal(true);
   };
@@ -286,7 +298,7 @@ export default function DepartmentsPage() {
           </h1>
           <button
             onClick={() => {
-              setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+              setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false, canCreateAnnouncement: false, allowedAnnouncementDepartments: [], canCreatePoll: false, allowedPollDepartments: [] });
               setShowModal(true);
             }}
             className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -390,7 +402,7 @@ export default function DepartmentsPage() {
               )}
 
               {session?.user.role === "ADMIN" && (
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -400,6 +412,28 @@ export default function DepartmentsPage() {
                     />
                     <label className="text-sm text-gray-600 dark:text-gray-300">
                       ارسال مستقیم فیدبک به مدیر
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={dept.canCreateAnnouncement || false}
+                      disabled
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                    />
+                    <label className="text-sm text-gray-600 dark:text-gray-300">
+                      اجازه ایجاد اعلان برای مدیر
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={dept.canCreatePoll || false}
+                      disabled
+                      className="h-4 w-4 text-purple-600 border-gray-300 rounded"
+                    />
+                    <label className="text-sm text-gray-600 dark:text-gray-300">
+                      اجازه ایجاد نظرسنجی برای مدیر
                     </label>
                   </div>
                 </div>
@@ -467,30 +501,148 @@ export default function DepartmentsPage() {
                   </p>
                 </div>
                 {session?.user.role === "ADMIN" && (
-                  <div className="flex items-center">
-                    <input
-                      id="allowDirectFeedback"
-                      type="checkbox"
-                      checked={formData.allowDirectFeedback}
-                      onChange={(e) =>
-                        setFormData({ ...formData, allowDirectFeedback: e.target.checked })
-                      }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="allowDirectFeedback"
-                      className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
-                    >
-                      ارسال مستقیم فیدبک به مدیر بخش
-                    </label>
-                  </div>
+                  <>
+                    <div className="flex items-center">
+                      <input
+                        id="allowDirectFeedback"
+                        type="checkbox"
+                        checked={formData.allowDirectFeedback}
+                        onChange={(e) =>
+                          setFormData({ ...formData, allowDirectFeedback: e.target.checked })
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="allowDirectFeedback"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        ارسال مستقیم فیدبک به مدیر بخش
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="canCreateAnnouncement"
+                        type="checkbox"
+                        checked={formData.canCreateAnnouncement}
+                        onChange={(e) =>
+                          setFormData({ ...formData, canCreateAnnouncement: e.target.checked })
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="canCreateAnnouncement"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        اجازه ایجاد اعلان برای مدیر بخش
+                      </label>
+                    </div>
+                    {formData.canCreateAnnouncement && (
+                      <div className="mr-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          بخش‌های مجاز برای ایجاد اعلان
+                        </label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {departments.map((dept) => (
+                            <div key={dept.id} className="flex items-center">
+                              <input
+                                id={`dept-create-${dept.id}`}
+                                type="checkbox"
+                                checked={formData.allowedAnnouncementDepartments.includes(dept.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      allowedAnnouncementDepartments: [...formData.allowedAnnouncementDepartments, dept.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      allowedAnnouncementDepartments: formData.allowedAnnouncementDepartments.filter(id => id !== dept.id)
+                                    });
+                                  }
+                                }}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label
+                                htmlFor={`dept-create-${dept.id}`}
+                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                {dept.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          مدیر می‌تواند برای بخش‌های انتخاب شده اعلان ایجاد کند
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <input
+                        id="canCreatePoll"
+                        type="checkbox"
+                        checked={formData.canCreatePoll}
+                        onChange={(e) =>
+                          setFormData({ ...formData, canCreatePoll: e.target.checked })
+                        }
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="canCreatePoll"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        اجازه ایجاد نظرسنجی برای مدیر بخش
+                      </label>
+                    </div>
+                    {formData.canCreatePoll && (
+                      <div className="mr-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          بخش‌های مجاز برای ایجاد نظرسنجی
+                        </label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {departments.map((dept) => (
+                            <div key={dept.id} className="flex items-center">
+                              <input
+                                id={`dept-poll-create-${dept.id}`}
+                                type="checkbox"
+                                checked={formData.allowedPollDepartments.includes(dept.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      allowedPollDepartments: [...formData.allowedPollDepartments, dept.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      allowedPollDepartments: formData.allowedPollDepartments.filter(id => id !== dept.id)
+                                    });
+                                  }
+                                }}
+                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                              />
+                              <label
+                                htmlFor={`dept-poll-create-${dept.id}`}
+                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                {dept.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          مدیر می‌تواند برای بخش‌های انتخاب شده نظرسنجی ایجاد کند
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="flex justify-end space-x-4 space-x-reverse pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowModal(false);
-                      setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+                      setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false, canCreateAnnouncement: false, allowedAnnouncementDepartments: [], canCreatePoll: false, allowedPollDepartments: [] });
                       setError("");
                     }}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -565,23 +717,141 @@ export default function DepartmentsPage() {
                   />
                 </div>
                 {session?.user.role === "ADMIN" && (
-                  <div className="flex items-center">
-                    <input
-                      id="editAllowDirectFeedback"
-                      type="checkbox"
-                      checked={formData.allowDirectFeedback}
-                      onChange={(e) =>
-                        setFormData({ ...formData, allowDirectFeedback: e.target.checked })
-                      }
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label
-                      htmlFor="editAllowDirectFeedback"
-                      className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
-                    >
-                      ارسال مستقیم فیدبک به مدیر بخش
-                    </label>
-                  </div>
+                  <>
+                    <div className="flex items-center">
+                      <input
+                        id="editAllowDirectFeedback"
+                        type="checkbox"
+                        checked={formData.allowDirectFeedback}
+                        onChange={(e) =>
+                          setFormData({ ...formData, allowDirectFeedback: e.target.checked })
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="editAllowDirectFeedback"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        ارسال مستقیم فیدبک به مدیر بخش
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        id="editCanCreateAnnouncement"
+                        type="checkbox"
+                        checked={formData.canCreateAnnouncement}
+                        onChange={(e) =>
+                          setFormData({ ...formData, canCreateAnnouncement: e.target.checked })
+                        }
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="editCanCreateAnnouncement"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        اجازه ایجاد اعلان برای مدیر بخش
+                      </label>
+                    </div>
+                    {formData.canCreateAnnouncement && (
+                      <div className="mr-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          بخش‌های مجاز برای ایجاد اعلان
+                        </label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {departments.filter(d => d.id !== selectedDepartment?.id).map((dept) => (
+                            <div key={dept.id} className="flex items-center">
+                              <input
+                                id={`dept-edit-${dept.id}`}
+                                type="checkbox"
+                                checked={formData.allowedAnnouncementDepartments.includes(dept.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      allowedAnnouncementDepartments: [...formData.allowedAnnouncementDepartments, dept.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      allowedAnnouncementDepartments: formData.allowedAnnouncementDepartments.filter(id => id !== dept.id)
+                                    });
+                                  }
+                                }}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label
+                                htmlFor={`dept-edit-${dept.id}`}
+                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                {dept.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          مدیر می‌تواند برای بخش‌های انتخاب شده اعلان ایجاد کند
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <input
+                        id="editCanCreatePoll"
+                        type="checkbox"
+                        checked={formData.canCreatePoll}
+                        onChange={(e) =>
+                          setFormData({ ...formData, canCreatePoll: e.target.checked })
+                        }
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="editCanCreatePoll"
+                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                      >
+                        اجازه ایجاد نظرسنجی برای مدیر بخش
+                      </label>
+                    </div>
+                    {formData.canCreatePoll && (
+                      <div className="mr-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          بخش‌های مجاز برای ایجاد نظرسنجی
+                        </label>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {departments.filter(d => d.id !== selectedDepartment?.id).map((dept) => (
+                            <div key={dept.id} className="flex items-center">
+                              <input
+                                id={`dept-poll-edit-${dept.id}`}
+                                type="checkbox"
+                                checked={formData.allowedPollDepartments.includes(dept.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({
+                                      ...formData,
+                                      allowedPollDepartments: [...formData.allowedPollDepartments, dept.id]
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      allowedPollDepartments: formData.allowedPollDepartments.filter(id => id !== dept.id)
+                                    });
+                                  }
+                                }}
+                                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                              />
+                              <label
+                                htmlFor={`dept-poll-edit-${dept.id}`}
+                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                {dept.name}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          مدیر می‌تواند برای بخش‌های انتخاب شده نظرسنجی ایجاد کند
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="flex justify-end space-x-4 space-x-reverse pt-4">
                   <button
@@ -589,7 +859,7 @@ export default function DepartmentsPage() {
                     onClick={() => {
                       setShowEditModal(false);
                       setSelectedDepartment(null);
-                      setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false });
+                      setFormData({ name: "", description: "", keywords: "", allowDirectFeedback: false, canCreateAnnouncement: false, allowedAnnouncementDepartments: [], canCreatePoll: false, allowedPollDepartments: [] });
                       setError("");
                     }}
                     className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"

@@ -9,6 +9,10 @@ const updateDepartmentSchema = z.object({
   description: z.string().optional().nullable(),
   keywords: z.string().optional().nullable(),
   allowDirectFeedback: z.boolean().optional(),
+  canCreateAnnouncement: z.boolean().optional(),
+  allowedAnnouncementDepartments: z.array(z.string()).optional(),
+  canCreatePoll: z.boolean().optional(),
+  allowedPollDepartments: z.array(z.string()).optional(),
 });
 
 // GET - مشاهده جزئیات یک بخش
@@ -119,6 +123,26 @@ export async function PATCH(
     
     if (data.allowDirectFeedback !== undefined) {
       updateData.allowDirectFeedback = Boolean(data.allowDirectFeedback);
+    }
+
+    if (data.canCreateAnnouncement !== undefined) {
+      updateData.canCreateAnnouncement = Boolean(data.canCreateAnnouncement);
+    }
+
+    if (data.allowedAnnouncementDepartments !== undefined) {
+      updateData.allowedAnnouncementDepartments = Array.isArray(data.allowedAnnouncementDepartments)
+        ? data.allowedAnnouncementDepartments
+        : [];
+    }
+
+    if (data.canCreatePoll !== undefined) {
+      updateData.canCreatePoll = Boolean(data.canCreatePoll);
+    }
+
+    if (data.allowedPollDepartments !== undefined) {
+      updateData.allowedPollDepartments = Array.isArray(data.allowedPollDepartments)
+        ? data.allowedPollDepartments
+        : [];
     }
 
     // بررسی اینکه آیا داده‌ای برای به‌روزرسانی وجود دارد

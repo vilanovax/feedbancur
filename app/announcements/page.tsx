@@ -4,9 +4,10 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bell, ArrowRight, AlertCircle, Info, AlertTriangle, Plus, Settings, Grid3x3, List, Search } from "lucide-react";
+import { Bell, ArrowRight, AlertCircle, Info, AlertTriangle, Plus, Settings, Grid3x3, List, Search, Paperclip } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import AnnouncementModal from "@/components/AnnouncementModal";
 
 type ViewMode = "grid" | "list";
 type SortOption = "newest" | "oldest" | "priority" | "title";
@@ -55,7 +56,20 @@ export default function AnnouncementsPage() {
     }
     return "list";
   });
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [showModal, setShowModal] = useState(false);
   const isFirstRender = useRef(true);
+
+  const openModal = (announcement: any) => {
+    console.log('Opening modal for announcement:', announcement.id);
+    setSelectedAnnouncement(announcement);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedAnnouncement(null);
+  };
 
   // ذخیره وضعیت در localStorage (نه در اولین render)
   useEffect(() => {
@@ -331,9 +345,10 @@ export default function AnnouncementsPage() {
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredAndSortedAnnouncements.map((announcement) => (
-              <div
+              <Link
                 key={announcement.id}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow flex flex-col ${getPriorityColor(
+                href={`/announcements/${announcement.id}`}
+                className={`text-right bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow flex flex-col ${getPriorityColor(
                   announcement.priority
                 )}`}
               >
@@ -342,9 +357,14 @@ export default function AnnouncementsPage() {
                     {getPriorityIcon(announcement.priority)}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2 mb-2">
-                      {announcement.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2 flex-1">
+                        {announcement.title}
+                      </h3>
+                      {announcement.attachments && Array.isArray(announcement.attachments) && announcement.attachments.length > 0 && (
+                        <Paperclip size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      )}
+                    </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(announcement.createdAt).toLocaleDateString("fa-IR", {
                         year: "numeric",
@@ -354,8 +374,8 @@ export default function AnnouncementsPage() {
                     </span>
                   </div>
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm line-clamp-3 flex-1">
-                  {announcement.content}
+                <p className="text-gray-500 dark:text-gray-400 mb-4 text-sm flex-1">
+                  برای مشاهده جزئیات کلیک کنید
                 </p>
                 <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
                   <div className="flex items-center gap-2">
@@ -371,15 +391,16 @@ export default function AnnouncementsPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (
           <div className="space-y-4">
             {filteredAndSortedAnnouncements.map((announcement) => (
-              <div
+              <Link
                 key={announcement.id}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${getPriorityColor(
+                href={`/announcements/${announcement.id}`}
+                className={`block text-right w-full bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow ${getPriorityColor(
                   announcement.priority
                 )}`}
               >
@@ -389,9 +410,14 @@ export default function AnnouncementsPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
-                        {announcement.title}
-                      </h3>
+                      <div className="flex items-center gap-2 flex-1">
+                        <h3 className="text-xl font-semibold text-gray-800 dark:text-white">
+                          {announcement.title}
+                        </h3>
+                        {announcement.attachments && Array.isArray(announcement.attachments) && announcement.attachments.length > 0 && (
+                          <Paperclip size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        )}
+                      </div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         {new Date(announcement.createdAt).toLocaleDateString(
                           "fa-IR",
@@ -403,8 +429,8 @@ export default function AnnouncementsPage() {
                         )}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-300 mb-3 whitespace-pre-wrap">
-                      {announcement.content}
+                    <p className="text-gray-500 dark:text-gray-400 mb-3 text-sm">
+                      برای مشاهده جزئیات کلیک کنید
                     </p>
                     <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>از طرف: {announcement.createdBy?.name}</span>
@@ -419,9 +445,17 @@ export default function AnnouncementsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
+        )}
+
+        {/* مودال نمایش اعلان */}
+        {showModal && selectedAnnouncement && (
+          <AnnouncementModal
+            announcement={selectedAnnouncement}
+            onClose={closeModal}
+          />
         )}
         </div>
       </main>

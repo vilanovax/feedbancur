@@ -1560,12 +1560,23 @@ export default function FeedbacksPage() {
                 )}
                 <div className="relative w-full h-full max-h-[70vh] min-h-[400px]">
                   <Image
-                    src={selectedImages[currentImageIndex]}
+                    src={
+                      selectedImages[currentImageIndex]?.includes("liara.space")
+                        ? `/api/image-proxy?url=${encodeURIComponent(selectedImages[currentImageIndex])}`
+                        : selectedImages[currentImageIndex]
+                    }
                     alt={`ضمیمه فیدبک ${currentImageIndex + 1}`}
                     fill
                     className="object-contain"
                     unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                    onError={(e) => {
+                      // Fallback به URL مستقیم در صورت خطا
+                      const img = e.target as HTMLImageElement;
+                      if (img.src.includes("/api/image-proxy")) {
+                        img.src = selectedImages[currentImageIndex];
+                      }
+                    }}
                   />
                 </div>
                 {selectedImages.length > 1 && (

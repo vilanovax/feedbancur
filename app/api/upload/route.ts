@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync, mkdirSync } from "fs";
+import { prisma } from "@/lib/prisma";
+import { uploadToLiara } from "@/lib/liara-storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,32 +41,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // دریافت تنظیمات Object Storage
+    const settings = await prisma.settings.findFirst();
+    const objectStorageSettings = settings?.objectStorageSettings
+      ? (typeof settings.objectStorageSettings === 'string'
+          ? JSON.parse(settings.objectStorageSettings)
+          : settings.objectStorageSettings)
+      : { enabled: false };
+
+    // بررسی فعال بودن Object Storage
+    if (!objectStorageSettings.enabled) {
+      return NextResponse.json(
+        { error: "Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید." },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // ایجاد پوشه uploads اگر وجود نداشته باشد
-    const uploadsDir = join(process.cwd(), "public", "uploads");
-    if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
-    }
 
     // نام فایل
     const timestamp = Date.now();
     const extension = file.name.split(".").pop();
     const filename = `logo-${timestamp}.${extension}`;
-    const filepath = join(uploadsDir, filename);
 
-    // ذخیره فایل
-    await writeFile(filepath, buffer);
+    try {
+      // آپلود به لیارا
+      const fileUrl = await uploadToLiara(
+        buffer,
+        filename,
+        file.type,
+        objectStorageSettings,
+        "logo"
+      );
+      console.log("Logo uploaded to Liara:", fileUrl);
 
-    // URL فایل
-    const fileUrl = `/uploads/${filename}`;
-
-    return NextResponse.json({
-      success: true,
-      url: fileUrl,
-      message: "لوگو با موفقیت آپلود شد",
-    });
+      return NextResponse.json({
+        success: true,
+        url: fileUrl,
+        message: "لوگو با موفقیت آپلود شد",
+      });
+    } catch (uploadError: any) {
+      console.error("Error uploading logo to Liara:", uploadError);
+      return NextResponse.json(
+        { error: `خطا در آپلود لوگو: ${uploadError.message || "خطای نامشخص"}` },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

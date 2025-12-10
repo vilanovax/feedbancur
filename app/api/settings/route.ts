@@ -105,6 +105,26 @@ export async function GET() {
             directFeedbackToManager: true,
             feedbackCompletedByManager: true,
           },
+      chatSettings: dbSettings?.chatSettings
+        ? (typeof dbSettings.chatSettings === 'string'
+            ? JSON.parse(dbSettings.chatSettings)
+            : dbSettings.chatSettings)
+        : {
+            maxFileSize: 5,
+            allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+          },
+      objectStorageSettings: dbSettings?.objectStorageSettings
+        ? (typeof dbSettings.objectStorageSettings === 'string'
+            ? JSON.parse(dbSettings.objectStorageSettings)
+            : dbSettings.objectStorageSettings)
+        : {
+            enabled: false,
+            endpoint: "https://storage.c2.liara.space",
+            accessKeyId: "3ipqq41nabtsqsdh",
+            secretAccessKey: "49ae07a8-d515-4700-8daa-65ef98da8cab",
+            bucket: "feedban",
+            region: "us-east-1",
+          },
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -279,6 +299,48 @@ export async function POST(request: NextRequest) {
       updateData.notificationSettings = {
         directFeedbackToManager: true,
         feedbackCompletedByManager: true,
+      };
+    }
+
+    // ذخیره chatSettings
+    if (body.chatSettings && typeof body.chatSettings === 'object') {
+      const maxFileSize = Number(body.chatSettings.maxFileSize) || 5;
+      const allowedFileTypes = Array.isArray(body.chatSettings.allowedFileTypes) 
+        ? body.chatSettings.allowedFileTypes.filter((t: string) => typeof t === 'string')
+        : ["image/jpeg"];
+      
+      // حداقل یک نوع باید وجود داشته باشد
+      if (allowedFileTypes.length > 0) {
+        updateData.chatSettings = {
+          maxFileSize: Math.max(1, Math.min(50, maxFileSize)), // بین 1 تا 50 مگابایت
+          allowedFileTypes: allowedFileTypes,
+        };
+      }
+    } else if (!existingSettings) {
+      updateData.chatSettings = {
+        maxFileSize: 5,
+        allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+      };
+    }
+
+    // ذخیره objectStorageSettings
+    if (body.objectStorageSettings && typeof body.objectStorageSettings === 'object') {
+      updateData.objectStorageSettings = {
+        enabled: Boolean(body.objectStorageSettings.enabled),
+        endpoint: String(body.objectStorageSettings.endpoint || ""),
+        accessKeyId: String(body.objectStorageSettings.accessKeyId || ""),
+        secretAccessKey: String(body.objectStorageSettings.secretAccessKey || ""),
+        bucket: String(body.objectStorageSettings.bucket || ""),
+        region: String(body.objectStorageSettings.region || "us-east-1"),
+      };
+    } else if (!existingSettings) {
+      updateData.objectStorageSettings = {
+        enabled: false,
+        endpoint: "",
+        accessKeyId: "",
+        secretAccessKey: "",
+        bucket: "",
+        region: "us-east-1",
       };
     }
 

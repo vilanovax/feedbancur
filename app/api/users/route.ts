@@ -9,10 +9,10 @@ const createUserSchema = z.object({
   mobile: z.string().regex(/^09\d{9}$/, "شماره موبایل معتبر نیست"),
   name: z.string().min(1, "نام الزامی است"),
   email: z.string().email("ایمیل معتبر نیست").optional().or(z.literal("")),
-  role: z.enum(["MANAGER", "EMPLOYEE"], {
-    errorMap: () => ({ message: "نقش باید MANAGER یا EMPLOYEE باشد" }),
+  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"], {
+    errorMap: () => ({ message: "نقش باید ADMIN، MANAGER یا EMPLOYEE باشد" }),
   }),
-  departmentId: z.string().min(1, "انتخاب بخش الزامی است"),
+  departmentId: z.string().optional().nullable(), // برای ADMIN اختیاری است
   password: z.string().min(6, "رمز عبور حداقل 6 کاراکتر باید باشد").optional(),
   isActive: z.boolean().optional().default(true),
 });
@@ -35,10 +35,14 @@ export async function GET(req: NextRequest) {
     const role = searchParams.get("role");
     const departmentId = searchParams.get("departmentId");
     const search = searchParams.get("search");
+    const showAdmins = searchParams.get("showAdmins") === "true";
 
-    const where: any = {
-      role: { not: "ADMIN" }, // ادمین‌ها را نشان نمی‌دهیم
-    };
+    const where: any = {};
+
+    // فقط اگر showAdmins فعال نباشد، ادمین‌ها را فیلتر کن
+    if (!showAdmins) {
+      where.role = { not: "ADMIN" };
+    }
 
     // MANAGER فقط کاربران بخش خودش را می‌بیند
     if (session.user.role === "MANAGER") {
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
     }
 
     // فیلتر بر اساس نقش
-    if (role && (role === "MANAGER" || role === "EMPLOYEE")) {
+    if (role && (role === "ADMIN" || role === "MANAGER" || role === "EMPLOYEE")) {
       where.role = role;
     }
 
@@ -159,6 +163,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = createUserSchema.parse(body);
 
+    // فقط ADMIN می‌تواند کاربر ADMIN ایجاد کند
+    if (data.role === "ADMIN" && session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "فقط ادمین می‌تواند کاربر ادمین دیگر ایجاد کند" },
+        { status: 403 }
+      );
+    }
+
     // MANAGER فقط می‌تواند EMPLOYEE بسازد و فقط در بخش خودش
     if (session.user.role === "MANAGER") {
       if (data.role !== "EMPLOYEE") {
@@ -176,6 +188,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // بررسی وجود بخش (فقط برای MANAGER و EMPLOYEE)
+    if (data.role !== "ADMIN") {
+      if (!data.departmentId) {
+        return NextResponse.json(
+          { error: "انتخاب بخش برای مدیر و کارمند الزامی است" },
+          { status: 400 }
+        );
+      }
+    }
+
     // بررسی تکراری نبودن شماره موبایل
     const existingUser = await prisma.user.findUnique({
       where: { mobile: data.mobile },
@@ -188,16 +210,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // بررسی وجود بخش
-    const department = await prisma.department.findUnique({
-      where: { id: data.departmentId },
-    });
+    // بررسی وجود بخش (فقط اگر departmentId داده شده باشد)
+    if (data.departmentId) {
+      const department = await prisma.department.findUnique({
+        where: { id: data.departmentId },
+      });
 
-    if (!department) {
-      return NextResponse.json(
-        { error: "بخش مورد نظر یافت نشد" },
-        { status: 404 }
-      );
+      if (!department) {
+        return NextResponse.json(
+          { error: "بخش مورد نظر یافت نشد" },
+          { status: 404 }
+        );
+      }
     }
 
     // اگر رمز عبور ارسال نشده یا خالی است، از رمز پیش‌فرض استفاده کن
@@ -226,7 +250,7 @@ export async function POST(req: NextRequest) {
           name: data.name,
           email: data.email || null,
           role: data.role,
-          departmentId: data.departmentId,
+          departmentId: data.departmentId || null, // برای ADMIN می‌تواند null باشد
           password: hashedPassword,
           isActive: data.isActive ?? true,
           mustChangePassword: mustChangePassword,
@@ -270,7 +294,7 @@ export async function POST(req: NextRequest) {
             name: data.name,
             email: data.email || null,
             role: data.role,
-            departmentId: data.departmentId,
+            departmentId: data.departmentId || null, // برای ADMIN می‌تواند null باشد
             password: hashedPassword,
             mustChangePassword: mustChangePassword,
           },

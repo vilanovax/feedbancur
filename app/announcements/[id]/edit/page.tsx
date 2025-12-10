@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { Bell } from "lucide-react";
@@ -12,8 +12,7 @@ export default function EditAnnouncementPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
-  const id = params?.id as string;
-
+  const announcementId = params?.id as string;
   const [announcement, setAnnouncement] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,47 +27,59 @@ export default function EditAnnouncementPage() {
         fetchAnnouncement();
       }
     }
-  }, [status, session, router, id]);
+  }, [status, session, router, announcementId]);
 
   const fetchAnnouncement = async () => {
     try {
-      const res = await fetch(`/api/announcements/${id}`);
+      const res = await fetch(`/api/announcements/${announcementId}`);
       if (res.ok) {
         const data = await res.json();
-
-        // Check if user has permission to edit
-        const canEdit =
-          session?.user.role === "ADMIN" ||
-          data.createdById === session?.user.id;
-
-        if (!canEdit) {
-          setError("شما دسترسی به ویرایش این اعلان را ندارید");
-          setTimeout(() => router.push("/announcements/manage"), 2000);
-          return;
-        }
-
         setAnnouncement(data);
+      } else if (res.status === 404) {
+        setError("اعلان یافت نشد");
       } else {
-        const error = await res.json();
-        setError(error.error || "خطا در دریافت اطلاعات اعلان");
-        setTimeout(() => router.push("/announcements/manage"), 2000);
+        setError("خطا در دریافت اعلان");
       }
     } catch (error) {
       console.error("Error fetching announcement:", error);
-      setError("خطایی رخ داد");
-      setTimeout(() => router.push("/announcements/manage"), 2000);
+      setError("خطا در دریافت اعلان");
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubmit = async (data: any) => {
-    const res = await fetch(`/api/announcements/${id}`, {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("content", data.content);
+    formData.append("priority", data.priority);
+    // فقط departmentId را اضافه کن اگر مقدار داشت
+    if (data.departmentId) {
+      formData.append("departmentId", data.departmentId);
+    }
+    formData.append("isActive", data.isActive ? "true" : "false");
+    if (data.scheduledAt) {
+      formData.append("scheduledAt", data.scheduledAt);
+    }
+
+    // اضافه کردن فایل‌های موجود
+    if (data.existingAttachments) {
+      formData.append("existingAttachments", JSON.stringify(data.existingAttachments));
+    }
+
+    // اضافه کردن فایل‌های جدید
+    if (data.files && data.files.length > 0) {
+      formData.append("fileCount", data.files.length.toString());
+      data.files.forEach((file: File, index: number) => {
+        formData.append(`attachment_${index}`, file);
+      });
+    } else {
+      formData.append("fileCount", "0");
+    }
+
+    const res = await fetch(`/api/announcements/${announcementId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+      body: formData,
     });
 
     if (!res.ok) {
@@ -121,6 +132,7 @@ export default function EditAnnouncementPage() {
     scheduledAt: announcement.scheduledAt
       ? new Date(announcement.scheduledAt).toISOString().slice(0, 16)
       : null,
+    attachments: announcement.attachments || [],
   };
 
   return (
@@ -147,3 +159,4 @@ export default function EditAnnouncementPage() {
     </div>
   );
 }
+

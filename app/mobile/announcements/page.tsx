@@ -3,8 +3,10 @@
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import MobileLayout from "@/components/MobileLayout";
-import { Bell, AlertTriangle, AlertCircle, Info, Calendar, User, ArrowUpDown } from "lucide-react";
+import AnnouncementModal from "@/components/AnnouncementModal";
+import { Bell, AlertTriangle, AlertCircle, Info, Calendar, User, ArrowUpDown, Paperclip, Plus } from "lucide-react";
 import { format } from "date-fns";
 
 type SortOption = "newest" | "oldest" | "priority" | "title";
@@ -14,6 +16,9 @@ export default function MobileAnnouncementsPage() {
   const router = useRouter();
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [canCreateAnnouncement, setCanCreateAnnouncement] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("mobileAnnouncementsSortOption") as SortOption;
@@ -33,6 +38,7 @@ export default function MobileAnnouncementsPage() {
   useEffect(() => {
     if (session) {
       fetchAnnouncements();
+      checkAnnouncementPermission();
     }
   }, [session]);
 
@@ -49,6 +55,35 @@ export default function MobileAnnouncementsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkAnnouncementPermission = async () => {
+    // فقط برای مدیران چک می‌کنیم
+    if (session?.user?.role !== "MANAGER" || !session?.user?.departmentId) {
+      setCanCreateAnnouncement(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/departments/${session.user.departmentId}`);
+      if (res.ok) {
+        const department = await res.json();
+        setCanCreateAnnouncement(department.canCreateAnnouncement || false);
+      }
+    } catch (error) {
+      console.error("Error checking announcement permission:", error);
+      setCanCreateAnnouncement(false);
+    }
+  };
+
+  const openModal = (announcement: any) => {
+    setSelectedAnnouncement(announcement);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedAnnouncement(null);
   };
 
   const getPriorityIcon = (priority?: string) => {
@@ -165,9 +200,10 @@ export default function MobileAnnouncementsPage() {
         ) : (
           <div className="space-y-3">
             {sortedAnnouncements.map((announcement) => (
-              <div
+              <Link
                 key={announcement.id}
-                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 ${getPriorityColor(
+                href={`/announcements/${announcement.id}`}
+                className={`block w-full text-right bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all ${getPriorityColor(
                   announcement.priority
                 )}`}
               >
@@ -176,36 +212,66 @@ export default function MobileAnnouncementsPage() {
                     {getPriorityIcon(announcement.priority)}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
-                      {announcement.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex-1">
+                        {announcement.title}
+                      </h3>
+                      {announcement.attachments && Array.isArray(announcement.attachments) && announcement.attachments.length > 0 && (
+                        <Paperclip size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 mb-2">
-                      {announcement.department && (
+                      {announcement.department ? (
                         <div className="flex items-center gap-1">
                           <User size={12} />
                           <span>{announcement.department.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <User size={12} />
+                          <span className="text-blue-600 dark:text-blue-400">همه واحدها</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1">
                         <Calendar size={12} />
                         <span>
-                          {format(
-                            new Date(announcement.createdAt),
-                            "yyyy/MM/dd"
-                          )}
+                          {new Date(announcement.createdAt).toLocaleDateString("fa-IR", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                          })}
                         </span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {announcement.content}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      برای مشاهده جزئیات کلیک کنید
                     </p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
       </div>
+
+      {/* مودال نمایش جزئیات */}
+      {showModal && selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={closeModal}
+        />
+      )}
+
+      {/* دکمه Float برای مدیران با مجوز ایجاد اعلان */}
+      {canCreateAnnouncement && (
+        <Link
+          href="/mobile/manager/announcements/create"
+          className="fixed bottom-20 left-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 active:scale-95 z-40"
+          aria-label="ایجاد اعلان جدید"
+        >
+          <Plus size={28} />
+        </Link>
+      )}
     </MobileLayout>
   );
 }

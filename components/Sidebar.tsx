@@ -19,6 +19,8 @@ import {
   CheckCircle,
   Send,
   Archive,
+  Shield,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -101,6 +103,20 @@ export default function Sidebar() {
       roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
     },
     {
+      name: "نظرسنجی‌ها",
+      href: "/polls",
+      icon: CheckSquare,
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+      subItems: [
+        {
+          name: "مدیریت نظرسنجی",
+          href: "/polls/manage",
+          icon: Settings,
+          roles: ["ADMIN", "MANAGER"],
+        },
+      ],
+    },
+    {
       name: "بورد افتخارات",
       href: "/public-board",
       icon: Trophy,
@@ -111,6 +127,12 @@ export default function Sidebar() {
       href: "/users",
       icon: Users,
       roles: ["ADMIN", "MANAGER"],
+    },
+    {
+      name: "مدیریت ادمین‌ها",
+      href: "/admins",
+      icon: Shield,
+      roles: ["ADMIN"],
     },
     {
       name: "مدیریت بخش‌ها",

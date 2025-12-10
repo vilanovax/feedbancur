@@ -23,17 +23,39 @@ export default function CreateAnnouncementPage() {
   }, [status, session, router]);
 
   const handleSubmit = async (data: any) => {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("content", data.content);
+    formData.append("priority", data.priority);
+    // فقط departmentId را اضافه کن اگر مقدار داشت
+    if (data.departmentId) {
+      formData.append("departmentId", data.departmentId);
+    }
+    formData.append("isActive", data.isActive ? "true" : "false");
+    if (data.scheduledAt) {
+      formData.append("scheduledAt", data.scheduledAt);
+    }
+    
+    // اضافه کردن فایل‌ها
+    if (data.files && data.files.length > 0) {
+      formData.append("fileCount", data.files.length.toString());
+      data.files.forEach((file: File, index: number) => {
+        formData.append(`attachment_${index}`, file);
+      });
+    } else {
+      formData.append("fileCount", "0");
+    }
+
     const res = await fetch("/api/announcements", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+      body: formData,
+      // Content-Type را تنظیم نکن - مرورگر خودش boundary را اضافه می‌کند
     });
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.error || "خطا در ایجاد اعلان");
+      console.error('Server error response:', error);
+      throw new Error(error.details || error.error || "خطا در ایجاد اعلان");
     }
 
     router.push("/announcements/manage");

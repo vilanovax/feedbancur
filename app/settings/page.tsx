@@ -17,12 +17,15 @@ import {
   Lock,
   Palette,
   Upload,
+  Download,
   Image as ImageIcon,
   Plus,
   Trash2,
   Edit,
   ArrowUp,
   ArrowDown,
+  MessageCircle,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -34,7 +37,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database">("general");
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -82,6 +85,22 @@ export default function SettingsPage() {
     notificationSettings: {
       directFeedbackToManager: true, // نوتیفیکیشن برای فیدبک مستقیم به مدیر
       feedbackCompletedByManager: true, // نوتیفیکیشن برای فیدبک انجام شده توسط مدیر
+    },
+    
+    // تنظیمات چت
+    chatSettings: {
+      maxFileSize: 5, // حداکثر حجم فایل به مگابایت
+      allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"], // فرمت‌های مجاز
+    },
+    
+    // تنظیمات Object Storage (لیارا)
+    objectStorageSettings: {
+      enabled: false,
+      endpoint: "https://storage.c2.liara.space",
+      accessKeyId: "3ipqq41nabtsqsdh",
+      secretAccessKey: "49ae07a8-d515-4700-8daa-65ef98da8cab",
+      bucket: "feedban",
+      region: "us-east-1",
     },
   });
 
@@ -320,6 +339,36 @@ export default function SettingsPage() {
                 }`}
               >
                 نوتیفیکیشن‌ها
+              </button>
+              <button
+                onClick={() => setActiveTab("chat")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "chat"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                تنظیمات چت
+              </button>
+              <button
+                onClick={() => setActiveTab("storage")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "storage"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                Object Storage
+              </button>
+              <button
+                onClick={() => setActiveTab("database")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "database"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                پشتیبان‌گیری
               </button>
             </nav>
           </div>
@@ -985,6 +1034,452 @@ export default function SettingsPage() {
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                       </label>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب تنظیمات چت */}
+            {activeTab === "chat" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <MessageCircle className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات چت
+                    </h2>
+                  </div>
+                  
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    تنظیمات مربوط به چت و ضمیمه فایل در پیام‌ها.
+                  </p>
+
+                  <div className="space-y-6">
+                    {/* حداکثر حجم فایل */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        حداکثر حجم فایل (مگابایت)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={settings.chatSettings?.maxFileSize || 5}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            chatSettings: {
+                              ...settings.chatSettings,
+                              maxFileSize: parseInt(e.target.value) || 5,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        حداکثر حجم مجاز برای فایل‌های ضمیمه شده در چت (1 تا 50 مگابایت)
+                      </p>
+                    </div>
+
+                    {/* فرمت‌های مجاز */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        فرمت‌های مجاز فایل
+                      </label>
+                      <div className="space-y-2">
+                        {[
+                          { value: "image/jpeg", label: "JPEG (JPG)" },
+                          { value: "image/png", label: "PNG" },
+                          { value: "image/gif", label: "GIF" },
+                          { value: "image/webp", label: "WebP" },
+                        ].map((type) => (
+                          <label key={type.value} className="flex items-center space-x-2 space-x-reverse">
+                            <input
+                              type="checkbox"
+                              checked={(settings.chatSettings?.allowedFileTypes || []).includes(type.value)}
+                              onChange={(e) => {
+                                const currentTypes = settings.chatSettings?.allowedFileTypes || [];
+                                const newTypes = e.target.checked
+                                  ? [...currentTypes, type.value]
+                                  : currentTypes.filter((t) => t !== type.value);
+                                setSettings({
+                                  ...settings,
+                                  chatSettings: {
+                                    ...settings.chatSettings,
+                                    allowedFileTypes: newTypes.length > 0 ? newTypes : ["image/jpeg"], // حداقل یک نوع باید انتخاب شود
+                                  },
+                                });
+                              }}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{type.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        حداقل یک فرمت باید انتخاب شود
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب Object Storage */}
+            {activeTab === "storage" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Upload className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات Object Storage (لیارا)
+                    </h2>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* فعال/غیرفعال کردن Object Storage */}
+                    <div className="flex items-center space-x-3 space-x-reverse">
+                      <input
+                        type="checkbox"
+                        id="storageEnabled"
+                        checked={settings.objectStorageSettings?.enabled || false}
+                        onChange={(e) => {
+                          setSettings({
+                            ...settings,
+                            objectStorageSettings: {
+                              ...settings.objectStorageSettings,
+                              enabled: e.target.checked,
+                            },
+                          });
+                        }}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="storageEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        استفاده از Object Storage برای ذخیره تصاویر
+                      </label>
+                    </div>
+
+                    {settings.objectStorageSettings?.enabled && (
+                      <>
+                        {/* Endpoint */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Endpoint
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.objectStorageSettings?.endpoint || ""}
+                            onChange={(e) => {
+                              setSettings({
+                                ...settings,
+                                objectStorageSettings: {
+                                  ...settings.objectStorageSettings,
+                                  endpoint: e.target.value,
+                                },
+                              });
+                            }}
+                            placeholder="https://storage.iran.liara.space"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            آدرس endpoint لیارا Object Storage
+                          </p>
+                        </div>
+
+                        {/* Access Key ID */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Access Key ID
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.objectStorageSettings?.accessKeyId || ""}
+                            onChange={(e) => {
+                              setSettings({
+                                ...settings,
+                                objectStorageSettings: {
+                                  ...settings.objectStorageSettings,
+                                  accessKeyId: e.target.value,
+                                },
+                              });
+                            }}
+                            placeholder="Access Key ID"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Secret Access Key */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Secret Access Key
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.objectStorageSettings?.secretAccessKey || ""}
+                            onChange={(e) => {
+                              setSettings({
+                                ...settings,
+                                objectStorageSettings: {
+                                  ...settings.objectStorageSettings,
+                                  secretAccessKey: e.target.value,
+                                },
+                              });
+                            }}
+                            placeholder="Secret Access Key"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Bucket */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Bucket Name
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.objectStorageSettings?.bucket || ""}
+                            onChange={(e) => {
+                              setSettings({
+                                ...settings,
+                                objectStorageSettings: {
+                                  ...settings.objectStorageSettings,
+                                  bucket: e.target.value,
+                                },
+                              });
+                            }}
+                            placeholder="bucket-name"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Region */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Region
+                          </label>
+                          <input
+                            type="text"
+                            value={settings.objectStorageSettings?.region || "us-east-1"}
+                            onChange={(e) => {
+                              setSettings({
+                                ...settings,
+                                objectStorageSettings: {
+                                  ...settings.objectStorageSettings,
+                                  region: e.target.value,
+                                },
+                              });
+                            }}
+                            placeholder="us-east-1"
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            معمولاً us-east-1 برای لیارا
+                          </p>
+                        </div>
+
+                        {/* Important Note */}
+                        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 mt-4">
+                          <div className="flex items-start space-x-2 space-x-reverse">
+                            <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={24} />
+                            <div>
+                              <h4 className="text-base font-bold text-red-800 dark:text-red-300 mb-2">
+                                ⚠️ نکته بسیار مهم: فعال‌سازی دسترسی عمومی
+                              </h4>
+                              <p className="text-sm text-red-700 dark:text-red-400 mb-2">
+                                برای نمایش تصاویر در مرورگر، <strong>حتماً</strong> باید دسترسی عمومی (Public Access) را در پنل لیارا برای bucket خود فعال کنید.
+                              </p>
+                              <div className="bg-white dark:bg-gray-800 rounded p-3 mt-2 border border-red-200 dark:border-red-800">
+                                <p className="text-xs font-mono text-red-800 dark:text-red-300 mb-1">
+                                  <strong>مراحل فعال‌سازی:</strong>
+                                </p>
+                                <ol className="text-xs text-red-700 dark:text-red-400 list-decimal list-inside space-y-1">
+                                  <li>وارد پنل مدیریت لیارا شوید</li>
+                                  <li>به بخش <strong>Object Storage</strong> بروید</li>
+                                  <li>bucket خود را انتخاب کنید</li>
+                                  <li>به بخش <strong>تنظیمات (Settings)</strong> بروید</li>
+                                  <li>گزینه <strong>"Public Access"</strong> یا <strong>"دسترسی عمومی"</strong> را فعال کنید</li>
+                                  <li>تغییرات را ذخیره کنید</li>
+                                </ol>
+                              </div>
+                              <p className="text-xs text-red-600 dark:text-red-400 mt-2 font-semibold">
+                                ⚠️ بدون این تنظیم، تصاویر با خطای <code className="bg-red-100 dark:bg-red-900/30 px-1 rounded">403 Forbidden</code> نمایش داده می‌شوند و قابل مشاهده نخواهند بود.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب پشتیبان‌گیری */}
+            {activeTab === "database" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Database className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      پشتیبان‌گیری و بازیابی دیتابیس
+                    </h2>
+                  </div>
+
+                  {/* هشدار امنیتی */}
+                  <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 mb-6">
+                    <div className="flex items-start space-x-2 space-x-reverse">
+                      <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={24} />
+                      <div>
+                        <h4 className="text-base font-bold text-red-800 dark:text-red-300 mb-2">
+                          ⚠️ هشدار امنیتی
+                        </h4>
+                        <ul className="text-sm text-red-700 dark:text-red-400 space-y-1 list-disc list-inside">
+                          <li>بازیابی دیتابیس تمام اطلاعات فعلی را پاک می‌کند</li>
+                          <li>حتماً قبل از بازیابی، از دیتابیس فعلی نسخه پشتیبان تهیه کنید</li>
+                          <li>فایل‌های پشتیبان را در مکانی امن نگهداری کنید</li>
+                          <li>فقط از فایل‌های پشتیبان معتبر استفاده کنید</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* بخش پشتیبان‌گیری */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        دانلود نسخه پشتیبان
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        یک نسخه پشتیبان کامل از دیتابیس دریافت کنید. این فایل شامل تمام جداول، داده‌ها و ساختار دیتابیس است.
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
+                        💡 فایل به صورت JSON دانلود می‌شود (سازگار با تمام سیستم‌ها)
+                      </p>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("آیا از دانلود نسخه پشتیبان اطمینان دارید؟")) return;
+
+                          try {
+                            const res = await fetch("/api/backup");
+                            if (res.ok) {
+                              const blob = await res.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              const contentDisposition = res.headers.get("Content-Disposition");
+                              const filename = contentDisposition
+                                ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+                                : `backup-${new Date().toISOString().split("T")[0]}.sql`;
+                              a.download = filename;
+                              document.body.appendChild(a);
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                              document.body.removeChild(a);
+                              alert("نسخه پشتیبان با موفقیت دانلود شد");
+                            } else {
+                              const data = await res.json();
+                              alert(data.error || "خطا در ایجاد نسخه پشتیبان");
+                            }
+                          } catch (error) {
+                            console.error("Error downloading backup:", error);
+                            alert("خطا در دانلود نسخه پشتیبان");
+                          }
+                        }}
+                        className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                      >
+                        <Download className="ml-2" size={20} />
+                        <span>دانلود نسخه پشتیبان</span>
+                      </button>
+                    </div>
+
+                    {/* بخش بازیابی */}
+                    <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                        بازیابی از نسخه پشتیبان
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        دیتابیس را از یک فایل پشتیبان بازیابی کنید. این عملیات تمام داده‌های فعلی را حذف می‌کند.
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
+                        💡 هم فایل‌های JSON و هم SQL پشتیبانی می‌شوند
+                      </p>
+                      <div className="space-y-4">
+                        <input
+                          type="file"
+                          id="restore-file"
+                          accept=".sql,.json"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+
+                            if (!file.name.endsWith(".sql") && !file.name.endsWith(".json")) {
+                              alert("فقط فایل‌های SQL یا JSON پشتیبانی می‌شوند");
+                              return;
+                            }
+
+                            if (!confirm(
+                              "⚠️ هشدار: این عملیات تمام داده‌های فعلی را حذف می‌کند و جایگزین داده‌های فایل پشتیبان می‌کند.\\n\\nآیا مطمئن هستید؟"
+                            )) {
+                              e.target.value = "";
+                              return;
+                            }
+
+                            if (!confirm(
+                              "آیا از دیتابیس فعلی نسخه پشتیبان گرفته‌اید؟\\n\\nبدون نسخه پشتیبان، داده‌های فعلی برای همیشه از بین می‌روند."
+                            )) {
+                              e.target.value = "";
+                              return;
+                            }
+
+                            try {
+                              const formData = new FormData();
+                              formData.append("backup", file);
+
+                              const res = await fetch("/api/backup", {
+                                method: "POST",
+                                body: formData,
+                              });
+
+                              const data = await res.json();
+
+                              if (res.ok) {
+                                alert("دیتابیس با موفقیت بازیابی شد. لطفاً صفحه را رفرش کنید.");
+                                window.location.reload();
+                              } else {
+                                alert(data.error || "خطا در بازیابی دیتابیس");
+                              }
+                            } catch (error) {
+                              console.error("Error restoring backup:", error);
+                              alert("خطا در بازیابی دیتابیس");
+                            } finally {
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="restore-file"
+                          className="flex items-center space-x-2 space-x-reverse bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition cursor-pointer inline-flex"
+                        >
+                          <Upload className="ml-2" size={20} />
+                          <span>انتخاب فایل و بازیابی</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* توضیحات تکمیلی */}
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+                        💡 نکات مهم:
+                      </h4>
+                      <ul className="text-xs text-yellow-700 dark:text-yellow-400 space-y-1 list-disc list-inside">
+                        <li>پشتیبان‌گیری منظم (روزانه یا هفتگی) را فراموش نکنید</li>
+                        <li>فایل‌های پشتیبان را در چند مکان مختلف ذخیره کنید</li>
+                        <li>قبل از هر به‌روزرسانی مهم، حتماً نسخه پشتیبان بگیرید</li>
+                        <li>فایل‌های پشتیبان را در محیط توسعه تست کنید</li>
+                        <li>برای سرورهای production، از ابزارهای خودکار پشتیبان‌گیری استفاده کنید</li>
+                      </ul>
                     </div>
                   </div>
                 </div>

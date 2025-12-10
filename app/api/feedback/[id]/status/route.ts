@@ -143,6 +143,24 @@ export async function PATCH(
         }
       }
 
+      // ارسال نوتیفیکیشن به مدیرانی که فیدبک به آن‌ها ارجاع شده
+      if (feedback.forwardedToId && feedback.forwardedToId !== session.user.id) {
+        try {
+          await prisma.notification.create({
+            data: {
+              userId: feedback.forwardedToId,
+              feedbackId: id,
+              title: "فیدبک تمام شد",
+              content: `فیدبک "${feedback.title}" شما توسط ${updatedFeedback.department.name} انجام شد.`,
+              type: "SUCCESS",
+            },
+          });
+        } catch (error) {
+          console.error("Error creating manager notification:", error);
+          // ادامه می‌دهیم حتی اگر خطا رخ دهد
+        }
+      }
+
       // ارسال نوتیفیکیشن به همه ادمین‌ها وقتی مدیر وضعیت را به COMPLETED تغییر می‌دهد (بر اساس تنظیمات)
       if (session.user.role === "MANAGER") {
         try {

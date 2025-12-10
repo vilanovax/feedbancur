@@ -32,6 +32,18 @@ enum TaskStatus {
   FORWARDED
 }
 
+enum PollType {
+  SINGLE_CHOICE      // چندگزینه‌ای تک‌انتخابی
+  MULTIPLE_CHOICE    // چندگزینه‌ای چندانتخابی
+  RATING_SCALE       // مقیاس امتیازدهی (1-5 یا 1-10)
+  TEXT_INPUT         // متن آزاد کوتاه
+}
+
+enum PollVisibilityMode {
+  ANONYMOUS          // رای‌ها مخفی
+  PUBLIC             // رای‌ها قابل مشاهده
+}
+
 model User {
   id            String    @id @default(cuid())
   mobile        String    @unique
@@ -52,9 +64,13 @@ model User {
   completedFeedbacks Feedback[]       @relation("CompletedFeedbacks")
   assignedTasks      TaskAssignment[]
   createdTasks       Task[]           @relation("TaskCreator")
-  announcements      Announcement[]
-  sentMessages       Message[]        @relation("MessageSender")
-  notifications      Notification[]   @relation("Notifications")
+  announcements          Announcement[]
+  announcementMessages   AnnouncementMessage[] @relation("AnnouncementMessageCreator")
+  announcementViews      AnnouncementView[] @relation("AnnouncementViews")
+  polls                  Poll[]
+  pollResponses          PollResponse[]
+  sentMessages           Message[]        @relation("MessageSender")
+  notifications          Notification[]   @relation("Notifications")
 
   @@map("users")
 }
@@ -66,6 +82,10 @@ model Department {
   keywords           String[]  // کلیدواژه‌ها برای روتینگ خودکار
   managerId          String?   // مدیر بخش
   allowDirectFeedback Boolean   @default(false) // اجازه ارسال مستقیم فیدبک به مدیر
+  canCreateAnnouncement Boolean @default(false) // اجازه ایجاد اعلان برای مدیر بخش
+  allowedAnnouncementDepartments String[] @default([]) // لیست ID بخش‌هایی که مدیر می‌تواند برای آنها اعلان ایجاد کند
+  canCreatePoll           Boolean  @default(false) // اجازه ایجاد نظرسنجی برای مدیر بخش
+  allowedPollDepartments  String[] @default([]) // لیست ID بخش‌هایی که مدیر می‌تواند برای آنها نظرسنجی ایجاد کند
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -74,6 +94,7 @@ model Department {
   tasks         Task[]
   employees     Employee[]
   announcements Announcement[]
+  polls         Poll[]
 
   @@map("departments")
 }
@@ -208,10 +229,43 @@ model Announcement {
   department   Department? @relation(fields: [departmentId], references: [id])
   createdById  String
   createdBy    User        @relation(fields: [createdById], references: [id])
+  attachments  Json?       // Array of {url: string, name: string} برای فایل‌های ضمیمه
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
+  messages     AnnouncementMessage[]
+  views        AnnouncementView[]
+
   @@map("announcements")
+}
+
+model AnnouncementView {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation("AnnouncementViews", fields: [userId], references: [id], onDelete: Cascade)
+  viewedAt       DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+  @@index([announcementId])
+  @@index([userId])
+  @@map("announcement_views")
+}
+
+model AnnouncementMessage {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  content        String
+  createdById    String
+  createdBy      User         @relation("AnnouncementMessageCreator", fields: [createdById], references: [id])
+  attachments    Json?        // Array of {url: string, name: string} برای فایل‌های ضمیمه
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([announcementId])
+  @@map("announcement_messages")
 }
 
 model OTP {
@@ -233,6 +287,7 @@ model Message {
   senderId    String
   sender      User     @relation("MessageSender", fields: [senderId], references: [id])
   content     String
+  image       String?  // URL یا path تصویر ضمیمه شده
   isRead      Boolean  @default(false)
   readAt      DateTime?
   createdAt   DateTime @default(now())
@@ -284,9 +339,95 @@ model Settings {
   statusTexts        Json?     // Store customizable status texts as JSON
   feedbackTypes      Json?     // Store customizable feedback types as JSON array: [{key: string, label: string}]
   notificationSettings Json?   // Store notification preferences as JSON: {directFeedbackToManager: boolean, feedbackCompletedByManager: boolean, ...}
+  chatSettings       Json?     // Store chat settings as JSON: {maxFileSize: number (in MB), allowedFileTypes: string[]}
+  objectStorageSettings Json?   // Store object storage settings (Liara S3-compatible) as JSON: {enabled: boolean, endpoint: string, accessKeyId: string, secretAccessKey: string, bucket: string, region: string}
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@map("settings")
+}
+
+model Poll {
+  id                String              @id @default(cuid())
+  title             String
+  description       String?
+  type              PollType            @default(SINGLE_CHOICE)
+  visibilityMode    PollVisibilityMode  @default(PUBLIC)
+  isActive          Boolean             @default(true)
+  allowMultipleVotes Boolean            @default(false)
+
+  // الزامات جدید
+  isRequired        Boolean             @default(false)  // اجباری بودن شرکت
+  showResultsMode   String              @default("LIVE") // "LIVE" یا "AFTER_CLOSE" - نمایش نتایج
+  maxTextLength     Int?                // حداکثر طول متن (برای TEXT_INPUT)
+
+  // زمان‌بندی (مشابه Announcement)
+  scheduledAt       DateTime?           // زمان انتشار برنامه‌ریزی شده
+  publishedAt       DateTime?           // زمان انتشار واقعی
+  closedAt          DateTime?           // زمان بسته شدن
+
+  // هدف‌گیری بخش (null = کل شرکت)
+  departmentId      String?
+  department        Department?         @relation(fields: [departmentId], references: [id])
+
+  // سازنده
+  createdById       String
+  createdBy         User                @relation(fields: [createdById], references: [id])
+
+  // برای نظرسنجی امتیازی
+  minRating         Int?                // حداقل امتیاز (مثلاً 1)
+  maxRating         Int?                // حداکثر امتیاز (مثلاً 5 یا 10)
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  // روابط
+  options           PollOption[]
+  responses         PollResponse[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id          String         @id @default(cuid())
+  pollId      String
+  poll        Poll           @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text        String         // متن گزینه
+  order       Int            @default(0)  // ترتیب نمایش
+  createdAt   DateTime       @default(now())
+
+  responses   PollResponse[]
+
+  @@index([pollId])
+  @@map("poll_options")
+}
+
+model PollResponse {
+  id          String       @id @default(cuid())
+  pollId      String
+  poll        Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // برای نظرسنجی‌های تک/چند گزینه‌ای
+  optionId    String?
+  option      PollOption?  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  // برای نظرسنجی امتیازی
+  ratingValue Int?
+
+  // برای نظرسنجی متن آزاد
+  textValue   String?
+
+  // نظر اختیاری
+  comment     String?
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([pollId])
+  @@index([userId])
+  @@index([optionId])
+  @@map("poll_responses")
 }
 

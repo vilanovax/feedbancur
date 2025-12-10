@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Paperclip, X } from "lucide-react";
 
 interface AnnouncementFormProps {
   mode: "create" | "edit";
@@ -29,6 +29,11 @@ export default function AnnouncementForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [useSchedule, setUseSchedule] = useState(!!initialData?.scheduledAt);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<Array<{ url: string; name: string }>>(
+    (initialData as any)?.attachments || []
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
@@ -62,6 +67,54 @@ export default function AnnouncementForm({
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const allowedTypes = [
+        'image/',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/zip',
+        'application/x-rar-compressed',
+      ];
+      
+      const validFiles: File[] = [];
+      
+      for (const file of files) {
+        const isValidType = allowedTypes.some(type => file.type.startsWith(type));
+        if (!isValidType) {
+          setError(`نوع فایل "${file.name}" مجاز نیست. فایل‌های مجاز: تصاویر، PDF، Word، ZIP، RAR`);
+          continue;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          setError(`حجم فایل "${file.name}" نباید بیشتر از 10 مگابایت باشد`);
+          continue;
+        }
+
+        validFiles.push(file);
+      }
+
+      if (validFiles.length > 0) {
+        setSelectedFiles((prev) => [...prev, ...validFiles]);
+        setError("");
+      }
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingAttachment = (index: number) => {
+    setExistingAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -72,6 +125,8 @@ export default function AnnouncementForm({
         ...formData,
         departmentId: formData.departmentId || null,
         scheduledAt: useSchedule && formData.scheduledAt ? formData.scheduledAt : null,
+        files: selectedFiles, // اضافه کردن فایل‌ها به داده‌ها
+        existingAttachments: existingAttachments, // فایل‌های موجود (برای ویرایش)
       };
 
       await onSubmit(submitData);
@@ -250,6 +305,86 @@ export default function AnnouncementForm({
           >
             فعال (نمایش اعلان)
           </label>
+        </div>
+      )}
+
+      {/* فایل‌های ضمیمه - فقط برای ADMIN */}
+      {isAdmin && (
+        <div>
+          <label
+            htmlFor="attachment"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+          >
+            فایل‌های ضمیمه (اختیاری) - می‌توانید چند فایل اضافه کنید
+          </label>
+          <div className="space-y-3">
+            <input
+              ref={fileInputRef}
+              id="attachment"
+              type="file"
+              onChange={handleFileChange}
+              accept="image/*,.pdf,.doc,.docx,.zip,.rar"
+              multiple
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              فایل‌های مجاز: تصاویر، PDF، Word، ZIP، RAR (حداکثر 10MB برای هر فایل)
+            </p>
+            
+            {/* فایل‌های موجود (برای ویرایش) */}
+            {mode === "edit" && existingAttachments.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">فایل‌های موجود:</p>
+                {existingAttachments.map((attachment, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
+                    <Paperclip size={18} className="text-gray-600 dark:text-gray-400" />
+                    <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {attachment.name}
+                    </span>
+                    <a
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
+                    >
+                      مشاهده
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExistingAttachment(index)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      title="حذف"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* فایل‌های جدید انتخاب شده */}
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">فایل‌های جدید:</p>
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <Paperclip size={18} className="text-blue-600 dark:text-blue-400" />
+                    <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      title="حذف"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

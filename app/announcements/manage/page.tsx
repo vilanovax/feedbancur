@@ -14,9 +14,13 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
+  Eye,
+  BarChart3,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import AnnouncementModal from "@/components/AnnouncementModal";
+import AnnouncementViewersModal from "@/components/AnnouncementViewersModal";
 
 export default function ManageAnnouncementsPage() {
   const { data: session, status } = useSession();
@@ -24,6 +28,8 @@ export default function ManageAnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showViewersModal, setShowViewersModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -106,6 +112,26 @@ export default function ManageAnnouncementsPage() {
   const openDeleteModal = (announcement: any) => {
     setSelectedAnnouncement(announcement);
     setShowDeleteModal(true);
+  };
+
+  const openViewModal = (announcement: any) => {
+    setSelectedAnnouncement(announcement);
+    setShowViewModal(true);
+  };
+
+  const closeViewModal = () => {
+    setShowViewModal(false);
+    setSelectedAnnouncement(null);
+  };
+
+  const openViewersModal = (announcement: any) => {
+    setSelectedAnnouncement(announcement);
+    setShowViewersModal(true);
+  };
+
+  const closeViewersModal = () => {
+    setShowViewersModal(false);
+    setSelectedAnnouncement(null);
   };
 
   const getStatusBadge = (announcement: any) => {
@@ -268,6 +294,24 @@ export default function ManageAnnouncementsPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-2">
+                            {/* View Details */}
+                            <button
+                              onClick={() => openViewModal(announcement)}
+                              className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors"
+                              title="مشاهده جزئیات"
+                            >
+                              <Eye size={18} />
+                            </button>
+
+                            {/* View Statistics */}
+                            <button
+                              onClick={() => openViewersModal(announcement)}
+                              className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors"
+                              title="آمار بازدید"
+                            >
+                              <BarChart3 size={18} />
+                            </button>
+
                             {/* Toggle Active/Inactive */}
                             <button
                               onClick={() => toggleActive(announcement)}
@@ -309,6 +353,22 @@ export default function ManageAnnouncementsPage() {
             </div>
           </div>
         </div>
+
+        {/* View Details Modal */}
+        {showViewModal && selectedAnnouncement && (
+          <AnnouncementModal
+            announcement={selectedAnnouncement}
+            onClose={closeViewModal}
+          />
+        )}
+
+        {/* Viewers Statistics Modal */}
+        {showViewersModal && selectedAnnouncement && (
+          <AnnouncementViewersModal
+            announcementId={selectedAnnouncement.id}
+            onClose={closeViewersModal}
+          />
+        )}
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && selectedAnnouncement && (
