@@ -26,6 +26,9 @@ import {
   ArrowDown,
   MessageCircle,
   AlertCircle,
+  Clock,
+  Calendar,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
@@ -39,7 +42,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours">("general");
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -103,6 +106,15 @@ export default function SettingsPage() {
       secretAccessKey: "49ae07a8-d515-4700-8daa-65ef98da8cab",
       bucket: "feedban",
       region: "us-east-1",
+    },
+
+    // تنظیمات ساعت کاری
+    workingHoursSettings: {
+      enabled: false,
+      startHour: 8, // 8 صبح
+      endHour: 17, // 5 عصر
+      workingDays: [6, 0, 1, 2, 3], // شنبه تا چهارشنبه (6=شنبه، 0=یکشنبه، 1=دوشنبه، 2=سه‌شنبه، 3=چهارشنبه)
+      holidays: [] as string[], // تاریخ‌های تعطیل (فرمت: YYYY-MM-DD)
     },
   });
 
@@ -361,6 +373,16 @@ export default function SettingsPage() {
                 }`}
               >
                 Object Storage
+              </button>
+              <button
+                onClick={() => setActiveTab("workingHours")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "workingHours"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                ساعت کاری
               </button>
               <button
                 onClick={() => setActiveTab("database")}
@@ -1309,6 +1331,253 @@ export default function SettingsPage() {
                               </p>
                             </div>
                           </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب ساعت کاری */}
+            {activeTab === "workingHours" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Clock className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات ساعت کاری
+                    </h2>
+                  </div>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    تنظیم ساعات کاری برای محاسبه زمان انجام فیدبک‌ها. با فعال کردن این گزینه، زمان انجام فیدبک‌ها فقط بر اساس ساعات کاری محاسبه می‌شود.
+                  </p>
+
+                  <div className="space-y-6">
+                    {/* فعال/غیرفعال کردن محاسبه بر اساس ساعت کاری */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                          محاسبه بر اساس ساعت کاری
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          با فعال کردن این گزینه، زمان انجام فیدبک‌ها فقط در ساعات کاری محاسبه می‌شود (مثلاً 4 روز × 9 ساعت = 36 ساعت به جای 96 ساعت)
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer mr-4">
+                        <input
+                          type="checkbox"
+                          checked={settings.workingHoursSettings?.enabled ?? false}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              workingHoursSettings: {
+                                ...settings.workingHoursSettings,
+                                enabled: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {settings.workingHoursSettings?.enabled && (
+                      <>
+                        {/* ساعت شروع و پایان کار */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <Clock className="inline ml-2" size={16} />
+                              ساعت شروع کار
+                            </label>
+                            <select
+                              value={settings.workingHoursSettings?.startHour ?? 8}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  workingHoursSettings: {
+                                    ...settings.workingHoursSettings,
+                                    startHour: parseInt(e.target.value),
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => (
+                                <option key={i} value={i}>
+                                  {i.toString().padStart(2, '0')}:00
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              <Clock className="inline ml-2" size={16} />
+                              ساعت پایان کار
+                            </label>
+                            <select
+                              value={settings.workingHoursSettings?.endHour ?? 17}
+                              onChange={(e) =>
+                                setSettings({
+                                  ...settings,
+                                  workingHoursSettings: {
+                                    ...settings.workingHoursSettings,
+                                    endHour: parseInt(e.target.value),
+                                  },
+                                })
+                              }
+                              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => (
+                                <option key={i} value={i}>
+                                  {i.toString().padStart(2, '0')}:00
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* روزهای کاری */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            <Calendar className="inline ml-2" size={16} />
+                            روزهای کاری
+                          </label>
+                          <div className="grid grid-cols-7 gap-2">
+                            {[
+                              { day: 6, label: 'شنبه' },
+                              { day: 0, label: 'یکشنبه' },
+                              { day: 1, label: 'دوشنبه' },
+                              { day: 2, label: 'سه‌شنبه' },
+                              { day: 3, label: 'چهارشنبه' },
+                              { day: 4, label: 'پنج‌شنبه' },
+                              { day: 5, label: 'جمعه' },
+                            ].map(({ day, label }) => {
+                              const isSelected = (settings.workingHoursSettings?.workingDays || []).includes(day);
+                              return (
+                                <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => {
+                                    const currentDays = settings.workingHoursSettings?.workingDays || [];
+                                    const newDays = isSelected
+                                      ? currentDays.filter(d => d !== day)
+                                      : [...currentDays, day].sort();
+                                    setSettings({
+                                      ...settings,
+                                      workingHoursSettings: {
+                                        ...settings.workingHoursSettings,
+                                        workingDays: newDays,
+                                      },
+                                    });
+                                  }}
+                                  className={`p-3 rounded-lg text-xs font-medium transition-colors ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            روزهای کاری را انتخاب کنید (حداقل یک روز)
+                          </p>
+                        </div>
+
+                        {/* تعطیلات */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            <Calendar className="inline ml-2" size={16} />
+                            تعطیلات رسمی
+                          </label>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            تاریخ‌های تعطیل را به فرمت YYYY-MM-DD وارد کنید (مثال: 2025-03-21 برای نوروز)
+                          </p>
+
+                          {/* لیست تعطیلات */}
+                          <div className="space-y-2 mb-3">
+                            {(settings.workingHoursSettings?.holidays || []).map((holiday, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                              >
+                                <Calendar size={16} className="text-gray-500" />
+                                <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {holiday}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newHolidays = (settings.workingHoursSettings?.holidays || []).filter((_, i) => i !== index);
+                                    setSettings({
+                                      ...settings,
+                                      workingHoursSettings: {
+                                        ...settings.workingHoursSettings,
+                                        holidays: newHolidays,
+                                      },
+                                    });
+                                  }}
+                                  className="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
+                                  title="حذف"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* افزودن تعطیل جدید */}
+                          <div className="flex gap-2">
+                            <input
+                              type="date"
+                              id="new-holiday"
+                              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const input = document.getElementById('new-holiday') as HTMLInputElement;
+                                const dateValue = input?.value;
+                                if (dateValue) {
+                                  const currentHolidays = settings.workingHoursSettings?.holidays || [];
+                                  if (!currentHolidays.includes(dateValue)) {
+                                    setSettings({
+                                      ...settings,
+                                      workingHoursSettings: {
+                                        ...settings.workingHoursSettings,
+                                        holidays: [...currentHolidays, dateValue].sort(),
+                                      },
+                                    });
+                                    input.value = '';
+                                  } else {
+                                    toast.info('این تاریخ قبلاً اضافه شده است');
+                                  }
+                                }
+                              }}
+                              className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                            >
+                              <Plus size={16} />
+                              افزودن
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* نمایش اطلاعات خلاصه */}
+                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                          <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2">
+                            📊 خلاصه تنظیمات:
+                          </h4>
+                          <ul className="text-xs text-green-700 dark:text-green-400 space-y-1">
+                            <li>• ساعات کاری: {settings.workingHoursSettings?.startHour?.toString().padStart(2, '0')}:00 تا {settings.workingHoursSettings?.endHour?.toString().padStart(2, '0')}:00 ({(settings.workingHoursSettings?.endHour ?? 17) - (settings.workingHoursSettings?.startHour ?? 8)} ساعت در روز)</li>
+                            <li>• روزهای کاری: {(settings.workingHoursSettings?.workingDays || []).length} روز در هفته</li>
+                            <li>• تعطیلات رسمی: {(settings.workingHoursSettings?.holidays || []).length} روز</li>
+                          </ul>
                         </div>
                       </>
                     )}

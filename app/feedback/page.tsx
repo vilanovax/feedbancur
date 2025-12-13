@@ -11,6 +11,7 @@ import AppHeader from "@/components/AdminHeader";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
+import { getCompletionTime, WorkingHoursSettings } from "@/lib/working-hours-utils";
 import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
 
@@ -112,6 +113,7 @@ export default function FeedbacksPage() {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [workingHoursSettings, setWorkingHoursSettings] = useState<WorkingHoursSettings | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -122,7 +124,22 @@ export default function FeedbacksPage() {
   useEffect(() => {
     fetchDepartments();
     fetchManagers();
+    fetchWorkingHoursSettings();
   }, []);
+
+  const fetchWorkingHoursSettings = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.workingHoursSettings) {
+          setWorkingHoursSettings(data.workingHoursSettings);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching working hours settings:", error);
+    }
+  };
 
   // Save quick filter to localStorage when changed (only for admin)
   useEffect(() => {
@@ -1045,6 +1062,15 @@ export default function FeedbacksPage() {
                       {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
+                  {/* نمایش زمان انجام کار برای فیدبک‌های تکمیل شده */}
+                  {feedback.status === "COMPLETED" && feedback.completedAt && feedback.forwardedAt && workingHoursSettings && (
+                    <div className="flex items-center space-x-1 space-x-reverse text-green-600 dark:text-green-400 font-medium">
+                      <Clock size={14} />
+                      <span>
+                        زمان انجام: {getCompletionTime(feedback.forwardedAt, feedback.completedAt, workingHoursSettings)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-3 mb-4 flex-grow">
