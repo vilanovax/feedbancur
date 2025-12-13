@@ -10,8 +10,10 @@ import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 import Image from "next/image";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function ManagerForwardedFeedbacksPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -136,11 +138,11 @@ export default function ManagerForwardedFeedbacksPage() {
         setTimeout(() => setNotesSaved(false), 3000);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ذخیره یادداشت");
+        toast.error(error.error || "خطا در ذخیره یادداشت");
       }
     } catch (error) {
       console.error("Error saving notes:", error);
-      alert("خطا در ذخیره یادداشت");
+      toast.error("خطا در ذخیره یادداشت");
     }
   };
 
@@ -228,11 +230,11 @@ export default function ManagerForwardedFeedbacksPage() {
         }, 500);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ارسال پیام");
+        toast.error(error.error || "خطا در ارسال پیام");
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("خطا در ارسال پیام");
+      toast.error("خطا در ارسال پیام");
     }
   };
 
@@ -250,14 +252,14 @@ export default function ManagerForwardedFeedbacksPage() {
     // بررسی حجم فایل (از تنظیمات)
     const maxSize = 5 * 1024 * 1024; // 5MB پیش‌فرض
     if (file.size > maxSize) {
-      alert(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
+      toast.info(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
       return;
     }
 
     // بررسی فرمت فایل
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
+      toast.info("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
       return;
     }
 
@@ -368,15 +370,15 @@ export default function ManagerForwardedFeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("وضعیت فیدبک با موفقیت تغییر کرد");
+        toast.success("وضعیت فیدبک با موفقیت تغییر کرد");
         fetchForwardedFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در تغییر وضعیت");
+        toast.error(error.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
       console.error("Error changing status:", error);
-      alert("خطا در تغییر وضعیت");
+      toast.error("خطا در تغییر وضعیت");
     }
   };
 
@@ -868,7 +870,7 @@ export default function ManagerForwardedFeedbacksPage() {
                         window.URL.revokeObjectURL(url);
                       } catch (error) {
                         console.error("Error downloading image:", error);
-                        alert("خطا در دانلود تصویر");
+                        toast.error("خطا در دانلود تصویر");
                       }
                     }}
                     className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"

@@ -7,18 +7,23 @@ import { Lock, Eye, AlertCircle, CheckCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import PollVotingInterface from "@/components/PollVotingInterface";
+import PollResults from "@/components/PollResults";
 import { TypeBadge, VisibilityBadge, StatusBadge } from "@/components/PollBadges";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function PollDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
   const pollId = params?.id as string;
+  const toast = useToast();
 
   const [poll, setPoll] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [userResponse, setUserResponse] = useState<any>(null);
   const [canVote, setCanVote] = useState(false);
+  const [results, setResults] = useState<any>(null);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -36,14 +41,32 @@ export default function PollDetailPage() {
         setPoll(data.poll);
         setUserResponse(data.userResponse);
         setCanVote(data.canVote);
+
+        // اگر کاربر شرکت کرده، نتایج را بارگذاری کن
+        if (data.userResponse) {
+          fetchResults();
+        }
       } else {
-        alert("نظرسنجی یافت نشد");
+        toast.error("نظرسنجی یافت نشد");
         router.push("/polls");
       }
     } catch (error) {
       console.error("Error fetching poll:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchResults = async () => {
+    try {
+      const res = await fetch(`/api/polls/${pollId}/results`);
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data);
+        setShowResults(true);
+      }
+    } catch (error) {
+      console.error("Error fetching results:", error);
     }
   };
 
@@ -58,16 +81,16 @@ export default function PollDetailPage() {
       });
 
       if (res.ok) {
-        alert("رای شما با موفقیت ثبت شد");
+        toast.success("رای شما با موفقیت ثبت شد");
         // بارگذاری مجدد نظرسنجی
         fetchPoll();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در ثبت رای");
+        toast.error(data.error || "خطا در ثبت رای");
       }
     } catch (error) {
       console.error("Vote error:", error);
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     }
   };
 
@@ -203,8 +226,18 @@ export default function PollDetailPage() {
                 poll={poll}
                 onVote={handleVote}
                 disabled={false}
+                onValidationError={(msg) => toast.warning(msg)}
               />
             </div>
+          )}
+
+          {/* Poll Results - نمایش نتایج برای کسانی که شرکت کرده‌اند */}
+          {showResults && results && (
+            <PollResults
+              results={results.results}
+              stats={results.stats}
+              pollType={poll.type}
+            />
           )}
 
           {/* Department Info */}

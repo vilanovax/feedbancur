@@ -7,8 +7,10 @@ import { Star, Calendar, Building2, User, XCircle, RefreshCw, MessageCircle, X, 
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function ForwardedFeedbacksPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -77,15 +79,15 @@ export default function ForwardedFeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("ارجاع فیدبک با موفقیت لغو شد");
+        toast.success("ارجاع فیدبک با موفقیت لغو شد");
         fetchForwardedFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در لغو ارجاع");
+        toast.error(error.error || "خطا در لغو ارجاع");
       }
     } catch (error) {
       console.error("Error canceling forward:", error);
-      alert("خطا در لغو ارجاع");
+      toast.error("خطا در لغو ارجاع");
     } finally {
       setCancelingForward(null);
     }

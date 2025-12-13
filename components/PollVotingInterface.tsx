@@ -30,9 +30,10 @@ interface PollVotingInterfaceProps {
   poll: Poll;
   onVote: (data: VoteData) => Promise<void>;
   disabled?: boolean;
+  onValidationError?: (message: string) => void;
 }
 
-export default function PollVotingInterface({ poll, onVote, disabled }: PollVotingInterfaceProps) {
+export default function PollVotingInterface({ poll, onVote, disabled, onValidationError }: PollVotingInterfaceProps) {
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [rating, setRating] = useState<number>(0);
@@ -50,28 +51,28 @@ export default function PollVotingInterface({ poll, onVote, disabled }: PollVoti
 
       if (poll.type === 'SINGLE_CHOICE') {
         if (!selectedOption) {
-          alert('لطفاً یک گزینه انتخاب کنید');
+          onValidationError?.('لطفاً یک گزینه انتخاب کنید');
           setLoading(false);
           return;
         }
         voteData.optionId = selectedOption;
       } else if (poll.type === 'MULTIPLE_CHOICE') {
         if (selectedOptions.length === 0) {
-          alert('لطفاً حداقل یک گزینه انتخاب کنید');
+          onValidationError?.('لطفاً حداقل یک گزینه انتخاب کنید');
           setLoading(false);
           return;
         }
         voteData.optionIds = selectedOptions;
       } else if (poll.type === 'RATING_SCALE') {
         if (rating === 0) {
-          alert('لطفاً امتیاز خود را انتخاب کنید');
+          onValidationError?.('لطفاً امتیاز خود را انتخاب کنید');
           setLoading(false);
           return;
         }
         voteData.ratingValue = rating;
       } else if (poll.type === 'TEXT_INPUT') {
         if (!textValue.trim()) {
-          alert('لطفاً پاسخ خود را وارد کنید');
+          onValidationError?.('لطفاً پاسخ خود را وارد کنید');
           setLoading(false);
           return;
         }

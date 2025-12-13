@@ -4,8 +4,10 @@ import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
 import MobileLayout from "@/components/MobileLayout";
 import PollVotingInterface from "@/components/PollVotingInterface";
+import PollResults from "@/components/PollResults";
 import { CheckCircle, Lock, Eye } from "lucide-react";
 import { TypeBadge, VisibilityBadge, StatusBadge } from "@/components/PollBadges";
+import { useToast } from "@/contexts/ToastContext";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -15,11 +17,14 @@ export default function MobilePollDetailPage({ params }: PageProps) {
   const { data: session } = useSession();
   const resolvedParams = use(params);
   const pollId = resolvedParams.id;
+  const toast = useToast();
 
   const [poll, setPoll] = useState<any>(null);
   const [canVote, setCanVote] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hasVoted, setHasVoted] = useState(false);
+  const [results, setResults] = useState<any>(null);
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     if (pollId) {
@@ -36,11 +41,29 @@ export default function MobilePollDetailPage({ params }: PageProps) {
         setPoll(data.poll);
         setCanVote(data.canVote);
         setHasVoted(!!data.userResponse);
+
+        // اگر کاربر شرکت کرده، نتایج را بارگذاری کن
+        if (data.userResponse) {
+          fetchResults();
+        }
       }
     } catch (error) {
       console.error("Error fetching poll:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchResults = async () => {
+    try {
+      const res = await fetch(`/api/polls/${pollId}/results`);
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data);
+        setShowResults(true);
+      }
+    } catch (error) {
+      console.error("Error fetching results:", error);
     }
   };
 
@@ -53,15 +76,15 @@ export default function MobilePollDetailPage({ params }: PageProps) {
       });
 
       if (res.ok) {
-        alert("رای شما با موفقیت ثبت شد");
+        toast.success("رای شما با موفقیت ثبت شد");
         fetchPoll(); // Reload poll data
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ثبت رای");
+        toast.error(error.error || "خطا در ثبت رای");
       }
     } catch (error) {
       console.error("Error voting:", error);
-      alert("خطا در ثبت رای");
+      toast.error("خطا در ثبت رای");
     }
   };
 
@@ -191,8 +214,18 @@ export default function MobilePollDetailPage({ params }: PageProps) {
               poll={poll}
               onVote={handleVote}
               disabled={false}
+              onValidationError={(msg) => toast.warning(msg)}
             />
           </div>
+        )}
+
+        {/* Poll Results - نمایش نتایج برای کسانی که شرکت کرده‌اند */}
+        {showResults && results && (
+          <PollResults
+            results={results.results}
+            stats={results.stats}
+            pollType={poll.type}
+          />
         )}
 
         {/* Show Results Link for Public Polls or Admins */}

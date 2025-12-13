@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import { CheckCircle, Plus } from "lucide-react";
 import { TypeBadge, VisibilityBadge, StatusBadge } from "@/components/PollBadges";
+import PollResultsModal from "@/components/PollResultsModal";
 
 export default function MobilePollsPage() {
   const { data: session, status } = useSession();
@@ -14,6 +15,8 @@ export default function MobilePollsPage() {
   const [loading, setLoading] = useState(true);
   const [sortOption, setSortOption] = useState("newest");
   const [canCreatePoll, setCanCreatePoll] = useState(false);
+  const [selectedPollId, setSelectedPollId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -77,6 +80,17 @@ export default function MobilePollsPage() {
     }
   });
 
+  const handlePollClick = (poll: any) => {
+    if (poll.hasVoted) {
+      // اگر قبلاً شرکت کرده، مودال نتایج را نمایش بده
+      setSelectedPollId(poll.id);
+      setIsModalOpen(true);
+    } else {
+      // اگر شرکت نکرده، به صفحه نظرسنجی برو
+      router.push(`/mobile/polls/${poll.id}`);
+    }
+  };
+
   if (!session) {
     return null;
   }
@@ -123,7 +137,7 @@ export default function MobilePollsPage() {
           {sortedPolls.map((poll) => (
             <button
               key={poll.id}
-              onClick={() => router.push(`/mobile/polls/${poll.id}`)}
+              onClick={() => handlePollClick(poll)}
               className="w-full bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 text-right hover:shadow-md transition"
             >
               <div className="flex items-start justify-between mb-2">
@@ -172,6 +186,18 @@ export default function MobilePollsPage() {
         >
           <Plus size={28} />
         </button>
+      )}
+
+      {/* Results Modal */}
+      {selectedPollId && (
+        <PollResultsModal
+          pollId={selectedPollId}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedPollId(null);
+          }}
+        />
       )}
     </MobileLayout>
   );

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { UserPlus, Shield, Trash2, Key, CheckCircle, XCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 interface AdminUser {
   id: string;
@@ -17,6 +18,7 @@ interface AdminUser {
 }
 
 export default function AdminsPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -105,7 +107,7 @@ export default function AdminsPage() {
       if (res.ok) {
         await fetchAdmins();
         setFormData({ mobile: "", name: "", email: "", password: "", isActive: true });
-        alert(
+        toast.success(
           `ادمین با موفقیت ایجاد شد!\n\nرمز عبور اولیه: ${passwordToUse}\n\nلطفاً این رمز را یادداشت کنید. کاربر باید در اولین ورود رمز عبور را تغییر دهد.`
         );
         setShowCreateModal(false);
@@ -130,13 +132,13 @@ export default function AdminsPage() {
         await fetchAdmins();
         setShowDeleteModal(false);
         setSelectedAdmin(null);
-        alert("ادمین با موفقیت حذف شد");
+        toast.success("ادمین با موفقیت حذف شد");
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در حذف ادمین");
+        toast.error(data.error || "خطا در حذف ادمین");
       }
     } catch (error) {
-      alert("خطا در حذف ادمین");
+      toast.error("خطا در حذف ادمین");
     }
   };
 

@@ -7,13 +7,15 @@ import Link from "next/link";
 import { Bell, ArrowRight, AlertCircle, Info, AlertTriangle, Send, MessageSquare, X, Paperclip, Download, FileText, Image as ImageIcon } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function AnnouncementDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const params = useParams();
+  const toast = useToast();
   const announcementId = params?.id as string;
-  
+
   const [announcement, setAnnouncement] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -88,13 +90,13 @@ export default function AnnouncementDetailPage() {
       
       const isValidType = allowedTypes.some(type => file.type.startsWith(type));
       if (!isValidType) {
-        alert('نوع فایل مجاز نیست. فایل‌های مجاز: تصاویر، PDF، Word، ZIP، RAR');
+        toast.warning('نوع فایل مجاز نیست. فایل‌های مجاز: تصاویر، PDF، Word، ZIP، RAR');
         return;
       }
 
       // بررسی حجم فایل (حداکثر 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('حجم فایل نباید بیشتر از 10 مگابایت باشد');
+        toast.warning('حجم فایل نباید بیشتر از 10 مگابایت باشد');
         return;
       }
 
@@ -141,11 +143,11 @@ export default function AnnouncementDetailPage() {
         }, 100);
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در ارسال پیام");
+        toast.error(data.error || "خطا در ارسال پیام");
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("خطا در ارسال پیام");
+      toast.error("خطا در ارسال پیام");
     } finally {
       setSending(false);
     }
@@ -396,8 +398,9 @@ export default function AnnouncementDetailPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Add Message Form (Only for ADMIN and MANAGER) */}
-            {(session?.user.role === "ADMIN" || session?.user.role === "MANAGER") && (
+            {/* Add Message Form (Only for ADMIN and MANAGER who created the announcement) */}
+            {(session?.user.role === "ADMIN" ||
+              (session?.user.role === "MANAGER" && announcement.createdById === session?.user.id)) && (
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">

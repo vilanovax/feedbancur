@@ -21,8 +21,10 @@ import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import AnnouncementModal from "@/components/AnnouncementModal";
 import AnnouncementViewersModal from "@/components/AnnouncementViewersModal";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function ManageAnnouncementsPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -76,10 +78,10 @@ export default function ManageAnnouncementsPage() {
         fetchAnnouncements();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در تغییر وضعیت");
+        toast.error(data.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     } finally {
       setActionLoading(false);
     }
@@ -100,10 +102,10 @@ export default function ManageAnnouncementsPage() {
         fetchAnnouncements();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در حذف اعلان");
+        toast.error(data.error || "خطا در حذف اعلان");
       }
     } catch (error) {
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     } finally {
       setActionLoading(false);
     }

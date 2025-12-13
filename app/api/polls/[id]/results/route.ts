@@ -48,12 +48,21 @@ export async function GET(
       );
     }
 
+    // بررسی اینکه آیا کاربر در نظرسنجی شرکت کرده
+    const userResponse = await prisma.pollResponse.findFirst({
+      where: {
+        pollId: id,
+        userId: session.user.id,
+      },
+    });
+
     // بررسی دسترسی
     const canView =
       session.user.role === 'ADMIN' ||
       poll.createdById === session.user.id ||
       poll.visibilityMode === 'PUBLIC' ||
-      (poll.showResultsMode === 'LIVE' && poll.visibilityMode === 'PUBLIC');
+      (poll.showResultsMode === 'LIVE' && poll.visibilityMode === 'PUBLIC') ||
+      (userResponse && poll.showResultsMode !== 'NEVER'); // اگر شرکت کرده و نمایش نتایج NEVER نباشد
 
     if (!canView) {
       return NextResponse.json(
@@ -67,7 +76,8 @@ export async function GET(
       poll.showResultsMode === 'AFTER_CLOSE' &&
       (!poll.closedAt || new Date(poll.closedAt) > new Date()) &&
       session.user.role !== 'ADMIN' &&
-      poll.createdById !== session.user.id
+      poll.createdById !== session.user.id &&
+      !userResponse // اگر شرکت نکرده
     ) {
       return NextResponse.json(
         { error: 'نتایج بعد از پایان نظرسنجی نمایش داده می‌شود' },

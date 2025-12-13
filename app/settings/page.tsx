@@ -28,8 +28,10 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function SettingsPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -158,13 +160,13 @@ export default function SettingsPage() {
 
     // بررسی نوع فایل
     if (!file.type.startsWith("image/")) {
-      alert("فقط فایل‌های تصویری مجاز هستند");
+      toast.info("فقط فایل‌های تصویری مجاز هستند");
       return;
     }
 
     // بررسی اندازه فایل
     if (file.size > 5 * 1024 * 1024) {
-      alert("حجم فایل نباید بیشتر از 5 مگابایت باشد");
+      toast.info("حجم فایل نباید بیشتر از 5 مگابایت باشد");
       return;
     }
 
@@ -195,14 +197,14 @@ export default function SettingsPage() {
           body: JSON.stringify({ ...settings, logoUrl: data.url }),
         });
 
-        alert("لوگو با موفقیت تغییر کرد");
+        toast.success("لوگو با موفقیت تغییر کرد");
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در آپلود لوگو");
+        toast.error(error.error || "خطا در آپلود لوگو");
       }
     } catch (error) {
       console.error("Error uploading logo:", error);
-      alert("خطا در آپلود لوگو");
+      toast.error("خطا در آپلود لوگو");
     } finally {
       setUploadingLogo(false);
     }
@@ -260,11 +262,11 @@ export default function SettingsPage() {
       } else {
         const errorData = await res.json();
         console.error("Error response:", errorData);
-        alert(errorData.message || errorData.error || "خطا در ذخیره تنظیمات");
+        toast.error(errorData.message || errorData.error || "خطا در ذخیره تنظیمات");
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert("خطا در ذخیره تنظیمات");
+      toast.error("خطا در ذخیره تنظیمات");
     } finally {
       setLoading(false);
     }
@@ -1376,14 +1378,14 @@ export default function SettingsPage() {
                               a.click();
                               window.URL.revokeObjectURL(url);
                               document.body.removeChild(a);
-                              alert("نسخه پشتیبان با موفقیت دانلود شد");
+                              toast.success("نسخه پشتیبان با موفقیت دانلود شد");
                             } else {
                               const data = await res.json();
-                              alert(data.error || "خطا در ایجاد نسخه پشتیبان");
+                              toast.error(data.error || "خطا در ایجاد نسخه پشتیبان");
                             }
                           } catch (error) {
                             console.error("Error downloading backup:", error);
-                            alert("خطا در دانلود نسخه پشتیبان");
+                            toast.error("خطا در دانلود نسخه پشتیبان");
                           }
                         }}
                         className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
@@ -1415,7 +1417,7 @@ export default function SettingsPage() {
                             if (!file) return;
 
                             if (!file.name.endsWith(".sql") && !file.name.endsWith(".json")) {
-                              alert("فقط فایل‌های SQL یا JSON پشتیبانی می‌شوند");
+                              toast.info("فقط فایل‌های SQL یا JSON پشتیبانی می‌شوند");
                               return;
                             }
 
@@ -1445,14 +1447,14 @@ export default function SettingsPage() {
                               const data = await res.json();
 
                               if (res.ok) {
-                                alert("دیتابیس با موفقیت بازیابی شد. لطفاً صفحه را رفرش کنید.");
+                                toast.success("دیتابیس با موفقیت بازیابی شد. لطفاً صفحه را رفرش کنید.");
                                 window.location.reload();
                               } else {
-                                alert(data.error || "خطا در بازیابی دیتابیس");
+                                toast.error(data.error || "خطا در بازیابی دیتابیس");
                               }
                             } catch (error) {
                               console.error("Error restoring backup:", error);
-                              alert("خطا در بازیابی دیتابیس");
+                              toast.error("خطا در بازیابی دیتابیس");
                             } finally {
                               e.target.value = "";
                             }

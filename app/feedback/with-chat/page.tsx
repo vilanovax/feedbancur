@@ -9,8 +9,10 @@ import { format } from "date-fns";
 import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function FeedbacksWithChatPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -131,11 +133,11 @@ export default function FeedbacksWithChatPage() {
         }, 500);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ارسال پیام");
+        toast.error(error.error || "خطا در ارسال پیام");
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("خطا در ارسال پیام");
+      toast.error("خطا در ارسال پیام");
     }
   };
 
@@ -153,14 +155,14 @@ export default function FeedbacksWithChatPage() {
     // بررسی حجم فایل (از تنظیمات)
     const maxSize = 5 * 1024 * 1024; // 5MB پیش‌فرض
     if (file.size > maxSize) {
-      alert(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
+      toast.info(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
       return;
     }
 
     // بررسی فرمت فایل
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
+      toast.info("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
       return;
     }
 
@@ -490,7 +492,7 @@ export default function FeedbacksWithChatPage() {
                       window.URL.revokeObjectURL(url);
                     } catch (error) {
                       console.error("Error downloading image:", error);
-                      alert("خطا در دانلود تصویر");
+                      toast.error("خطا در دانلود تصویر");
                     }
                   }}
                   className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"

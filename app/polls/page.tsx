@@ -8,6 +8,7 @@ import { BarChart3, Plus, Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import PollCard from "@/components/PollCard";
+import PollResultsModal from "@/components/PollResultsModal";
 
 export default function PollsPage() {
   const { data: session, status } = useSession();
@@ -16,6 +17,8 @@ export default function PollsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [canCreatePoll, setCanCreatePoll] = useState(false);
+  const [selectedPollId, setSelectedPollId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -65,6 +68,17 @@ export default function PollsPage() {
   const filteredPolls = polls.filter((poll) =>
     poll.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handlePollClick = (poll: any) => {
+    if (poll.hasVoted) {
+      // اگر قبلاً شرکت کرده، مودال نتایج را نمایش بده
+      setSelectedPollId(poll.id);
+      setIsModalOpen(true);
+    } else {
+      // اگر شرکت نکرده، به صفحه نظرسنجی برو
+      router.push(`/polls/${poll.id}`);
+    }
+  };
 
   if (status === "loading" || loading) {
     return (
@@ -129,13 +143,25 @@ export default function PollsPage() {
                   key={poll.id}
                   poll={poll}
                   hasVoted={poll.hasVoted}
-                  onClick={() => router.push(`/polls/${poll.id}`)}
+                  onClick={() => handlePollClick(poll)}
                 />
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Results Modal */}
+      {selectedPollId && (
+        <PollResultsModal
+          pollId={selectedPollId}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedPollId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

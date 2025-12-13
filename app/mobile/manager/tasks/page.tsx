@@ -10,11 +10,13 @@ import Image from "next/image";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
+import { useToast } from "@/contexts/ToastContext";
 
 type SortOption = "date-desc" | "date-asc" | "priority" | "status";
 type ViewMode = "grid" | "list";
 
 export default function ManagerTasksPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>(() => {
@@ -292,15 +294,15 @@ export default function ManagerTasksPage() {
       });
 
       if (res.ok) {
-        alert("وضعیت فیدبک با موفقیت تغییر کرد");
+        toast.success("وضعیت فیدبک با موفقیت تغییر کرد");
         fetchFeedbacksFromAPI();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در تغییر وضعیت");
+        toast.error(error.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
       console.error("Error changing status:", error);
-      alert("خطا در تغییر وضعیت");
+      toast.error("خطا در تغییر وضعیت");
     }
   };
 
@@ -321,7 +323,7 @@ export default function ManagerTasksPage() {
       });
 
       if (res.ok) {
-        alert("وضعیت فیدبک با موفقیت به انجام شد تغییر کرد");
+        toast.success("وضعیت فیدبک با موفقیت به انجام شد تغییر کرد");
         setCompletedModalOpen(false);
         setSelectedFeedbackForCompleted(null);
         setUserResponse("");
@@ -329,11 +331,11 @@ export default function ManagerTasksPage() {
         fetchFeedbacksFromAPI();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در تغییر وضعیت");
+        toast.error(error.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
       console.error("Error completing feedback:", error);
-      alert("خطا در تغییر وضعیت");
+      toast.error("خطا در تغییر وضعیت");
     }
   };
 
@@ -420,7 +422,7 @@ export default function ManagerTasksPage() {
         }));
         // متن را برگردان
         setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
-        alert("خطا در اضافه کردن آیتم");
+        toast.error("خطا در اضافه کردن آیتم");
       }
     } catch (error) {
       console.error("Error adding checklist item:", error);
@@ -431,7 +433,7 @@ export default function ManagerTasksPage() {
       }));
       // متن را برگردان
       setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
-      alert("خطا در اضافه کردن آیتم");
+      toast.error("خطا در اضافه کردن آیتم");
     }
   };
 
@@ -509,7 +511,7 @@ export default function ManagerTasksPage() {
   const saveEditingItem = async (itemId: string, feedbackId: string) => {
     const newTitle = editingTexts[itemId]?.trim();
     if (!newTitle) {
-      alert("عنوان آیتم نمی‌تواند خالی باشد");
+      toast.info("عنوان آیتم نمی‌تواند خالی باشد");
       return;
     }
 
@@ -541,13 +543,13 @@ export default function ManagerTasksPage() {
       } else {
         // در صورت خطا، تغییرات را برگردان
         fetchChecklist(feedbackId);
-        alert("خطا در ویرایش آیتم");
+        toast.error("خطا در ویرایش آیتم");
       }
     } catch (error) {
       console.error("Error updating checklist item:", error);
       // در صورت خطا، تغییرات را برگردان
       fetchChecklist(feedbackId);
-      alert("خطا در ویرایش آیتم");
+      toast.error("خطا در ویرایش آیتم");
     }
   };
 
@@ -645,11 +647,11 @@ export default function ManagerTasksPage() {
         }, 500);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ارسال پیام");
+        toast.error(error.error || "خطا در ارسال پیام");
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      alert("خطا در ارسال پیام");
+      toast.error("خطا در ارسال پیام");
     }
   };
 
@@ -667,14 +669,14 @@ export default function ManagerTasksPage() {
     // بررسی حجم فایل (از تنظیمات)
     const maxSize = 5 * 1024 * 1024; // 5MB پیش‌فرض
     if (file.size > maxSize) {
-      alert(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
+      toast.info(`حجم فایل نباید بیشتر از ${maxSize / 1024 / 1024} مگابایت باشد`);
       return;
     }
 
     // بررسی فرمت فایل
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
+      toast.info("فرمت فایل مجاز نیست. فقط تصاویر JPEG، PNG، GIF و WebP مجاز است.");
       return;
     }
 
@@ -744,11 +746,11 @@ export default function ManagerTasksPage() {
         setTimeout(() => setNotesSaved(false), 3000);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ذخیره یادداشت");
+        toast.error(error.error || "خطا در ذخیره یادداشت");
       }
     } catch (error) {
       console.error("Error saving notes:", error);
-      alert("خطا در ذخیره یادداشت");
+      toast.error("خطا در ذخیره یادداشت");
     }
   };
 
@@ -1610,7 +1612,7 @@ export default function ManagerTasksPage() {
                         window.URL.revokeObjectURL(url);
                       } catch (error) {
                         console.error("Error downloading image:", error);
-                        alert("خطا در دانلود تصویر");
+                        toast.error("خطا در دانلود تصویر");
                       }
                     }}
                     className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"

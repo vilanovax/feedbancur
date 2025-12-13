@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { UserPlus, Pencil, Trash2, Search, Shield, User, CheckCircle, XCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Department {
   id: string;
@@ -25,6 +26,7 @@ interface UserType {
 }
 
 export default function UsersPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [users, setUsers] = useState<UserType[]>(() => {
@@ -242,19 +244,19 @@ export default function UsersPage() {
         }
         fetchUsers();
         if (formData.password) {
-          alert(`کاربر با موفقیت ایجاد شد!\nرمز عبور: ${formData.password}`);
+          toast.success(`کاربر با موفقیت ایجاد شد!\nرمز عبور: ${formData.password}`);
         } else {
-          alert(`کاربر با موفقیت ایجاد شد!\nرمز عبور پیش‌فرض: 123456\nکاربر باید در اولین ورود رمز را تغییر دهد`);
+          toast.success(`کاربر با موفقیت ایجاد شد!\nرمز عبور پیش‌فرض: 123456\nکاربر باید در اولین ورود رمز را تغییر دهد`);
         }
       } else {
         const errorMessage = data.error || "خطا در ایجاد کاربر";
         setError(errorMessage);
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (err) {
       const errorMessage = "خطا در ایجاد کاربر";
       setError(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -295,17 +297,17 @@ export default function UsersPage() {
           localStorage.removeItem("users_cache_time");
         }
         fetchUsers();
-        alert("کاربر با موفقیت بروزرسانی شد");
+        toast.success("کاربر با موفقیت بروزرسانی شد");
       } else {
         const errorMessage = data.error || "خطا در بروزرسانی کاربر";
         setError(errorMessage);
         // نمایش پیام خطا به صورت alert هم برای اطمینان
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (err) {
       const errorMessage = "خطا در بروزرسانی کاربر";
       setError(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -326,7 +328,7 @@ export default function UsersPage() {
           localStorage.removeItem("users_cache_time");
         }
         fetchUsers();
-        alert("کاربر با موفقیت حذف شد");
+        toast.success("کاربر با موفقیت حذف شد");
       } else {
         const data = await res.json();
         setError(data.error || "خطا در حذف کاربر");

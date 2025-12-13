@@ -12,8 +12,10 @@ import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 import Image from "next/image";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function FeedbacksPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [allFeedbacks, setAllFeedbacks] = useState<any[]>([]); // همه فیدبک‌ها برای محاسبه تعداد
@@ -384,15 +386,15 @@ export default function FeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("ارجاع فیدبک با موفقیت لغو شد");
+        toast.success("ارجاع فیدبک با موفقیت لغو شد");
         fetchFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در لغو ارجاع");
+        toast.error(error.error || "خطا در لغو ارجاع");
       }
     } catch (error) {
       console.error("Error canceling forward:", error);
-      alert("خطا در لغو ارجاع");
+      toast.error("خطا در لغو ارجاع");
     } finally {
       setCancelingForward(null);
     }
@@ -400,7 +402,7 @@ export default function FeedbacksPage() {
 
   const handleForwardFeedback = async () => {
     if (!selectedManager || !selectedFeedback) {
-      alert("لطفا مدیر مقصد را انتخاب کنید");
+      toast.info("لطفا مدیر مقصد را انتخاب کنید");
       return;
     }
 
@@ -418,7 +420,7 @@ export default function FeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("فیدبک با موفقیت ارجاع داده شد");
+        toast.success("فیدبک با موفقیت ارجاع داده شد");
         closeForwardModal();
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
@@ -428,11 +430,11 @@ export default function FeedbacksPage() {
         fetchFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ارجاع فیدبک");
+        toast.error(error.error || "خطا در ارجاع فیدبک");
       }
     } catch (error) {
       console.error("Error forwarding feedback:", error);
-      alert("خطا در ارجاع فیدبک");
+      toast.error("خطا در ارجاع فیدبک");
     } finally {
       setForwardingFeedback(false);
     }
@@ -473,11 +475,11 @@ export default function FeedbacksPage() {
         fetchFeedbacks();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در حذف فیدبک");
+        toast.error(data.error || "خطا در حذف فیدبک");
       }
     } catch (error) {
       console.error("Error deleting feedback:", error);
-      alert("خطا در حذف فیدبک");
+      toast.error("خطا در حذف فیدبک");
     } finally {
       setDeletingFeedback(false);
     }
@@ -507,7 +509,7 @@ export default function FeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("فیدبک با موفقیت آرشیو شد");
+        toast.success("فیدبک با موفقیت آرشیو شد");
         closeArchiveModal();
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
@@ -517,11 +519,11 @@ export default function FeedbacksPage() {
         fetchFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در آرشیو کردن فیدبک");
+        toast.error(error.error || "خطا در آرشیو کردن فیدبک");
       }
     } catch (error) {
       console.error("Error archiving feedback:", error);
-      alert("خطا در آرشیو کردن فیدبک");
+      toast.error("خطا در آرشیو کردن فیدبک");
     } finally {
       setArchivingFeedback(false);
     }
@@ -546,7 +548,7 @@ export default function FeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("وضعیت فیدبک با موفقیت تغییر کرد");
+        toast.success("وضعیت فیدبک با موفقیت تغییر کرد");
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
           localStorage.removeItem("feedbacks_cache");
@@ -555,11 +557,11 @@ export default function FeedbacksPage() {
         fetchFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در تغییر وضعیت");
+        toast.error(error.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
       console.error("Error changing status:", error);
-      alert("خطا در تغییر وضعیت");
+      toast.error("خطا در تغییر وضعیت");
     }
   };
 
@@ -580,7 +582,7 @@ export default function FeedbacksPage() {
       });
 
       if (res.ok) {
-        alert("فیدبک با موفقیت تکمیل شد");
+        toast.success("فیدبک با موفقیت تکمیل شد");
         setShowCompleteModal(false);
         setSelectedFeedback(null);
         setCompleteUserResponse("");
@@ -592,11 +594,11 @@ export default function FeedbacksPage() {
         fetchFeedbacks();
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در تکمیل فیدبک");
+        toast.error(error.error || "خطا در تکمیل فیدبک");
       }
     } catch (error) {
       console.error("Error completing feedback:", error);
-      alert("خطا در تکمیل فیدبک");
+      toast.error("خطا در تکمیل فیدبک");
     } finally {
       setCompletingFeedback(false);
     }

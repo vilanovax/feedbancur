@@ -7,8 +7,10 @@ import { Trash2, RotateCcw, X, AlertTriangle, Calendar, Building2, User, Star } 
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function TrashPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -60,11 +62,11 @@ export default function TrashPage() {
         fetchTrash();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در بازگرداندن فیدبک");
+        toast.error(data.error || "خطا در بازگرداندن فیدبک");
       }
     } catch (error) {
       console.error("Error restoring feedback:", error);
-      alert("خطا در بازگرداندن فیدبک");
+      toast.error("خطا در بازگرداندن فیدبک");
     }
   };
 
@@ -87,11 +89,11 @@ export default function TrashPage() {
         fetchTrash();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در حذف فیدبک");
+        toast.error(data.error || "خطا در حذف فیدبک");
       }
     } catch (error) {
       console.error("Error deleting feedback:", error);
-      alert("خطا در حذف فیدبک");
+      toast.error("خطا در حذف فیدبک");
     } finally {
       setDeleting(false);
     }
@@ -108,14 +110,14 @@ export default function TrashPage() {
         const data = await res.json();
         setShowEmptyModal(false);
         setFeedbacks([]);
-        alert(`${data.count} فیدبک با موفقیت حذف شد`);
+        toast.success(`${data.count} فیدبک با موفقیت حذف شد`);
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در خالی کردن سطل آشغال");
+        toast.error(data.error || "خطا در خالی کردن سطل آشغال");
       }
     } catch (error) {
       console.error("Error emptying trash:", error);
-      alert("خطا در خالی کردن سطل آشغال");
+      toast.error("خطا در خالی کردن سطل آشغال");
     } finally {
       setEmptying(false);
     }

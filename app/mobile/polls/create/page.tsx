@@ -5,10 +5,12 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import { Trash2, Plus, Lock } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function MobileCreatePollPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const toast = useToast();
   const [canCreatePoll, setCanCreatePoll] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -84,17 +86,17 @@ export default function MobileCreatePollPage() {
     e.preventDefault();
 
     if (!title.trim()) {
-      alert("لطفاً عنوان نظرسنجی را وارد کنید");
+      toast.warning("لطفاً عنوان نظرسنجی را وارد کنید");
       return;
     }
 
     if ((type === "SINGLE_CHOICE" || type === "MULTIPLE_CHOICE") && options.filter(opt => opt.text.trim()).length < 2) {
-      alert("لطفاً حداقل 2 گزینه وارد کنید");
+      toast.warning("لطفاً حداقل 2 گزینه وارد کنید");
       return;
     }
 
     if (type === "RATING_SCALE" && minRating >= maxRating) {
-      alert("حداقل امتیاز باید کمتر از حداکثر امتیاز باشد");
+      toast.warning("حداقل امتیاز باید کمتر از حداکثر امتیاز باشد");
       return;
     }
 
@@ -133,15 +135,15 @@ export default function MobileCreatePollPage() {
       });
 
       if (res.ok) {
-        alert("نظرسنجی با موفقیت ایجاد شد");
+        toast.success("نظرسنجی با موفقیت ایجاد شد");
         router.push("/mobile/polls");
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در ایجاد نظرسنجی");
+        toast.error(error.error || "خطا در ایجاد نظرسنجی");
       }
     } catch (error) {
       console.error("Error creating poll:", error);
-      alert("خطا در ایجاد نظرسنجی");
+      toast.error("خطا در ایجاد نظرسنجی");
     } finally {
       setSubmitting(false);
     }

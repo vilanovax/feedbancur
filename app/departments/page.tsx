@@ -7,10 +7,12 @@ import Link from "next/link";
 import { Plus, Building2, Trash2, Pencil, Users, Edit } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function DepartmentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const toast = useToast();
   const [departments, setDepartments] = useState<any[]>(() => {
     // بارگذاری از cache در صورت وجود
     if (typeof window !== "undefined") {
@@ -134,7 +136,7 @@ export default function DepartmentsPage() {
           localStorage.removeItem("departments_cache_time");
         }
         fetchDepartments();
-        alert("بخش با موفقیت ایجاد شد");
+        toast.success("بخش با موفقیت ایجاد شد");
       } else {
         const data = await res.json();
         setError(data.error || "خطا در ایجاد بخش");
@@ -192,7 +194,7 @@ export default function DepartmentsPage() {
           localStorage.removeItem("departments_cache_time");
         }
         fetchDepartments();
-        alert("بخش با موفقیت بروزرسانی شد");
+        toast.success("بخش با موفقیت بروزرسانی شد");
       } else {
         setError(data.error || data.message || "خطا در بروزرسانی بخش");
         console.error("Update error:", data);
@@ -224,11 +226,11 @@ export default function DepartmentsPage() {
           localStorage.removeItem("departments_cache_time");
         }
         fetchDepartments();
-        alert("بخش با موفقیت حذف شد");
+        toast.success("بخش با موفقیت حذف شد");
       } else {
         const data = await res.json();
         setError(data.error || "خطا در حذف بخش");
-        alert(data.error || "خطا در حذف بخش");
+        toast.error(data.error || "خطا در حذف بخش");
       }
     } catch (err) {
       setError("خطایی رخ داد. لطفا دوباره تلاش کنید");

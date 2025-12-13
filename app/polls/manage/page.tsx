@@ -20,10 +20,12 @@ import {
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import { TypeBadge, VisibilityBadge, StatusBadge } from "@/components/PollBadges";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function ManagePollsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const toast = useToast();
   const [polls, setPolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -97,10 +99,10 @@ export default function ManagePollsPage() {
         fetchPolls();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در تغییر وضعیت");
+        toast.error(data.error || "خطا در تغییر وضعیت");
       }
     } catch (error) {
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     } finally {
       setActionLoading(false);
     }
@@ -115,13 +117,13 @@ export default function ManagePollsPage() {
 
       if (res.ok) {
         fetchPolls();
-        alert("نظرسنجی با موفقیت کپی شد");
+        toast.success("نظرسنجی با موفقیت کپی شد");
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در کپی نظرسنجی");
+        toast.error(data.error || "خطا در کپی نظرسنجی");
       }
     } catch (error) {
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     } finally {
       setActionLoading(false);
     }
@@ -142,10 +144,10 @@ export default function ManagePollsPage() {
         fetchPolls();
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در حذف نظرسنجی");
+        toast.error(data.error || "خطا در حذف نظرسنجی");
       }
     } catch (error) {
-      alert("خطایی رخ داد");
+      toast.error("خطایی رخ داد");
     } finally {
       setActionLoading(false);
     }

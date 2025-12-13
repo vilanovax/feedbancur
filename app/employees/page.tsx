@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { UserPlus, Pencil, Trash2, Search, User, Briefcase } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Department {
   id: string;
@@ -25,6 +26,7 @@ interface EmployeeType {
 }
 
 export default function EmployeesPage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [employees, setEmployees] = useState<EmployeeType[]>([]);
@@ -119,7 +121,7 @@ export default function EmployeesPage() {
           departmentId: "",
         });
         fetchEmployees();
-        alert("کارمند با موفقیت ایجاد شد");
+        toast.success("کارمند با موفقیت ایجاد شد");
       } else {
         setError(data.error || "خطا در ایجاد کارمند");
       }
@@ -146,7 +148,7 @@ export default function EmployeesPage() {
         setShowEditModal(false);
         setSelectedEmployee(null);
         fetchEmployees();
-        alert("کارمند با موفقیت بروزرسانی شد");
+        toast.success("کارمند با موفقیت بروزرسانی شد");
       } else {
         setError(data.error || "خطا در بروزرسانی کارمند");
       }
@@ -167,11 +169,11 @@ export default function EmployeesPage() {
         setShowDeleteModal(false);
         setSelectedEmployee(null);
         fetchEmployees();
-        alert("کارمند با موفقیت حذف شد");
+        toast.success("کارمند با موفقیت حذف شد");
       } else {
         const data = await res.json();
         setError(data.error || "خطا در حذف کارمند");
-        alert(data.error || "خطا در حذف کارمند");
+        toast.error(data.error || "خطا در حذف کارمند");
       }
     } catch (err) {
       setError("خطا در حذف کارمند");

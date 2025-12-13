@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X, Eye, EyeOff, User, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
 
 interface ViewerData {
   id: string;
@@ -49,6 +50,7 @@ export default function AnnouncementViewersModal({
   announcementId,
   onClose,
 }: AnnouncementViewersModalProps) {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState<AnnouncementData | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -70,12 +72,12 @@ export default function AnnouncementViewersModal({
         setUsers(data.users);
       } else {
         const error = await res.json();
-        alert(error.error || "خطا در دریافت اطلاعات");
+        toast.error(error.error || "خطا در دریافت اطلاعات");
         onClose();
       }
     } catch (error) {
       console.error("Error fetching viewers:", error);
-      alert("خطا در دریافت اطلاعات");
+      toast.error("خطا در دریافت اطلاعات");
       onClose();
     } finally {
       setLoading(false);

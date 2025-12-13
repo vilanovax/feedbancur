@@ -200,10 +200,10 @@ export async function POST(
       return NextResponse.json({ error: "اعلان یافت نشد" }, { status: 404 });
     }
 
-    // بررسی دسترسی: MANAGER فقط برای بخش خود می‌تواند پیام اضافه کند
+    // بررسی دسترسی: MANAGER فقط برای اعلان‌هایی که خودش ایجاد کرده می‌تواند پیام اضافه کند
     if (session.user.role === "MANAGER") {
-      if (announcement.departmentId && announcement.departmentId !== session.user.departmentId) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (announcement.createdById !== session.user.id) {
+        return NextResponse.json({ error: "شما فقط می‌توانید برای اعلان‌هایی که خودتان ایجاد کرده‌اید پیام ارسال کنید" }, { status: 403 });
       }
     }
 

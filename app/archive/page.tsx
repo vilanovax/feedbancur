@@ -20,8 +20,10 @@ import {
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function ArchivePage() {
+  const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
@@ -117,14 +119,14 @@ export default function ArchivePage() {
         setShowModal(false);
         setSelectedFeedback(null);
         // می‌توانید یک پیام موفقیت نمایش دهید
-        alert("فیدبک با موفقیت از آرشیو خارج شد");
+        toast.success("فیدبک با موفقیت از آرشیو خارج شد");
       } else {
         const data = await res.json();
-        alert(data.error || "خطا در خارج کردن از آرشیو");
+        toast.error(data.error || "خطا در خارج کردن از آرشیو");
       }
     } catch (error) {
       console.error("Error unarchiving feedback:", error);
-      alert("خطا در خارج کردن از آرشیو");
+      toast.error("خطا در خارج کردن از آرشیو");
     } finally {
       setUnarchiving(false);
     }
