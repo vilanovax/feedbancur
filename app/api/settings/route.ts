@@ -125,6 +125,17 @@ export async function GET() {
             bucket: "feedban",
             region: "us-east-1",
           },
+      workingHoursSettings: dbSettings?.workingHoursSettings
+        ? (typeof dbSettings.workingHoursSettings === 'string'
+            ? JSON.parse(dbSettings.workingHoursSettings)
+            : dbSettings.workingHoursSettings)
+        : {
+            enabled: false,
+            startHour: 8,
+            endHour: 17,
+            workingDays: [6, 0, 1, 2, 3], // شنبه تا چهارشنبه
+            holidays: [],
+          },
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -341,6 +352,29 @@ export async function POST(request: NextRequest) {
         secretAccessKey: "",
         bucket: "",
         region: "us-east-1",
+      };
+    }
+
+    // ذخیره workingHoursSettings
+    if (body.workingHoursSettings && typeof body.workingHoursSettings === 'object') {
+      updateData.workingHoursSettings = {
+        enabled: Boolean(body.workingHoursSettings.enabled),
+        startHour: Number(body.workingHoursSettings.startHour) || 8,
+        endHour: Number(body.workingHoursSettings.endHour) || 17,
+        workingDays: Array.isArray(body.workingHoursSettings.workingDays)
+          ? body.workingHoursSettings.workingDays.filter((d: any) => typeof d === 'number')
+          : [6, 0, 1, 2, 3],
+        holidays: Array.isArray(body.workingHoursSettings.holidays)
+          ? body.workingHoursSettings.holidays.filter((h: any) => typeof h === 'string')
+          : [],
+      };
+    } else if (!existingSettings) {
+      updateData.workingHoursSettings = {
+        enabled: false,
+        startHour: 8,
+        endHour: 17,
+        workingDays: [6, 0, 1, 2, 3],
+        holidays: [],
       };
     }
 
