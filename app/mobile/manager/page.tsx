@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
+import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import Image from "next/image";
 import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3 } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,7 @@ import Link from "next/link";
 export default function ManagerMobilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     myFeedbacks: 0,
     forwardedFeedbacks: 0,
@@ -71,14 +73,16 @@ export default function ManagerMobilePage() {
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">در حال بارگذاری...</div>
-      </div>
+      <MobileLayout role="MANAGER" title="داشبورد">
+        <MobileDashboardSkeleton />
+      </MobileLayout>
     );
   }
 

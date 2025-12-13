@@ -3,11 +3,29 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Cache برای stats - 30 ثانیه
+let statsCache: {
+  data: any;
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 30 * 1000; // 30 seconds
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // بررسی cache
+    const now = Date.now();
+    if (statsCache && (now - statsCache.timestamp) < CACHE_DURATION) {
+      return NextResponse.json(statsCache.data, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      });
     }
 
     // تاریخ 24 ساعت قبل برای تشخیص موارد جدید
@@ -82,7 +100,7 @@ export async function GET() {
       }),
     ]);
 
-    return NextResponse.json({
+    const statsData = {
       totalFeedbacks,
       pendingFeedbacks,
       departments,
@@ -97,6 +115,18 @@ export async function GET() {
       totalPolls,
       activePolls,
       newPolls,
+    };
+
+    // ذخیره در cache
+    statsCache = {
+      data: statsData,
+      timestamp: Date.now(),
+    };
+
+    return NextResponse.json(statsData, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+      },
     });
   } catch (error: any) {
     console.error("Error fetching stats:", error);

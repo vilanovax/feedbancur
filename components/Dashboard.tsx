@@ -7,6 +7,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import Sidebar from "./Sidebar";
 import AppHeader from "./AdminHeader";
+import DashboardSkeleton from "./DashboardSkeleton";
 import {
   MessageSquare,
   BarChart3,
@@ -25,6 +26,7 @@ import {
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalFeedbacks: 0,
     pendingFeedbacks: 0,
@@ -47,8 +49,10 @@ export default function Dashboard() {
   }, [status, router]);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (status === "authenticated") {
+      fetchStats();
+    }
+  }, [status]);
 
   const fetchStats = async () => {
     try {
@@ -59,13 +63,19 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (status === "loading") {
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">در حال بارگذاری...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+          <DashboardSkeleton />
+        </main>
       </div>
     );
   }
