@@ -356,7 +356,14 @@ export default function FeedbacksPage() {
       let comparison = 0;
 
       if (sortBy === "date") {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        // برای فیدبک‌های COMPLETED از completedAt استفاده کن، در غیر این صورت از createdAt
+        const aDate = a.status === "COMPLETED" && a.completedAt
+          ? new Date(a.completedAt).getTime()
+          : new Date(a.createdAt).getTime();
+        const bDate = b.status === "COMPLETED" && b.completedAt
+          ? new Date(b.completedAt).getTime()
+          : new Date(b.createdAt).getTime();
+        comparison = aDate - bDate;
       } else if (sortBy === "rating") {
         comparison = (a.rating || 0) - (b.rating || 0);
       } else if (sortBy === "status") {
