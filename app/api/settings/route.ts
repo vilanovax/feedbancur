@@ -136,6 +136,15 @@ export async function GET() {
             workingDays: [6, 0, 1, 2, 3], // شنبه تا چهارشنبه
             holidays: [],
           },
+      openAISettings: dbSettings?.openAISettings
+        ? (typeof dbSettings.openAISettings === 'string'
+            ? JSON.parse(dbSettings.openAISettings)
+            : dbSettings.openAISettings)
+        : {
+            enabled: false,
+            apiKey: "",
+            model: "gpt-3.5-turbo",
+          },
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -356,6 +365,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ذخیره workingHoursSettings
+    console.log("workingHoursSettings in body:", body.workingHoursSettings);
     if (body.workingHoursSettings && typeof body.workingHoursSettings === 'object') {
       updateData.workingHoursSettings = {
         enabled: Boolean(body.workingHoursSettings.enabled),
@@ -368,6 +378,7 @@ export async function POST(request: NextRequest) {
           ? body.workingHoursSettings.holidays.filter((h: any) => typeof h === 'string')
           : [],
       };
+      console.log("Processed workingHoursSettings:", updateData.workingHoursSettings);
     } else if (!existingSettings) {
       updateData.workingHoursSettings = {
         enabled: false,
@@ -375,6 +386,21 @@ export async function POST(request: NextRequest) {
         endHour: 17,
         workingDays: [6, 0, 1, 2, 3],
         holidays: [],
+      };
+    }
+
+    // ذخیره openAISettings
+    if (body.openAISettings && typeof body.openAISettings === 'object') {
+      updateData.openAISettings = {
+        enabled: Boolean(body.openAISettings.enabled),
+        apiKey: String(body.openAISettings.apiKey || ""),
+        model: String(body.openAISettings.model || "gpt-3.5-turbo"),
+      };
+    } else if (!existingSettings) {
+      updateData.openAISettings = {
+        enabled: false,
+        apiKey: "",
+        model: "gpt-3.5-turbo",
       };
     }
 
@@ -421,6 +447,34 @@ export async function POST(request: NextRequest) {
           }));
         })(),
         feedbackTypes: updateData.feedbackTypes || DEFAULT_FEEDBACK_TYPES,
+        notificationSettings: updateData.notificationSettings || {
+          directFeedbackToManager: true,
+          feedbackCompletedByManager: true,
+        },
+        chatSettings: updateData.chatSettings || {
+          maxFileSize: 5,
+          allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+        },
+        objectStorageSettings: updateData.objectStorageSettings || {
+          enabled: false,
+          endpoint: "",
+          accessKeyId: "",
+          secretAccessKey: "",
+          bucket: "",
+          region: "us-east-1",
+        },
+        workingHoursSettings: updateData.workingHoursSettings || {
+          enabled: false,
+          startHour: 8,
+          endHour: 17,
+          workingDays: [6, 0, 1, 2, 3],
+          holidays: [],
+        },
+        openAISettings: updateData.openAISettings || {
+          enabled: false,
+          apiKey: "",
+          model: "gpt-3.5-turbo",
+        },
         language: updateData.language || "fa",
         timezone: updateData.timezone || "Asia/Tehran",
         emailNotifications: updateData.emailNotifications !== undefined ? updateData.emailNotifications : true,

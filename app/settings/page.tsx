@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai">("general");
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -116,6 +116,13 @@ export default function SettingsPage() {
       workingDays: [6, 0, 1, 2, 3], // شنبه تا چهارشنبه (6=شنبه، 0=یکشنبه، 1=دوشنبه، 2=سه‌شنبه، 3=چهارشنبه)
       holidays: [] as string[], // تاریخ‌های تعطیل (فرمت: YYYY-MM-DD)
     },
+
+    // تنظیمات OpenAI
+    openAISettings: {
+      enabled: false,
+      apiKey: "",
+      model: "gpt-3.5-turbo",
+    },
   });
 
   useEffect(() => {
@@ -173,6 +180,17 @@ export default function SettingsPage() {
                 holidays: Array.isArray(data.workingHoursSettings.holidays)
                   ? data.workingHoursSettings.holidays
                   : [],
+              },
+            }));
+          }
+          // بارگذاری openAISettings اگر وجود دارد
+          if (data.openAISettings) {
+            setSettings((prev) => ({
+              ...prev,
+              openAISettings: {
+                enabled: data.openAISettings.enabled ?? false,
+                apiKey: data.openAISettings.apiKey ?? "",
+                model: data.openAISettings.model ?? "gpt-3.5-turbo",
               },
             }));
           }
@@ -252,7 +270,10 @@ export default function SettingsPage() {
           return acc;
         }, {} as Record<string, string>);
       }
-      
+
+      console.log("Saving settings:", settingsToSave);
+      console.log("workingHoursSettings:", settingsToSave.workingHoursSettings);
+
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: {
@@ -260,6 +281,8 @@ export default function SettingsPage() {
         },
         body: JSON.stringify(settingsToSave),
       });
+
+      console.log("Response status:", res.status, res.statusText);
 
       if (res.ok) {
         setSaved(true);
@@ -410,6 +433,16 @@ export default function SettingsPage() {
                 }`}
               >
                 پشتیبان‌گیری
+              </button>
+              <button
+                onClick={() => setActiveTab("openai")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "openai"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                هوش مصنوعی (OpenAI)
               </button>
             </nav>
           </div>
@@ -1594,6 +1627,125 @@ export default function SettingsPage() {
                             <li>• ساعات کاری: {settings.workingHoursSettings?.startHour?.toString().padStart(2, '0')}:00 تا {settings.workingHoursSettings?.endHour?.toString().padStart(2, '0')}:00 ({(settings.workingHoursSettings?.endHour ?? 17) - (settings.workingHoursSettings?.startHour ?? 8)} ساعت در روز)</li>
                             <li>• روزهای کاری: {(settings.workingHoursSettings?.workingDays || []).length} روز در هفته</li>
                             <li>• تعطیلات رسمی: {(settings.workingHoursSettings?.holidays || []).length} روز</li>
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب OpenAI */}
+            {activeTab === "openai" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Settings className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات OpenAI
+                    </h2>
+                  </div>
+
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    تنظیمات مربوط به OpenAI برای استخراج کلمات کلیدی از فیدبک‌ها.
+                  </p>
+
+                  <div className="space-y-6">
+                    {/* فعال/غیرفعال کردن OpenAI */}
+                    <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                          فعال‌سازی استخراج کلمات کلیدی با AI
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          با فعال کردن این گزینه، می‌توانید از OpenAI برای استخراج خودکار کلمات کلیدی از فیدبک‌ها استفاده کنید.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer mr-4">
+                        <input
+                          type="checkbox"
+                          checked={settings.openAISettings?.enabled ?? false}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              openAISettings: {
+                                ...settings.openAISettings,
+                                enabled: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {settings.openAISettings?.enabled && (
+                      <>
+                        {/* API Key */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            API Key
+                          </label>
+                          <input
+                            type="password"
+                            value={settings.openAISettings?.apiKey || ""}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                openAISettings: {
+                                  ...settings.openAISettings,
+                                  apiKey: e.target.value,
+                                },
+                              })
+                            }
+                            placeholder="sk-..."
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            کلید API خود را از پنل OpenAI دریافت کنید
+                          </p>
+                        </div>
+
+                        {/* Model */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            مدل
+                          </label>
+                          <select
+                            value={settings.openAISettings?.model || "gpt-3.5-turbo"}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                openAISettings: {
+                                  ...settings.openAISettings,
+                                  model: e.target.value,
+                                },
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          >
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                            <option value="gpt-4o">GPT-4o</option>
+                          </select>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            مدل OpenAI که می‌خواهید استفاده کنید
+                          </p>
+                        </div>
+
+                        {/* توضیحات */}
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                          <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+                            💡 نکات مهم:
+                          </h4>
+                          <ul className="text-xs text-yellow-700 dark:text-yellow-400 space-y-1 list-disc list-inside">
+                            <li>API Key شما به صورت امن ذخیره می‌شود</li>
+                            <li>برای استخراج کلمات کلیدی، از API endpoint مربوطه استفاده کنید</li>
+                            <li>استفاده از OpenAI ممکن است هزینه‌بر باشد</li>
+                            <li>مدل GPT-3.5 Turbo برای اکثر موارد کافی است</li>
                           </ul>
                         </div>
                       </>

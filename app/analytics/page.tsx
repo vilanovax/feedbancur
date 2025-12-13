@@ -16,6 +16,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
 } from "recharts";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
@@ -210,7 +212,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
               فیدبک‌ها بر اساس بخش
@@ -259,6 +261,51 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* نمودار سرعت انجام فیدبک‌ها */}
+        {analytics.departmentCompletionSpeed && analytics.departmentCompletionSpeed.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                سرعت انجام فیدبک‌ها بر اساس بخش
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                میانگین زمان انجام فیدبک‌ها (ساعت کاری)
+              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics.departmentCompletionSpeed}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis label={{ value: 'ساعت', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip 
+                    formatter={(value: number) => [`${value} ساعت`, 'میانگین زمان']}
+                  />
+                  <Legend />
+                  <Bar dataKey="averageHours" fill="#10b981" name="میانگین زمان (ساعت)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                تعداد فیدبک‌های انجام شده بر اساس بخش
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                تعداد فیدبک‌های تکمیل شده در هر بخش
+              </p>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics.departmentCompletionSpeed}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="totalCompleted" fill="#f59e0b" name="تعداد انجام شده" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
           </>
         )}
         </div>

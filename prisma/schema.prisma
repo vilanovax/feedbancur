@@ -128,6 +128,9 @@ model Feedback {
   adminNotes     String?        // یادداشت‌های ادمین
   managerNotes   String?        // یادداشت‌های مدیر
 
+  // AI fields
+  keywords       String[]       // کلمات کلیدی استخراج شده با AI
+
   // Delete fields
   deletedAt      DateTime?      // تاریخ حذف (soft delete)
 
@@ -343,6 +346,7 @@ model Settings {
   chatSettings       Json?     // Store chat settings as JSON: {maxFileSize: number (in MB), allowedFileTypes: string[]}
   objectStorageSettings Json?   // Store object storage settings (Liara S3-compatible) as JSON: {enabled: boolean, endpoint: string, accessKeyId: string, secretAccessKey: string, bucket: string, region: string}
   workingHoursSettings Json?   // Store working hours settings as JSON: {enabled: boolean, startHour: number, endHour: number, workingDays: number[], holidays: string[]}
+  openAISettings Json?         // Store OpenAI settings as JSON: {enabled: boolean, apiKey: string, model: string}
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
