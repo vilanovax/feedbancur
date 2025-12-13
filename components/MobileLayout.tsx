@@ -46,6 +46,7 @@ export default function MobileLayout({
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [hasAssignedTasks, setHasAssignedTasks] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => pathname === path;
@@ -169,12 +170,12 @@ export default function MobileLayout({
           // اعلان‌های 24 ساعت گذشته را به عنوان جدید در نظر می‌گیریم
           const oneDayAgo = new Date();
           oneDayAgo.setHours(oneDayAgo.getHours() - 24);
-          
+
           const newAnnouncements = announcements.filter((announcement: any) => {
             const announcementDate = new Date(announcement.createdAt);
             return announcementDate > oneDayAgo && announcement.isActive;
           });
-          
+
           setHasNewAnnouncements(newAnnouncements.length > 0);
         }
       } catch (error) {
@@ -189,6 +190,34 @@ export default function MobileLayout({
       return () => clearInterval(interval);
     }
   }, [session]);
+
+  // بررسی تسک‌های ارجاع شده برای مدیر
+  useEffect(() => {
+    const checkAssignedTasks = async () => {
+      if (role !== "MANAGER") return;
+
+      try {
+        const res = await fetch("/api/tasks");
+        if (res.ok) {
+          const tasks = await res.json();
+          // تسک‌هایی که status آنها IN_PROGRESS یا TODO باشد
+          const activeTasks = tasks.filter((task: any) =>
+            task.status === "IN_PROGRESS" || task.status === "TODO"
+          );
+          setHasAssignedTasks(activeTasks.length > 0);
+        }
+      } catch (error) {
+        console.error("Error checking assigned tasks:", error);
+      }
+    };
+
+    if (session && role === "MANAGER") {
+      checkAssignedTasks();
+      // بررسی هر 30 ثانیه یکبار
+      const interval = setInterval(checkAssignedTasks, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session, role]);
 
   const navItems = [
     {
@@ -530,6 +559,7 @@ export default function MobileLayout({
           ].map((item) => {
             const Icon = item.icon;
             const isAnnouncements = item.href === "/mobile/announcements";
+            const isTasks = item.href === "/mobile/manager/tasks";
             return (
               <Link
                 key={item.href}
@@ -543,6 +573,9 @@ export default function MobileLayout({
                 <div className="relative">
                   <Icon className="w-5 h-5" />
                   {isAnnouncements && hasNewAnnouncements && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                  )}
+                  {isTasks && hasAssignedTasks && role === "MANAGER" && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
                   )}
                 </div>
