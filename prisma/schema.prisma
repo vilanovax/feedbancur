@@ -342,6 +342,7 @@ model Settings {
   notificationSettings Json?   // Store notification preferences as JSON: {directFeedbackToManager: boolean, feedbackCompletedByManager: boolean, ...}
   chatSettings       Json?     // Store chat settings as JSON: {maxFileSize: number (in MB), allowedFileTypes: string[]}
   objectStorageSettings Json?   // Store object storage settings (Liara S3-compatible) as JSON: {enabled: boolean, endpoint: string, accessKeyId: string, secretAccessKey: string, bucket: string, region: string}
+  workingHoursSettings Json?   // Store working hours settings as JSON: {enabled: boolean, startHour: number, endHour: number, workingDays: number[], holidays: string[]}
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
