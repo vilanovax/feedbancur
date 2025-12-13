@@ -159,6 +159,23 @@ export default function SettingsPage() {
             // Dispatch custom event برای به‌روزرسانی در همان تب
             window.dispatchEvent(new CustomEvent("statusTextsUpdated", { detail: statusTextsJson }));
           }
+          // بارگذاری workingHoursSettings اگر وجود دارد
+          if (data.workingHoursSettings) {
+            setSettings((prev) => ({
+              ...prev,
+              workingHoursSettings: {
+                enabled: data.workingHoursSettings.enabled ?? false,
+                startHour: data.workingHoursSettings.startHour ?? 8,
+                endHour: data.workingHoursSettings.endHour ?? 17,
+                workingDays: Array.isArray(data.workingHoursSettings.workingDays)
+                  ? data.workingHoursSettings.workingDays
+                  : [6, 0, 1, 2, 3],
+                holidays: Array.isArray(data.workingHoursSettings.holidays)
+                  ? data.workingHoursSettings.holidays
+                  : [],
+              },
+            }));
+          }
         }
       }
     } catch (error) {
