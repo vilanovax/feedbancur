@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
       title: z.string().min(1),
       content: z.string().min(1),
       type: z.enum(["INFO", "SUCCESS", "WARNING", "ERROR"]).optional().default("INFO"),
+      redirectUrl: z.string().optional(),
     });
 
     const data = notificationSchema.parse(body);
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest) {
         title: data.title,
         content: data.content,
         type: data.type,
+        redirectUrl: data.redirectUrl,
       },
       include: {
         feedback: {

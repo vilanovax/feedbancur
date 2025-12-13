@@ -286,14 +286,18 @@ export async function POST(req: NextRequest) {
 
       // ایجاد نوتیفیکیشن برای همه کاربران هدف
       if (targetUsers.length > 0) {
-        await prisma.notification.createMany({
-          data: targetUsers.map(user => ({
-            userId: user.id,
-            title: 'نظرسنجی جدید',
-            content: `نظرسنجی جدیدی با عنوان "${poll.title}" ایجاد شده است. لطفاً شرکت کنید.`,
-            type: 'INFO',
-          })),
-        });
+        const notificationPromises = targetUsers.map(user =>
+          prisma.notification.create({
+            data: {
+              userId: user.id,
+              title: 'نظرسنجی جدید',
+              content: `نظرسنجی جدیدی با عنوان "${poll.title}" ایجاد شده است. لطفاً شرکت کنید.`,
+              type: 'INFO',
+              redirectUrl: `/mobile/polls/${poll.id}`,
+            },
+          })
+        );
+        await Promise.all(notificationPromises);
       }
     }
 

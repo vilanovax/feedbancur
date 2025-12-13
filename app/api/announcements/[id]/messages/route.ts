@@ -265,6 +265,7 @@ export async function POST(
             title: "پیام جدید به اعلان",
             content: `پیام جدیدی به اعلان "${announcement.title}" اضافه شد.`,
             type: "INFO",
+            redirectUrl: `/mobile/announcements/${resolvedParams.id}`,
           },
         })
       );

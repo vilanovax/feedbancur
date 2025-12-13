@@ -146,6 +146,21 @@ export default function MobileLayout({
     }
   };
 
+  const handleNotificationClick = (notification: any) => {
+    // علامت‌گذاری به عنوان خوانده شده
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    // بستن مودال
+    setNotificationsOpen(false);
+
+    // انتقال به صفحه مربوطه
+    if (notification.redirectUrl) {
+      router.push(notification.redirectUrl);
+    }
+  };
+
   const markAllAsRead = async () => {
     try {
       await fetch("/api/notifications/all/read", {
@@ -334,12 +349,8 @@ export default function MobileLayout({
                           {notifications.map((notification) => (
                             <div
                               key={notification.id}
-                              onClick={() => {
-                                if (!notification.isRead) {
-                                  markAsRead(notification.id);
-                                }
-                              }}
-                              className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`p-3 rounded-lg border cursor-pointer transition-colors hover:shadow-md ${
                                 notification.isRead
                                   ? "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
                                   : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"

@@ -118,6 +118,7 @@ export async function PATCH(
               title: "فیدبک شما تکمیل شد",
               content: data.userResponse.trim(),
               type: "SUCCESS",
+              redirectUrl: `/feedback/${id}`,
             },
           });
         } catch (error) {
@@ -153,6 +154,7 @@ export async function PATCH(
               title: "فیدبک تمام شد",
               content: `فیدبک "${feedback.title}" شما توسط ${updatedFeedback.department.name} انجام شد.`,
               type: "SUCCESS",
+              redirectUrl: `/feedback/${id}`,
             },
           });
         } catch (error) {
@@ -194,6 +196,7 @@ export async function PATCH(
                   title: "فیدبک تکمیل شد",
                   content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
                   type: "INFO",
+                  redirectUrl: `/feedback/${id}`,
                 },
               })
             );

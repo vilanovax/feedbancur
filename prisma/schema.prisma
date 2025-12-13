@@ -307,6 +307,7 @@ model Notification {
   title       String
   content     String
   type        String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  redirectUrl String?  // URL برای ریدایرکت هنگام کلیک روی نوتیفیکیشن
   isRead      Boolean  @default(false)
   readAt      DateTime?
   createdAt   DateTime @default(now())

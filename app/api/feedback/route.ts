@@ -398,6 +398,7 @@ export async function POST(request: NextRequest) {
                   title: "فیدبک مستقیم به بخش",
                   content: `فیدبک "${feedback.title}" به صورت مستقیم به بخش ${feedback.department.name} ارسال شد.`,
                   type: "INFO",
+                  redirectUrl: `/feedback/${feedback.id}`,
                 },
               })
             );

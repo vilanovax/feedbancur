@@ -7,9 +7,11 @@ import { Settings, Trash2, MessageCircle, Bell, X, Plus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { formatPersianDate } from "@/lib/date-utils";
+import { useRouter } from "next/navigation";
 
 export default function AppHeader() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [hasTrashItems, setHasTrashItems] = useState(false);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
@@ -153,6 +155,21 @@ export default function AppHeader() {
     }
   };
 
+  const handleNotificationClick = (notification: any) => {
+    // علامت‌گذاری به عنوان خوانده شده
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    // بستن مودال
+    setNotificationsOpen(false);
+
+    // انتقال به صفحه مربوطه
+    if (notification.redirectUrl) {
+      router.push(notification.redirectUrl);
+    }
+  };
+
   const markAllAsRead = async () => {
     try {
       await fetch("/api/notifications/all/read", {
@@ -246,12 +263,8 @@ export default function AppHeader() {
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          onClick={() => {
-                            if (!notification.isRead) {
-                              markAsRead(notification.id);
-                            }
-                          }}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`p-3 rounded-lg border cursor-pointer transition-colors hover:shadow-md ${
                             notification.isRead
                               ? "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
                               : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
