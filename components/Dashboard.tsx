@@ -91,7 +91,7 @@ export default function Dashboard() {
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/feedback" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">کل فیدبک‌ها</p>
@@ -101,9 +101,9 @@ export default function Dashboard() {
               </div>
               <MessageSquare className="text-blue-500" size={40} />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/feedback?status=PENDING" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های در انتظار</p>
@@ -113,9 +113,9 @@ export default function Dashboard() {
               </div>
               <BarChart3 className="text-yellow-500" size={40} />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/feedback?status=COMPLETED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های انجام شده</p>
@@ -125,9 +125,9 @@ export default function Dashboard() {
               </div>
               <CheckCircle className="text-green-500" size={40} />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/feedback?status=DEFERRED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های برای آینده</p>
@@ -137,9 +137,9 @@ export default function Dashboard() {
               </div>
               <Clock className="text-orange-500" size={40} />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/feedback?status=ARCHIVED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های آرشیو شده</p>
@@ -149,9 +149,9 @@ export default function Dashboard() {
               </div>
               <Archive className="text-gray-500" size={40} />
             </div>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <Link href="/departments" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">بخش‌ها</p>
@@ -161,7 +161,7 @@ export default function Dashboard() {
               </div>
               <Building2 className="text-purple-500" size={40} />
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}

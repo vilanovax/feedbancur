@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight, XCircle, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
@@ -18,6 +18,7 @@ export default function FeedbacksPage() {
   const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [allFeedbacks, setAllFeedbacks] = useState<any[]>([]); // همه فیدبک‌ها برای محاسبه تعداد
   const [feedbacks, setFeedbacks] = useState<any[]>(() => {
     // بارگذاری از cache در صورت وجود (فقط برای حالت بدون فیلتر)
@@ -61,7 +62,16 @@ export default function FeedbacksPage() {
     return [];
   });
   const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState(() => {
+    // بارگذاری status از URL query parameter
+    if (typeof window !== "undefined") {
+      const urlStatus = new URLSearchParams(window.location.search).get("status");
+      if (urlStatus && ["PENDING", "REVIEWED", "COMPLETED", "DEFERRED", "ARCHIVED"].includes(urlStatus)) {
+        return urlStatus;
+      }
+    }
+    return "";
+  });
   const [quickFilter, setQuickFilter] = useState<"all" | "active" | "forwarded" | "archived" | "deferred" | "completed">(() => {
     // Load from localStorage for admin
     if (typeof window !== "undefined") {
