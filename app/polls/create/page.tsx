@@ -408,7 +408,9 @@ export default function CreatePollPage() {
                         // فیلتر کردن بخش‌ها بر اساس دسترسی
                         const availableDepartments = session?.user.role === "ADMIN"
                           ? departments
-                          : departments.filter(dept => allowedPollDepartments.includes(dept.id));
+                          : session?.user.role === "MANAGER" && session.user.departmentId
+                            ? departments.filter(dept => dept.id === session.user.departmentId)
+                            : departments.filter(dept => allowedPollDepartments.includes(dept.id));
 
                         if (availableDepartments.length === 0) {
                           return <p className="text-gray-500 dark:text-gray-400 text-sm">هیچ بخش مجازی یافت نشد</p>;

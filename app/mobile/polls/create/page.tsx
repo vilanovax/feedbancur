@@ -113,6 +113,11 @@ export default function MobileCreatePollPage() {
         isActive: true,
       };
 
+      // اگر کاربر مدیر است، نظرسنجی را فقط برای بخش خودش ایجاد کند
+      if (session?.user.role === "MANAGER" && session.user.departmentId) {
+        pollData.selectedDepartments = [session.user.departmentId];
+      }
+
       if (type === "SINGLE_CHOICE" || type === "MULTIPLE_CHOICE") {
         pollData.options = options
           .filter(opt => opt.text.trim())
