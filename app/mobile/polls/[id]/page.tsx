@@ -77,7 +77,8 @@ export default function MobilePollDetailPage({ params }: PageProps) {
 
       if (res.ok) {
         toast.success("رای شما با موفقیت ثبت شد");
-        fetchPoll(); // Reload poll data
+        // برگشت به لیست نظرسنجی‌ها
+        router.push("/mobile/polls");
       } else {
         const error = await res.json();
         toast.error(error.error || "خطا در ثبت رای");

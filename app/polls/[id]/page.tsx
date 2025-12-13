@@ -82,8 +82,8 @@ export default function PollDetailPage() {
 
       if (res.ok) {
         toast.success("رای شما با موفقیت ثبت شد");
-        // بارگذاری مجدد نظرسنجی
-        fetchPoll();
+        // برگشت به لیست نظرسنجی‌ها
+        router.push("/polls");
       } else {
         const data = await res.json();
         toast.error(data.error || "خطا در ثبت رای");
