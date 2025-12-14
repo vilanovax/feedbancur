@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import { AssessmentCard } from "@/components/AssessmentCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,11 +73,16 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="flex h-screen bg-gray-50" dir="rtl">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="container mx-auto max-w-7xl">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">آزمون‌های شخصیت‌سنجی</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-3xl font-bold text-gray-900">آزمون‌های شخصیت‌سنجی</h1>
+          <p className="text-gray-600 mt-2">
             مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
           </p>
         </div>
@@ -120,7 +127,7 @@ export default function AssessmentsPage() {
         </div>
       ) : assessments.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">هیچ آزمونی یافت نشد</p>
+          <p className="text-gray-600">هیچ آزمونی یافت نشد</p>
           {session?.user.role === "ADMIN" && (
             <Button
               variant="outline"
@@ -181,6 +188,9 @@ export default function AssessmentsPage() {
           ))}
         </div>
       )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

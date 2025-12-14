@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import { AssessmentCard } from "@/components/AssessmentCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,7 +107,7 @@ export default function MyAssessmentsPage() {
             </div>
 
             {inProgress && (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-600">
                 سوال {assessment.userStatus.lastQuestion + 1} از{" "}
                 {assessment._count.questions}
               </div>
@@ -164,29 +166,40 @@ export default function MyAssessmentsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="flex h-screen bg-gray-50" dir="rtl">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AppHeader />
+          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">آزمون‌های من</h1>
-        <p className="text-muted-foreground mt-2">
-          مشاهده و انجام آزمون‌های اختصاص یافته
-        </p>
-      </div>
+    <div className="flex h-screen bg-gray-50" dir="rtl">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="container mx-auto max-w-7xl">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">آزمون‌های من</h1>
+              <p className="text-gray-600 mt-2">
+                مشاهده و انجام آزمون‌های اختصاص یافته
+              </p>
+            </div>
 
-      {assessments.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-          <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
-            هیچ آزمونی برای شما تعریف نشده است
-          </p>
-        </div>
-      ) : (
+            {assessments.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600">
+                  هیچ آزمونی برای شما تعریف نشده است
+                </p>
+              </div>
+            ) : (
         <Tabs defaultValue="available" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="available">
@@ -200,49 +213,52 @@ export default function MyAssessmentsPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="available" className="mt-6">
-            {availableAssessments.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  همه آزمون‌های موجود را انجام داده‌اید
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableAssessments.map(renderAssessmentCard)}
-              </div>
-            )}
-          </TabsContent>
+              <TabsContent value="available" className="mt-6">
+                {availableAssessments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">
+                      همه آزمون‌های موجود را انجام داده‌اید
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {availableAssessments.map(renderAssessmentCard)}
+                  </div>
+                )}
+              </TabsContent>
 
-          <TabsContent value="in-progress" className="mt-6">
-            {inProgressAssessments.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  هیچ آزمون ناتمامی ندارید
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {inProgressAssessments.map(renderAssessmentCard)}
-              </div>
-            )}
-          </TabsContent>
+              <TabsContent value="in-progress" className="mt-6">
+                {inProgressAssessments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">
+                      هیچ آزمون ناتمامی ندارید
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {inProgressAssessments.map(renderAssessmentCard)}
+                  </div>
+                )}
+              </TabsContent>
 
-          <TabsContent value="completed" className="mt-6">
-            {completedAssessments.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">
-                  هنوز هیچ آزمونی را تکمیل نکرده‌اید
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {completedAssessments.map(renderAssessmentCard)}
-              </div>
+              <TabsContent value="completed" className="mt-6">
+                {completedAssessments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">
+                      هنوز هیچ آزمونی را تکمیل نکرده‌اید
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {completedAssessments.map(renderAssessmentCard)}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
             )}
-          </TabsContent>
-        </Tabs>
-      )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
