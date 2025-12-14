@@ -42,7 +42,7 @@ export default function AnalyticsKeywordsReportsPage() {
   const router = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [reportType, setReportType] = useState<"summary" | "trends" | "comparison">("summary");
+  const [reportType, setReportType] = useState<"summary" | "trends" | "comparison" | "speed">("summary");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [dateRange, setDateRange] = useState({
     startDate: "",
@@ -369,6 +369,159 @@ export default function AnalyticsKeywordsReportsPage() {
     );
   };
 
+  const renderSpeedReport = () => {
+    if (!reportData) return null;
+
+    const TYPE_COLORS_MAP: Record<string, string> = {
+      SENSITIVE: "#ef4444",
+      POSITIVE: "#10b981",
+      NEGATIVE: "#f59e0b",
+      TOPIC: "#3b82f6",
+      CUSTOM: "#6b7280",
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* کارت‌های آماری */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">کل فیدبک‌های تکمیل شده</p>
+                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
+                  {reportData.totalCompletedFeedbacks || 0}
+                </p>
+              </div>
+              <BarChart3 className="text-blue-500" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">سریع‌ترین کلمه کلیدی</p>
+                <p className="text-xl font-bold text-green-800 dark:text-green-400 mt-2">
+                  {reportData.topFastestKeywords?.[0]?.keyword || "-"}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {reportData.topFastestKeywords?.[0]?.averageHours || 0} ساعت
+                </p>
+              </div>
+              <TrendingUp className="text-green-500" size={40} />
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">کندترین کلمه کلیدی</p>
+                <p className="text-xl font-bold text-red-800 dark:text-red-400 mt-2">
+                  {reportData.topSlowestKeywords?.[0]?.keyword || "-"}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {reportData.topSlowestKeywords?.[0]?.averageHours || 0} ساعت
+                </p>
+              </div>
+              <PieChartIcon className="text-red-500" size={40} />
+            </div>
+          </div>
+        </div>
+
+        {/* نمودارها */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* سریع‌ترین کلمات کلیدی */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              10 سریع‌ترین کلمه کلیدی
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              کمترین زمان میانگین برای انجام فیدبک (ساعت کاری)
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={reportData.topFastestKeywords || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="keyword" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `${value} ساعت`} />
+                <Legend />
+                <Bar dataKey="averageHours" fill="#10b981" name="میانگین زمان (ساعت)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* کندترین کلمات کلیدی */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              10 کندترین کلمه کلیدی
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              بیشترین زمان میانگین برای انجام فیدبک (ساعت کاری)
+            </p>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={reportData.topSlowestKeywords || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="keyword" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => `${value} ساعت`} />
+                <Legend />
+                <Bar dataKey="averageHours" fill="#ef4444" name="میانگین زمان (ساعت)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* جدول جزئیات همه کلمات کلیدی */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white p-6 pb-4">
+            جزئیات سرعت انجام برای همه کلمات کلیدی
+          </h2>
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                  کلمه کلیدی
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                  نوع
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                  تعداد فیدبک
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                  میانگین زمان (ساعت)
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {(reportData.keywordSpeedData || []).map((item: any, index: number) => (
+                <tr key={index}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {item.keyword}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {TYPE_LABELS[item.type as keyof typeof TYPE_LABELS] || item.type}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {item.totalFeedbacks}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <span className={`px-2 py-1 rounded ${
+                      item.averageHours < 24 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                      item.averageHours < 72 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}>
+                      {item.averageHours} ساعت
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -402,6 +555,7 @@ export default function AnalyticsKeywordsReportsPage() {
                   <option value="summary">خلاصه</option>
                   <option value="trends">روند</option>
                   <option value="comparison">مقایسه بخش‌ها</option>
+                  <option value="speed">سرعت انجام فیدبک‌ها</option>
                 </select>
               </div>
 
@@ -467,6 +621,7 @@ export default function AnalyticsKeywordsReportsPage() {
               {reportType === "summary" && renderSummaryReport()}
               {reportType === "trends" && renderTrendsReport()}
               {reportType === "comparison" && renderComparisonReport()}
+              {reportType === "speed" && renderSpeedReport()}
             </>
           )}
         </div>

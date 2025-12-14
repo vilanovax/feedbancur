@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { calculateWorkingHours, type WorkingHoursSettings } from "@/lib/working-hours-utils";
 
 export interface KeywordMatch {
   keywordId: string;
@@ -254,4 +255,130 @@ export async function compareKeywordsByDepartment() {
   );
 
   return results;
+}
+
+/**
+ * محاسبه سرعت انجام فیدبک‌ها بر اساس کلمات کلیدی
+ * @param departmentId - ID بخش (اختیاری)
+ * @param keywordId - ID کلمه کلیدی (اختیاری)
+ * @returns آمار سرعت انجام
+ */
+export async function getFeedbackCompletionSpeedByKeywords(
+  departmentId?: string,
+  keywordId?: string
+) {
+  // دریافت تنظیمات ساعت کاری
+  const settings = await prisma.settings.findFirst();
+  const workingHoursSettings: WorkingHoursSettings = settings?.workingHoursSettings
+    ? typeof settings.workingHoursSettings === 'string'
+      ? JSON.parse(settings.workingHoursSettings)
+      : settings.workingHoursSettings as WorkingHoursSettings
+    : { enabled: false, startHour: 8, endHour: 17, workingDays: [6, 0, 1, 2, 3], holidays: [] };
+
+  // دریافت کلمات کلیدی فعال
+  const keywordWhere: any = {
+    isActive: true,
+  };
+
+  if (keywordId) {
+    keywordWhere.id = keywordId;
+  } else if (departmentId) {
+    keywordWhere.OR = [
+      { departmentId },
+      { departmentId: null },
+    ];
+  }
+
+  const keywords = await prisma.analyticsKeyword.findMany({
+    where: keywordWhere,
+    orderBy: {
+      priority: "desc",
+    },
+  });
+
+  // ساخت فیلتر برای فیدبک‌های تکمیل شده
+  const feedbackWhere: any = {
+    deletedAt: null,
+    status: "COMPLETED",
+    completedAt: { not: null },
+    forwardedAt: { not: null },
+  };
+
+  if (departmentId) {
+    feedbackWhere.departmentId = departmentId;
+  }
+
+  const completedFeedbacks = await prisma.feedback.findMany({
+    where: feedbackWhere,
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      forwardedAt: true,
+      completedAt: true,
+    },
+  });
+
+  // تحلیل سرعت برای هر کلمه کلیدی
+  const keywordSpeedStats: {
+    [keywordId: string]: {
+      keyword: string;
+      type: string;
+      totalFeedbacks: number;
+      totalHours: number;
+      averageHours: number;
+      feedbackIds: string[];
+    };
+  } = {};
+
+  completedFeedbacks.forEach((feedback) => {
+    const fullText = `${feedback.title} ${feedback.content}`.toLowerCase();
+
+    keywords.forEach((kw) => {
+      const keywordLower = kw.keyword.toLowerCase();
+
+      // جستجوی کلمه کلیدی در متن
+      if (fullText.includes(keywordLower)) {
+        if (!keywordSpeedStats[kw.id]) {
+          keywordSpeedStats[kw.id] = {
+            keyword: kw.keyword,
+            type: kw.type,
+            totalFeedbacks: 0,
+            totalHours: 0,
+            averageHours: 0,
+            feedbackIds: [],
+          };
+        }
+
+        if (feedback.forwardedAt && feedback.completedAt) {
+          const startDate = new Date(feedback.forwardedAt);
+          const endDate = new Date(feedback.completedAt);
+          const hours = calculateWorkingHours(startDate, endDate, workingHoursSettings);
+
+          keywordSpeedStats[kw.id].totalFeedbacks++;
+          keywordSpeedStats[kw.id].totalHours += hours;
+          keywordSpeedStats[kw.id].feedbackIds.push(feedback.id);
+        }
+      }
+    });
+  });
+
+  // محاسبه میانگین و مرتب‌سازی
+  const speedData = Object.values(keywordSpeedStats)
+    .filter((stat) => stat.totalFeedbacks > 0)
+    .map((stat) => ({
+      keyword: stat.keyword,
+      type: stat.type,
+      totalFeedbacks: stat.totalFeedbacks,
+      averageHours: Math.round((stat.totalHours / stat.totalFeedbacks) * 10) / 10,
+      feedbackIds: stat.feedbackIds,
+    }))
+    .sort((a, b) => a.averageHours - b.averageHours); // مرتب‌سازی بر اساس سرعت (کمترین زمان = سریع‌تر)
+
+  return {
+    totalCompletedFeedbacks: completedFeedbacks.length,
+    keywordSpeedData: speedData,
+    topFastestKeywords: speedData.slice(0, 10),
+    topSlowestKeywords: speedData.slice(-10).reverse(),
+  };
 }

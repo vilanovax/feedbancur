@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { analyzeFeedbacksByKeywords, getKeywordTrends, compareKeywordsByDepartment } from "@/lib/analytics-utils";
+import {
+  analyzeFeedbacksByKeywords,
+  getKeywordTrends,
+  compareKeywordsByDepartment,
+  getFeedbackCompletionSpeedByKeywords
+} from "@/lib/analytics-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,10 +21,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const departmentId = searchParams.get("departmentId");
-    const reportType = searchParams.get("type") || "summary"; // summary, trends, comparison
+    const reportType = searchParams.get("type") || "summary"; // summary, trends, comparison, speed
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const days = searchParams.get("days");
+    const keywordId = searchParams.get("keywordId");
 
     let result;
 
@@ -44,6 +50,14 @@ export async function GET(request: NextRequest) {
       case "comparison":
         // مقایسه بخش‌ها
         result = await compareKeywordsByDepartment();
+        break;
+
+      case "speed":
+        // گزارش سرعت انجام فیدبک‌ها بر اساس کلمات کلیدی
+        result = await getFeedbackCompletionSpeedByKeywords(
+          departmentId || undefined,
+          keywordId || undefined
+        );
         break;
 
       default:
