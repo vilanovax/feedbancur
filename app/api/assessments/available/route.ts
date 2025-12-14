@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
     const assignments = await prisma.assessmentAssignment.findMany({
       where: {
         departmentId: user.departmentId || undefined,
+        assessment: {
+          isActive: true,
+        },
         OR: [
           {
             AND: [
@@ -45,9 +48,6 @@ export async function GET(request: NextRequest) {
       },
       include: {
         assessment: {
-          where: {
-            isActive: true,
-          },
           include: {
             _count: {
               select: {
