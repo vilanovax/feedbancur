@@ -60,7 +60,7 @@ async function seedKeywords() {
         id: `seed-sensitive-${kw.keyword}`,
         keyword: kw.keyword,
         type: "SENSITIVE",
-        priority: 100,
+        priority: "HIGH", // اولویت زیاد
         description: kw.description,
         isActive: true,
       },
@@ -77,7 +77,7 @@ async function seedKeywords() {
         id: `seed-positive-${kw.keyword}`,
         keyword: kw.keyword,
         type: "POSITIVE",
-        priority: 50,
+        priority: "MEDIUM", // اولویت متوسط
         description: kw.description,
         isActive: true,
       },
@@ -94,7 +94,7 @@ async function seedKeywords() {
         id: `seed-negative-${kw.keyword}`,
         keyword: kw.keyword,
         type: "NEGATIVE",
-        priority: 75,
+        priority: "HIGH", // اولویت زیاد
         description: kw.description,
         isActive: true,
       },
@@ -111,7 +111,7 @@ async function seedKeywords() {
         id: `seed-topic-${kw.keyword}`,
         keyword: kw.keyword,
         type: "TOPIC",
-        priority: 60,
+        priority: "MEDIUM", // اولویت متوسط
         description: kw.description,
         isActive: true,
       },

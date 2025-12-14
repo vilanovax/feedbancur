@@ -446,21 +446,28 @@ enum KeywordType {
   CUSTOM      // کلمات دلخواه
 }
 
+enum KeywordPriority {
+  LOW         // کم
+  MEDIUM      // متوسط
+  HIGH        // زیاد
+}
+
 model AnalyticsKeyword {
-  id            String      @id @default(cuid())
-  keyword       String      // کلمه کلیدی
-  type          KeywordType @default(CUSTOM) // نوع کلمه
-  priority      Int         @default(0) // اولویت (برای مرتب‌سازی)
-  description   String?     // توضیحات
-  isActive      Boolean     @default(true) // فعال/غیرفعال
-  departmentId  String?     // null = برای همه بخش‌ها
-  department    Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id            String          @id @default(cuid())
+  keyword       String          // کلمه کلیدی
+  type          KeywordType     @default(CUSTOM) // نوع کلمه
+  priority      KeywordPriority @default(MEDIUM) // اولویت: کم، متوسط، زیاد
+  description   String?         // توضیحات
+  isActive      Boolean         @default(true) // فعال/غیرفعال
+  departmentId  String?         // null = برای همه بخش‌ها
+  department    Department?     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@index([departmentId])
   @@index([type])
   @@index([isActive])
+  @@index([priority])
   @@map("analytics_keywords")
 }
 

@@ -36,6 +36,12 @@ const KEYWORD_TYPES = {
   CUSTOM: "دلخواه",
 };
 
+const KEYWORD_PRIORITIES = {
+  LOW: "کم",
+  MEDIUM: "متوسط",
+  HIGH: "زیاد",
+};
+
 const TYPE_COLORS = {
   SENSITIVE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
   POSITIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
@@ -59,7 +65,7 @@ export default function AnalyticsKeywordsPage() {
   const [formData, setFormData] = useState({
     keyword: "",
     type: "CUSTOM",
-    priority: 0,
+    priority: "MEDIUM" as "LOW" | "MEDIUM" | "HIGH",
     description: "",
     isActive: true,
     departmentId: "",
@@ -174,7 +180,7 @@ export default function AnalyticsKeywordsPage() {
     setFormData({
       keyword: "",
       type: "CUSTOM",
-      priority: 0,
+      priority: "MEDIUM",
       description: "",
       isActive: true,
       departmentId: "",
@@ -341,7 +347,7 @@ export default function AnalyticsKeywordsPage() {
                         {keyword.department ? keyword.department.name : "عمومی"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {keyword.priority}
+                        {KEYWORD_PRIORITIES[keyword.priority as keyof typeof KEYWORD_PRIORITIES]}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -396,8 +402,12 @@ export default function AnalyticsKeywordsPage() {
                     value={formData.keyword}
                     onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
                     required
+                    placeholder="مثال: یخچال، آشپزخانه، نظافت"
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    می‌توانید چند کلمه را با ویرگول (,) از هم جدا کنید
+                  </p>
                 </div>
 
                 <div>
@@ -438,16 +448,22 @@ export default function AnalyticsKeywordsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    اولویت
+                    اولویت *
                   </label>
-                  <input
-                    type="number"
+                  <select
                     value={formData.priority}
                     onChange={(e) =>
-                      setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
+                      setFormData({ ...formData, priority: e.target.value as "LOW" | "MEDIUM" | "HIGH" })
                     }
+                    required
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                  />
+                  >
+                    {Object.entries(KEYWORD_PRIORITIES).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

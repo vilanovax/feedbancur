@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - ایجاد کلمه کلیدی جدید
+// POST - ایجاد کلمه کلیدی جدید (با پشتیبانی از چند کلمه با ویرگول)
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -86,26 +86,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newKeyword = await prisma.analyticsKeyword.create({
-      data: {
-        keyword,
-        type,
-        priority: priority || 0,
-        description,
-        isActive: isActive !== undefined ? isActive : true,
-        departmentId: departmentId || null,
-      },
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    // جدا کردن کلمات با ویرگول
+    const keywords = keyword
+      .split(/[,،]/) // جدا کردن با ویرگول فارسی و انگلیسی
+      .map((kw: string) => kw.trim())
+      .filter((kw: string) => kw.length > 0);
 
-    return NextResponse.json(newKeyword, { status: 201 });
+    if (keywords.length === 0) {
+      return NextResponse.json(
+        { error: "At least one valid keyword is required" },
+        { status: 400 }
+      );
+    }
+
+    // ایجاد چندین کلمه کلیدی به صورت دسته‌ای
+    const createdKeywords = await Promise.all(
+      keywords.map((kw) =>
+        prisma.analyticsKeyword.create({
+          data: {
+            keyword: kw,
+            type,
+            priority: priority || "MEDIUM",
+            description,
+            isActive: isActive !== undefined ? isActive : true,
+            departmentId: departmentId || null,
+          },
+          include: {
+            department: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        })
+      )
+    );
+
+    // اگر فقط یک کلمه بود، همان را برگردان، وگرنه آرایه را برگردان
+    return NextResponse.json(
+      createdKeywords.length === 1 ? createdKeywords[0] : createdKeywords,
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error creating analytics keyword:", error);
     return NextResponse.json(

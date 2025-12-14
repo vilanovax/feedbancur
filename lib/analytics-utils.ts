@@ -43,7 +43,7 @@ export async function analyzeFeedbacksByKeywords(
       ],
     },
     orderBy: {
-      priority: "desc",
+      priority: "desc", // HIGH -> MEDIUM -> LOW
     },
   });
 
