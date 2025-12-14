@@ -21,6 +21,8 @@ import {
   Archive,
   Shield,
   Settings,
+  Brain,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -121,6 +123,18 @@ export default function Sidebar() {
       href: "/public-board",
       icon: Trophy,
       roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+    },
+    {
+      name: "آزمون‌های من",
+      href: "/my-assessments",
+      icon: Brain,
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+    },
+    {
+      name: "مدیریت آزمون‌ها",
+      href: "/assessments",
+      icon: ClipboardList,
+      roles: ["ADMIN", "MANAGER"],
     },
     {
       name: "مدیریت کاربران",
