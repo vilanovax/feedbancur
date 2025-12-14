@@ -16,7 +16,7 @@ interface AnalyticsKeyword {
   id: string;
   keyword: string;
   type: string;
-  priority: number;
+  priority: "LOW" | "MEDIUM" | "HIGH";
   description?: string;
   isActive: boolean;
   departmentId?: string;
