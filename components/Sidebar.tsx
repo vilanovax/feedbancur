@@ -145,6 +145,20 @@ export default function Sidebar() {
       href: "/analytics",
       icon: BarChart3,
       roles: ["ADMIN", "MANAGER"],
+      subItems: [
+        {
+          name: "کلمات کلیدی",
+          href: "/analytics-keywords",
+          icon: Settings,
+          roles: ["ADMIN"],
+        },
+        {
+          name: "گزارشات تحلیلی",
+          href: "/analytics-keywords/reports",
+          icon: BarChart3,
+          roles: ["ADMIN", "MANAGER"],
+        },
+      ],
     },
   ];
 

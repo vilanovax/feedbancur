@@ -95,6 +95,7 @@ model Department {
   employees     Employee[]
   announcements Announcement[]
   polls         Poll[]
+  analyticsKeywords AnalyticsKeyword[]
 
   @@map("departments")
 }
@@ -435,5 +436,31 @@ model PollResponse {
   @@index([userId])
   @@index([optionId])
   @@map("poll_responses")
+}
+
+enum KeywordType {
+  SENSITIVE   // کلمات حساس (مثل شکایت، مشکل، اعتراض)
+  POSITIVE    // کلمات مثبت (مثل عالی، خوب، ممنون)
+  NEGATIVE    // کلمات منفی (مثل ضعیف، بد، نامناسب)
+  TOPIC       // موضوعات خاص (مثل بهداشت، امنیت، نظافت)
+  CUSTOM      // کلمات دلخواه
+}
+
+model AnalyticsKeyword {
+  id            String      @id @default(cuid())
+  keyword       String      // کلمه کلیدی
+  type          KeywordType @default(CUSTOM) // نوع کلمه
+  priority      Int         @default(0) // اولویت (برای مرتب‌سازی)
+  description   String?     // توضیحات
+  isActive      Boolean     @default(true) // فعال/غیرفعال
+  departmentId  String?     // null = برای همه بخش‌ها
+  department    Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([departmentId])
+  @@index([type])
+  @@index([isActive])
+  @@map("analytics_keywords")
 }
 
