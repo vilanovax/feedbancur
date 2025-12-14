@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { Toaster } from "sonner";
 
 const vazirmatn = localFont({
   src: [
@@ -53,7 +54,10 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body className={`${vazirmatn.variable} ${vazirmatn.className}`}>
         <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+            <Toaster />
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>
