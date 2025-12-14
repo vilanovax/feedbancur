@@ -139,9 +139,14 @@ export default function AnalyticsKeywordsPage() {
         setEditingKeyword(null);
         resetForm();
         fetchKeywords();
+      } else {
+        const errorData = await res.json();
+        console.error("Server error:", errorData);
+        alert(`خطا: ${errorData.error || "مشکلی در ذخیره کلمه کلیدی رخ داد"}`);
       }
     } catch (error) {
       console.error("Error saving keyword:", error);
+      alert("خطا در ارتباط با سرور");
     }
   };
 

@@ -128,10 +128,13 @@ export async function POST(request: NextRequest) {
       createdKeywords.length === 1 ? createdKeywords[0] : createdKeywords,
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating analytics keyword:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details: error.message || String(error)
+      },
       { status: 500 }
     );
   }
