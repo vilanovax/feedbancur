@@ -65,161 +65,225 @@ export function AssessmentForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="title">عنوان آزمون *</Label>
-        <Input
-          id="title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          required
-          placeholder="مثال: آزمون شخصیت‌سنجی MBTI"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">نوع آزمون *</Label>
-        <Select
-          value={formData.type}
-          onValueChange={(value: "MBTI" | "DISC" | "CUSTOM") =>
-            setFormData({ ...formData, type: value })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="MBTI">MBTI - مایرز بریگز</SelectItem>
-            <SelectItem value="DISC">DISC - رفتارشناسی</SelectItem>
-            <SelectItem value="CUSTOM">سفارشی</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">توضیحات</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
-          placeholder="توضیحات کوتاه درباره آزمون..."
-          rows={3}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="instructions">دستورالعمل</Label>
-        <Textarea
-          id="instructions"
-          value={formData.instructions}
-          onChange={(e) =>
-            setFormData({ ...formData, instructions: e.target.value })
-          }
-          placeholder="راهنمای انجام آزمون برای کاربران..."
-          rows={4}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* بخش اطلاعات اصلی */}
+      <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="timeLimit">محدودیت زمانی (دقیقه)</Label>
+          <Label htmlFor="title" className="text-sm font-medium text-gray-900">
+            عنوان آزمون <span className="text-red-500">*</span>
+          </Label>
           <Input
-            id="timeLimit"
-            type="number"
-            min="0"
-            value={formData.timeLimit || ""}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                timeLimit: e.target.value ? parseInt(e.target.value) : undefined,
-              })
-            }
-            placeholder="بدون محدودیت"
+            id="title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            required
+            placeholder="مثال: آزمون شخصیت‌سنجی MBTI"
+            className="text-base"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="passingScore">نمره قبولی (درصد)</Label>
-          <Input
-            id="passingScore"
-            type="number"
-            min="0"
-            max="100"
-            value={formData.passingScore || ""}
+          <Label htmlFor="type" className="text-sm font-medium text-gray-900">
+            نوع آزمون <span className="text-red-500">*</span>
+          </Label>
+          <Select
+            value={formData.type}
+            onValueChange={(value: "MBTI" | "DISC" | "CUSTOM") =>
+              setFormData({ ...formData, type: value })
+            }
+          >
+            <SelectTrigger className="text-base">
+              <SelectValue placeholder="نوع آزمون را انتخاب کنید">
+                {formData.type === "MBTI" && "MBTI - مایرز بریگز"}
+                {formData.type === "DISC" && "DISC - رفتارشناسی"}
+                {formData.type === "CUSTOM" && "سفارشی"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="MBTI">MBTI - مایرز بریگز</SelectItem>
+              <SelectItem value="DISC">DISC - رفتارشناسی</SelectItem>
+              <SelectItem value="CUSTOM">سفارشی</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-gray-500">
+            نوع آزمون تعیین می‌کند که نتایج چگونه محاسبه شوند
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-sm font-medium text-gray-900">
+            توضیحات
+          </Label>
+          <Textarea
+            id="description"
+            value={formData.description}
             onChange={(e) =>
-              setFormData({
-                ...formData,
-                passingScore: e.target.value
-                  ? parseInt(e.target.value)
-                  : undefined,
-              })
+              setFormData({ ...formData, description: e.target.value })
             }
-            placeholder="بدون نمره قبولی"
+            placeholder="توضیحات کوتاه درباره آزمون..."
+            rows={3}
+            className="text-base resize-none"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="instructions" className="text-sm font-medium text-gray-900">
+            دستورالعمل
+          </Label>
+          <Textarea
+            id="instructions"
+            value={formData.instructions}
+            onChange={(e) =>
+              setFormData({ ...formData, instructions: e.target.value })
+            }
+            placeholder="راهنمای انجام آزمون برای کاربران..."
+            rows={4}
+            className="text-base resize-none"
+          />
+          <p className="text-sm text-gray-500">
+            این متن قبل از شروع آزمون به کاربران نمایش داده می‌شود
+          </p>
         </div>
       </div>
 
-      <div className="space-y-4 rounded-lg border p-4">
-        <h3 className="font-medium">تنظیمات</h3>
+      {/* بخش تنظیمات زمان و نمره */}
+      <div className="space-y-4 border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900">تنظیمات زمان و نمره</h3>
 
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="isActive">فعال</Label>
-            <p className="text-sm text-muted-foreground">
-              آزمون برای کاربران قابل دسترسی باشد
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="timeLimit" className="text-sm font-medium text-gray-900">
+              محدودیت زمانی (دقیقه)
+            </Label>
+            <Input
+              id="timeLimit"
+              type="number"
+              min="0"
+              value={formData.timeLimit || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  timeLimit: e.target.value ? parseInt(e.target.value) : undefined,
+                })
+              }
+              placeholder="بدون محدودیت"
+              className="text-base"
+            />
+            <p className="text-xs text-gray-500">
+              خالی بگذارید برای بدون محدودیت
             </p>
           </div>
-          <Switch
-            id="isActive"
-            checked={formData.isActive}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, isActive: checked })
-            }
-          />
-        </div>
 
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="allowRetake">امکان تکرار</Label>
-            <p className="text-sm text-muted-foreground">
-              کاربران می‌توانند آزمون را دوباره انجام دهند
+          <div className="space-y-2">
+            <Label htmlFor="passingScore" className="text-sm font-medium text-gray-900">
+              نمره قبولی (درصد)
+            </Label>
+            <Input
+              id="passingScore"
+              type="number"
+              min="0"
+              max="100"
+              value={formData.passingScore || ""}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  passingScore: e.target.value
+                    ? parseInt(e.target.value)
+                    : undefined,
+                })
+              }
+              placeholder="بدون نمره قبولی"
+              className="text-base"
+            />
+            <p className="text-xs text-gray-500">
+              برای آزمون‌های شخصیت‌سنجی معمولاً نیازی نیست
             </p>
           </div>
-          <Switch
-            id="allowRetake"
-            checked={formData.allowRetake}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, allowRetake: checked })
-            }
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label htmlFor="showResults">نمایش نتایج</Label>
-            <p className="text-sm text-muted-foreground">
-              نتایج به کاربران نمایش داده شود
-            </p>
-          </div>
-          <Switch
-            id="showResults"
-            checked={formData.showResults}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, showResults: checked })
-            }
-          />
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      {/* بخش تنظیمات */}
+      <div className="space-y-4 border-t pt-6">
+        <h3 className="text-lg font-semibold text-gray-900">تنظیمات دسترسی</h3>
+
+        <div className="space-y-4 bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="isActive" className="text-base font-medium text-gray-900 cursor-pointer">
+                فعال بودن آزمون
+              </Label>
+              <p className="text-sm text-gray-600">
+                آزمون برای کاربران قابل دسترسی باشد
+              </p>
+            </div>
+            <Switch
+              id="isActive"
+              checked={formData.isActive}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, isActive: checked })
+              }
+            />
+          </div>
+
+          <div className="border-t border-gray-200" />
+
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="allowRetake" className="text-base font-medium text-gray-900 cursor-pointer">
+                امکان تکرار آزمون
+              </Label>
+              <p className="text-sm text-gray-600">
+                کاربران می‌توانند آزمون را دوباره انجام دهند
+              </p>
+            </div>
+            <Switch
+              id="allowRetake"
+              checked={formData.allowRetake}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, allowRetake: checked })
+              }
+            />
+          </div>
+
+          <div className="border-t border-gray-200" />
+
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="showResults" className="text-base font-medium text-gray-900 cursor-pointer">
+                نمایش نتایج
+              </Label>
+              <p className="text-sm text-gray-600">
+                نتایج به کاربران نمایش داده شود
+              </p>
+            </div>
+            <Switch
+              id="showResults"
+              checked={formData.showResults}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, showResults: checked })
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* دکمه‌های عملیات */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="min-w-[100px]"
+          >
             انصراف
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="min-w-[120px]"
+        >
           {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
           {submitLabel}
         </Button>

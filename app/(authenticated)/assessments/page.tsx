@@ -73,75 +73,74 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AppHeader />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="container mx-auto max-w-7xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">آزمون‌های شخصیت‌سنجی</h1>
-          <p className="text-gray-600 mt-2">
-            مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
-          </p>
-        </div>
-        {session?.user.role === "ADMIN" && (
-          <Button onClick={() => router.push("/assessments/new")}>
-            <Plus className="w-4 h-4 ml-2" />
-            آزمون جدید
-          </Button>
-        )}
-      </div>
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های شخصیت‌سنجی</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
+                مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
+              </p>
+            </div>
+            {session?.user.role === "ADMIN" && (
+              <Button onClick={() => router.push("/assessments/new")}>
+                <Plus className="w-4 h-4 ml-2" />
+                آزمون جدید
+              </Button>
+            )}
+          </div>
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6">
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="نوع آزمون" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">همه انواع</SelectItem>
-            <SelectItem value="MBTI">MBTI</SelectItem>
-            <SelectItem value="DISC">DISC</SelectItem>
-            <SelectItem value="CUSTOM">سفارشی</SelectItem>
-          </SelectContent>
-        </Select>
+          {/* Filters */}
+          <div className="flex gap-4 mb-6">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="نوع آزمون" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">همه انواع</SelectItem>
+                <SelectItem value="MBTI">MBTI</SelectItem>
+                <SelectItem value="DISC">DISC</SelectItem>
+                <SelectItem value="CUSTOM">سفارشی</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="وضعیت" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">همه</SelectItem>
-            <SelectItem value="active">فعال</SelectItem>
-            <SelectItem value="inactive">غیرفعال</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="وضعیت" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">همه</SelectItem>
+                <SelectItem value="active">فعال</SelectItem>
+                <SelectItem value="inactive">غیرفعال</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Assessments Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : assessments.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-600">هیچ آزمونی یافت نشد</p>
-          {session?.user.role === "ADMIN" && (
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => router.push("/assessments/new")}
-            >
-              <Plus className="w-4 h-4 ml-2" />
-              ایجاد اولین آزمون
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assessments.map((assessment) => (
+          {/* Assessments Grid */}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : assessments.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 dark:text-gray-400">هیچ آزمونی یافت نشد</p>
+              {session?.user.role === "ADMIN" && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => router.push("/assessments/new")}
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  ایجاد اولین آزمون
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assessments.map((assessment) => (
             <AssessmentCard
               key={assessment.id}
               assessment={assessment}
@@ -185,12 +184,11 @@ export default function AssessmentsPage() {
                 </div>
               }
             />
-          ))}
+              ))}
+            </div>
+          )}
         </div>
-      )}
-          </div>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }

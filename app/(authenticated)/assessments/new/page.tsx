@@ -2,9 +2,12 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import { AssessmentForm } from "@/components/AssessmentForm";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
 export default function NewAssessmentPage() {
@@ -37,28 +40,44 @@ export default function NewAssessmentPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/assessments")}
-          className="mb-4"
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          بازگشت
-        </Button>
-        <h1 className="text-3xl font-bold">ایجاد آزمون جدید</h1>
-        <p className="text-muted-foreground mt-2">
-          پس از ایجاد آزمون، می‌توانید سوالات را اضافه کنید
-        </p>
-      </div>
+    <div className="flex h-screen bg-gray-50" dir="rtl">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="container mx-auto max-w-4xl">
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/assessments")}
+                className="mb-4"
+              >
+                <ArrowRight className="w-4 h-4 ml-2" />
+                بازگشت
+              </Button>
+              <h1 className="text-3xl font-bold text-gray-900">ایجاد آزمون جدید</h1>
+              <p className="text-gray-600 mt-2">
+                پس از ایجاد آزمون، می‌توانید سوالات را اضافه کنید
+              </p>
+            </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <AssessmentForm
-          onSubmit={handleSubmit}
-          onCancel={() => router.push("/assessments")}
-          submitLabel="ایجاد آزمون"
-        />
+            <Card>
+              <CardHeader>
+                <CardTitle>مشخصات آزمون</CardTitle>
+                <CardDescription>
+                  اطلاعات اولیه آزمون را وارد کنید
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AssessmentForm
+                  onSubmit={handleSubmit}
+                  onCancel={() => router.push("/assessments")}
+                  submitLabel="ایجاد آزمون"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     </div>
   );
