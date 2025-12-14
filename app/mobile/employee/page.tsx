@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import Image from "next/image";
-import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3 } from "lucide-react";
+import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3, ClipboardList } from "lucide-react";
 import Link from "next/link";
 
 export default function EmployeeMobilePage() {
@@ -20,6 +20,7 @@ export default function EmployeeMobilePage() {
     newAnnouncements: 0,
     activePolls: 0,
     newPolls: 0,
+    assessments: 0,
   });
 
   useEffect(() => {
@@ -38,10 +39,11 @@ export default function EmployeeMobilePage() {
 
   const fetchStats = async () => {
     try {
-      const [feedbacksRes, tasksRes, statsRes] = await Promise.all([
+      const [feedbacksRes, tasksRes, statsRes, assessmentsRes] = await Promise.all([
         fetch("/api/feedback"),
         fetch("/api/tasks"),
         fetch("/api/stats"),
+        fetch("/api/assessments/available"),
       ]);
 
       if (feedbacksRes.ok) {
@@ -63,6 +65,11 @@ export default function EmployeeMobilePage() {
           activePolls: statsData.activePolls || 0,
           newPolls: statsData.newPolls || 0,
         }));
+      }
+
+      if (assessmentsRes.ok) {
+        const assessments = await assessmentsRes.json();
+        setStats((prev) => ({ ...prev, assessments: assessments.length }));
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -134,6 +141,19 @@ export default function EmployeeMobilePage() {
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">تسک‌های من</p>
           </div>
+
+          <Link
+            href="/mobile/employee/assessments"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <ClipboardList className="w-8 h-8 text-indigo-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+              {stats.assessments}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">آزمون‌ها</p>
+          </Link>
 
           {/* اعلانات فعال */}
           <Link

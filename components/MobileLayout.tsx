@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Settings,
   Edit,
+  ClipboardList,
 } from "lucide-react";
 import { formatPersianDate } from "@/lib/date-utils";
 
@@ -249,6 +250,11 @@ export default function MobileLayout({
       name: "فیدبک‌های من",
       href: "/mobile/feedback",
       icon: MessageSquare,
+    },
+    {
+      name: "آزمون‌های شخصیت‌سنجی",
+      href: role === "MANAGER" ? "/mobile/manager/assessments" : "/mobile/employee/assessments",
+      icon: ClipboardList,
     },
     {
       name: "اعلانات",

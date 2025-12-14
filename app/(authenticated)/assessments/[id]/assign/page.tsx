@@ -8,8 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, ArrowRight, Save, Trash2 } from "lucide-react";
+import { Loader2, ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 
 interface Department {
   id: string;
@@ -199,153 +201,207 @@ export default function AssignAssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/assessments")}
-          className="mb-4"
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          بازگشت
-        </Button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">تخصیص آزمون به بخش‌ها</h1>
-            <p className="text-muted-foreground mt-2">
-              انتخاب بخش‌ها و تنظیمات دسترسی
-            </p>
-          </div>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-            <Save className="w-4 h-4 ml-2" />
-            ذخیره
-          </Button>
-        </div>
-      </div>
-
-      <Card className="mb-4">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>انتخاب بخش‌ها</CardTitle>
-            <Button variant="outline" size="sm" onClick={handleSelectAll}>
-              {selectedDepartments.size === departments.length
-                ? "حذف همه"
-                : "انتخاب همه"}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+      <Sidebar />
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/assessments")}
+              className="mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              بازگشت
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {departments.map((dept) => (
-              <div
-                key={dept.id}
-                className="flex items-center space-x-2 space-x-reverse"
-              >
-                <Checkbox
-                  id={dept.id}
-                  checked={selectedDepartments.has(dept.id)}
-                  onCheckedChange={() => handleDepartmentToggle(dept.id)}
-                />
-                <Label htmlFor={dept.id} className="flex-1 cursor-pointer">
-                  {dept.name}
-                </Label>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  تخصیص آزمون به بخش‌ها
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                  انتخاب بخش‌ها و تنظیمات دسترسی
+                </p>
               </div>
-            ))}
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Save className="w-4 h-4 mr-2" />
+                ذخیره
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {selectedDepartments.size > 0 && (
-        <div className="space-y-4">
-          {[...selectedDepartments].map((deptId) => {
-            const dept = departments.find((d) => d.id === deptId);
-            if (!dept) return null;
-
-            const data = assignmentData[deptId] || {
-              isRequired: false,
-              startDate: "",
-              endDate: "",
-              allowManagerView: false,
-            };
-
-            return (
-              <Card key={deptId}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{dept.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`start-${deptId}`}>تاریخ شروع</Label>
-                      <Input
-                        id={`start-${deptId}`}
-                        type="date"
-                        value={data.startDate}
-                        onChange={(e) =>
-                          handleDataChange(deptId, "startDate", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`end-${deptId}`}>تاریخ پایان</Label>
-                      <Input
-                        id={`end-${deptId}`}
-                        type="date"
-                        value={data.endDate}
-                        onChange={(e) =>
-                          handleDataChange(deptId, "endDate", e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor={`required-${deptId}`}>اجباری</Label>
-                      <p className="text-sm text-muted-foreground">
-                        آزمون برای این بخش اجباری است
-                      </p>
-                    </div>
-                    <Switch
-                      id={`required-${deptId}`}
-                      checked={data.isRequired}
-                      onCheckedChange={(checked) =>
-                        handleDataChange(deptId, "isRequired", checked)
-                      }
+          <Card className="mb-4 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-gray-900 dark:text-white">
+                  انتخاب بخش‌ها
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                  {selectedDepartments.size === departments.length
+                    ? "حذف همه"
+                    : "انتخاب همه"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    className="flex items-center space-x-2 space-x-reverse"
+                  >
+                    <Checkbox
+                      id={dept.id}
+                      checked={selectedDepartments.has(dept.id)}
+                      onCheckedChange={() => handleDepartmentToggle(dept.id)}
                     />
+                    <Label
+                      htmlFor={dept.id}
+                      className="flex-1 cursor-pointer text-gray-900 dark:text-white"
+                    >
+                      {dept.name}
+                    </Label>
                   </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor={`manager-${deptId}`}>
-                        نمایش برای مدیر
-                      </Label>
-                      <p className="text-sm text-muted-foreground">
-                        مدیر بخش می‌تواند نتایج را ببیند
-                      </p>
-                    </div>
-                    <Switch
-                      id={`manager-${deptId}`}
-                      checked={data.allowManagerView}
-                      onCheckedChange={(checked) =>
-                        handleDataChange(deptId, "allowManagerView", checked)
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {selectedDepartments.size > 0 && (
+            <div className="space-y-4">
+              {[...selectedDepartments].map((deptId) => {
+                const dept = departments.find((d) => d.id === deptId);
+                if (!dept) return null;
+
+                const data = assignmentData[deptId] || {
+                  isRequired: false,
+                  startDate: "",
+                  endDate: "",
+                  allowManagerView: false,
+                };
+
+                return (
+                  <Card
+                    key={deptId}
+                    className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-lg text-gray-900 dark:text-white">
+                        {dept.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor={`start-${deptId}`}
+                            className="text-gray-900 dark:text-white"
+                          >
+                            تاریخ شروع
+                          </Label>
+                          <Input
+                            id={`start-${deptId}`}
+                            type="date"
+                            value={data.startDate}
+                            onChange={(e) =>
+                              handleDataChange(
+                                deptId,
+                                "startDate",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label
+                            htmlFor={`end-${deptId}`}
+                            className="text-gray-900 dark:text-white"
+                          >
+                            تاریخ پایان
+                          </Label>
+                          <Input
+                            id={`end-${deptId}`}
+                            type="date"
+                            value={data.endDate}
+                            onChange={(e) =>
+                              handleDataChange(
+                                deptId,
+                                "endDate",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label
+                            htmlFor={`required-${deptId}`}
+                            className="text-gray-900 dark:text-white"
+                          >
+                            اجباری
+                          </Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            آزمون برای این بخش اجباری است
+                          </p>
+                        </div>
+                        <Switch
+                          id={`required-${deptId}`}
+                          checked={data.isRequired}
+                          onCheckedChange={(checked) =>
+                            handleDataChange(deptId, "isRequired", checked)
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label
+                            htmlFor={`manager-${deptId}`}
+                            className="text-gray-900 dark:text-white"
+                          >
+                            نمایش برای مدیر
+                          </Label>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            مدیر بخش می‌تواند نتایج را ببیند
+                          </p>
+                        </div>
+                        <Switch
+                          id={`manager-${deptId}`}
+                          checked={data.allowManagerView}
+                          onCheckedChange={(checked) =>
+                            handleDataChange(
+                              deptId,
+                              "allowManagerView",
+                              checked
+                            )
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 }

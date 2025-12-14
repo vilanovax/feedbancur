@@ -25,24 +25,37 @@ export async function GET(request: NextRequest) {
     // 2. Currently within date range (if specified)
     const now = new Date();
 
+    // If user has no department, return empty array
+    if (!user.departmentId) {
+      return NextResponse.json([]);
+    }
+
     const assignments = await prisma.assessmentAssignment.findMany({
       where: {
-        departmentId: user.departmentId || undefined,
+        departmentId: user.departmentId,
         assessment: {
           isActive: true,
         },
         OR: [
+          // No date restrictions
           {
-            AND: [
-              { startDate: { lte: now } },
-              { endDate: { gte: now } },
-            ],
+            startDate: null,
+            endDate: null,
           },
+          // Only start date, must have started
           {
-            AND: [{ startDate: null }, { endDate: null }],
+            startDate: { lte: now },
+            endDate: null,
           },
+          // Only end date, must not have ended
           {
-            AND: [{ startDate: { lte: now } }, { endDate: null }],
+            startDate: null,
+            endDate: { gte: now },
+          },
+          // Both dates, must be within range
+          {
+            startDate: { lte: now },
+            endDate: { gte: now },
           },
         ],
       },

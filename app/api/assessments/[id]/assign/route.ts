@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // POST /api/assessments/[id]/assign - تخصیص به بخش (ADMIN)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,7 +38,7 @@ export async function POST(
 
     // Check if assessment exists
     const assessment = await prisma.assessment.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!assessment) {
@@ -63,7 +64,7 @@ export async function POST(
     const assignment = await prisma.assessmentAssignment.upsert({
       where: {
         assessmentId_departmentId: {
-          assessmentId: params.id,
+          assessmentId: id,
           departmentId,
         },
       },
@@ -74,7 +75,7 @@ export async function POST(
         allowManagerView: allowManagerView ?? false,
       },
       create: {
-        assessmentId: params.id,
+        assessmentId: id,
         departmentId,
         isRequired: isRequired ?? false,
         startDate: startDate ? new Date(startDate) : null,
@@ -105,9 +106,10 @@ export async function POST(
 // DELETE /api/assessments/[id]/assign - حذف تخصیص (ADMIN)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -131,7 +133,7 @@ export async function DELETE(
     const assignment = await prisma.assessmentAssignment.findUnique({
       where: {
         assessmentId_departmentId: {
-          assessmentId: params.id,
+          assessmentId: id,
           departmentId,
         },
       },
@@ -147,7 +149,7 @@ export async function DELETE(
     await prisma.assessmentAssignment.delete({
       where: {
         assessmentId_departmentId: {
-          assessmentId: params.id,
+          assessmentId: id,
           departmentId,
         },
       },

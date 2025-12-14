@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import Image from "next/image";
-import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3 } from "lucide-react";
+import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList } from "lucide-react";
 import Link from "next/link";
 
 export default function ManagerMobilePage() {
@@ -21,6 +21,7 @@ export default function ManagerMobilePage() {
     newAnnouncements: 0,
     activePolls: 0,
     newPolls: 0,
+    assessments: 0,
   });
 
   useEffect(() => {
@@ -39,11 +40,12 @@ export default function ManagerMobilePage() {
 
   const fetchStats = async () => {
     try {
-      const [feedbacksRes, forwardedRes, tasksRes, statsRes] = await Promise.all([
+      const [feedbacksRes, forwardedRes, tasksRes, statsRes, assessmentsRes] = await Promise.all([
         fetch("/api/feedback"),
         fetch("/api/feedback?forwardedToMe=true"),
         fetch("/api/tasks"),
         fetch("/api/stats"),
+        fetch("/api/assessments"),
       ]);
 
       if (feedbacksRes.ok) {
@@ -70,6 +72,11 @@ export default function ManagerMobilePage() {
           activePolls: statsData.activePolls || 0,
           newPolls: statsData.newPolls || 0,
         }));
+      }
+
+      if (assessmentsRes.ok) {
+        const assessments = await assessmentsRes.json();
+        setStats((prev) => ({ ...prev, assessments: assessments.length }));
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -147,7 +154,10 @@ export default function ManagerMobilePage() {
             </p>
           </Link>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
+          <Link
+            href="/mobile/manager/tasks"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-2">
               <CheckSquare className="w-8 h-8 text-green-600" />
             </div>
@@ -155,7 +165,20 @@ export default function ManagerMobilePage() {
               {stats.myTasks}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">تسک‌های من</p>
-          </div>
+          </Link>
+
+          <Link
+            href="/mobile/manager/assessments"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <ClipboardList className="w-8 h-8 text-indigo-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+              {stats.assessments}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">آزمون‌ها</p>
+          </Link>
 
           {/* اعلانات فعال */}
           <Link
@@ -234,6 +257,28 @@ export default function ManagerMobilePage() {
             {stats.forwardedFeedbacks > 0 && (
               <div className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                 {stats.forwardedFeedbacks}
+              </div>
+            )}
+          </Link>
+
+          <Link
+            href="/mobile/manager/assessments"
+            className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-indigo-600"
+          >
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+              <ClipboardList className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-gray-800 dark:text-white">
+                آزمون‌های شخصیت‌سنجی
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                مدیریت و مشاهده آزمون‌های بخش
+              </p>
+            </div>
+            {stats.assessments > 0 && (
+              <div className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                {stats.assessments}
               </div>
             )}
           </Link>

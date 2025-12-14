@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/assessments/[id] - جزئیات آزمون (ADMIN/MANAGER)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +20,7 @@ export async function GET(
     }
 
     const assessment = await prisma.assessment.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         createdBy: {
           select: {
@@ -72,9 +73,10 @@ export async function GET(
 // PATCH /api/assessments/[id] - ویرایش آزمون (ADMIN)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -99,7 +101,7 @@ export async function PATCH(
 
     // Check if assessment exists
     const existingAssessment = await prisma.assessment.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingAssessment) {
@@ -110,7 +112,7 @@ export async function PATCH(
     }
 
     const assessment = await prisma.assessment.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(title !== undefined && { title }),
         ...(description !== undefined && { description }),
@@ -153,9 +155,10 @@ export async function PATCH(
 // DELETE /api/assessments/[id] - حذف آزمون (ADMIN)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -167,7 +170,7 @@ export async function DELETE(
 
     // Check if assessment exists
     const existingAssessment = await prisma.assessment.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         _count: {
           select: {
@@ -196,7 +199,7 @@ export async function DELETE(
     }
 
     await prisma.assessment.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ message: "Assessment deleted successfully" });

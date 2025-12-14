@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import { AssessmentForm } from "@/components/AssessmentForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +16,7 @@ import {
   Trash2,
   GripVertical,
   AlertCircle,
+  Edit,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -29,15 +33,21 @@ import {
 export default function EditAssessmentPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const assessmentId = params.id as string;
   const [assessment, setAssessment] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<any>(null);
 
   useEffect(() => {
+    if (session?.user.role !== "ADMIN") {
+      router.push("/");
+      return;
+    }
     fetchAssessment();
-  }, []);
+  }, [session]);
 
   const fetchAssessment = async () => {
     try {
@@ -127,24 +137,45 @@ export default function EditAssessmentPage() {
     }
   };
 
+  if (session?.user.role !== "ADMIN") {
+    return null;
+  }
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="flex h-screen bg-gray-50" dir="rtl">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AppHeader />
+          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          </main>
+        </div>
       </div>
     );
   }
 
   if (!assessment) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">آزمون یافت نشد</p>
+      <div className="flex h-screen bg-gray-50" dir="rtl">
+        <Sidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AppHeader />
+          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <p className="text-gray-600">آزمون یافت نشد</p>
+          </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="flex h-screen bg-gray-50" dir="rtl">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="container mx-auto max-w-7xl">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -287,14 +318,24 @@ export default function EditAssessmentPage() {
                               )}
                           </div>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeleteId(question.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingQuestion(question)}
+                              className="text-blue-500 hover:text-blue-700"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteId(question.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -325,6 +366,9 @@ export default function EditAssessmentPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

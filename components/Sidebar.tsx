@@ -125,16 +125,18 @@ export default function Sidebar() {
       roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
     },
     {
-      name: "آزمون‌های من",
-      href: "/my-assessments",
-      icon: Brain,
-      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
-    },
-    {
       name: "مدیریت آزمون‌ها",
       href: "/assessments",
       icon: ClipboardList,
-      roles: ["ADMIN", "MANAGER"],
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+      subItems: [
+        {
+          name: "آزمون‌های من",
+          href: "/my-assessments",
+          icon: Brain,
+          roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+        },
+      ],
     },
     {
       name: "مدیریت کاربران",

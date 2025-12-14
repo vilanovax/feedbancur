@@ -19,6 +19,62 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type"); // MBTI, DISC, CUSTOM
     const isActive = searchParams.get("isActive");
 
+    // For MANAGER, only show assessments assigned to their department
+    if (session.user.role === "MANAGER") {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { departmentId: true },
+      });
+
+      if (!user?.departmentId) {
+        return NextResponse.json([]);
+      }
+
+      // Get all assignments for manager's department
+      const assignments = await prisma.assessmentAssignment.findMany({
+        where: {
+          departmentId: user.departmentId,
+          allowManagerView: true, // Only show if manager is allowed to view
+        },
+        include: {
+          assessment: {
+            include: {
+              createdBy: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+              _count: {
+                select: {
+                  questions: true,
+                  assignments: true,
+                  results: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Extract assessments and apply filters
+      let assessments = assignments
+        .map((a) => a.assessment)
+        .filter((a) => a !== null);
+
+      if (type) {
+        assessments = assessments.filter((a) => a.type === type);
+      }
+      if (isActive !== null) {
+        const activeFilter = isActive === "true";
+        assessments = assessments.filter((a) => a.isActive === activeFilter);
+      }
+
+      return NextResponse.json(assessments);
+    }
+
+    // For ADMIN, show all assessments
     const where: any = {};
     if (type) {
       where.type = type;
