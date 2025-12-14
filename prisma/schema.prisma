@@ -71,6 +71,9 @@ model User {
   pollResponses          PollResponse[]
   sentMessages           Message[]        @relation("MessageSender")
   notifications          Notification[]   @relation("Notifications")
+  createdAssessments     Assessment[]     @relation("CreatedAssessments")
+  assessmentProgress     AssessmentProgress[] @relation("AssessmentProgress")
+  assessmentResults      AssessmentResult[]   @relation("AssessmentResults")
 
   @@map("users")
 }
@@ -96,6 +99,7 @@ model Department {
   announcements Announcement[]
   polls         Poll[]
   analyticsKeywords AnalyticsKeyword[]
+  assessmentAssignments AssessmentAssignment[]
 
   @@map("departments")
 }
@@ -452,6 +456,19 @@ enum KeywordPriority {
   HIGH        // زیاد
 }
 
+enum AssessmentType {
+  MBTI
+  DISC
+  CUSTOM
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE  // یک گزینه
+  RATING_SCALE     // مقیاس 1-5
+  TRUE_FALSE       // بله/خیر
+  TEXT             // متن آزاد
+}
+
 model AnalyticsKeyword {
   id            String          @id @default(cuid())
   keyword       String          // کلمه کلیدی
@@ -469,5 +486,101 @@ model AnalyticsKeyword {
   @@index([isActive])
   @@index([priority])
   @@map("analytics_keywords")
+}
+
+model Assessment {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?  @db.Text
+  type            AssessmentType
+  instructions    String?  @db.Text
+  isActive        Boolean  @default(true)
+  allowRetake     Boolean  @default(false)
+  timeLimit       Int?     // دقیقه (null = بدون محدودیت)
+  passingScore    Int?     // درصد (null = بدون نمره قبولی)
+  showResults     Boolean  @default(true)
+  createdById     String
+  createdBy       User     @relation("CreatedAssessments", fields: [createdById], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  questions       AssessmentQuestion[]
+  assignments     AssessmentAssignment[]
+  results         AssessmentResult[]
+  progress        AssessmentProgress[]
+
+  @@index([type])
+  @@index([isActive])
+  @@map("assessments")
+}
+
+model AssessmentQuestion {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionText String     @db.Text
+  questionType QuestionType
+  order        Int
+  isRequired   Boolean    @default(true)
+  options      Json       // [{text: "...", value: "A", score: {...}}]
+  image        String?    // URL تصویر
+  createdAt    DateTime   @default(now())
+
+  @@index([assessmentId, order])
+  @@map("assessment_questions")
+}
+
+model AssessmentAssignment {
+  id               String      @id @default(cuid())
+  assessmentId     String
+  assessment       Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  departmentId     String?
+  department       Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isRequired       Boolean     @default(false)
+  startDate        DateTime?
+  endDate          DateTime?
+  allowManagerView Boolean     @default(false) // آیا مدیر می‌تواند نتایج را ببیند؟
+  createdAt        DateTime    @default(now())
+
+  @@unique([assessmentId, departmentId])
+  @@index([assessmentId])
+  @@index([departmentId])
+  @@map("assessment_assignments")
+}
+
+model AssessmentProgress {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation("AssessmentProgress", fields: [userId], references: [id], onDelete: Cascade)
+  answers      Json       // {questionId: answer}
+  lastQuestion Int        @default(0)
+  startedAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([assessmentId, userId])
+  @@index([userId])
+  @@map("assessment_progress")
+}
+
+model AssessmentResult {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation("AssessmentResults", fields: [userId], references: [id], onDelete: Cascade)
+  answers      Json       // {questionId: answer}
+  result       Json       // {type: "INTJ", scores: {...}, description: "...", percentage: 85}
+  score        Int?       // نمره کلی (اگر مقیاس باشد)
+  isPassed     Boolean?   // آیا قبول شده؟
+  startedAt    DateTime
+  completedAt  DateTime   @default(now())
+  timeTaken    Int?       // ثانیه
+
+  @@index([assessmentId])
+  @@index([userId])
+  @@index([completedAt])
+  @@map("assessment_results")
 }
 
