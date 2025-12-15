@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // PATCH /api/assessments/[id]/questions/[qid] - ویرایش سوال (ADMIN)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string; qid: string } }
+  { params }: { params: Promise<{ id: string; qid: string }> }
 ) {
   try {
+    const { id, qid } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +25,7 @@ export async function PATCH(
 
     // Check if question exists
     const existingQuestion = await prisma.assessmentQuestion.findUnique({
-      where: { id: params.qid },
+      where: { id: qid },
     });
 
     if (!existingQuestion) {
@@ -35,7 +36,7 @@ export async function PATCH(
     }
 
     // Verify question belongs to the assessment
-    if (existingQuestion.assessmentId !== params.id) {
+    if (existingQuestion.assessmentId !== id) {
       return NextResponse.json(
         { error: "Question does not belong to this assessment" },
         { status: 400 }
@@ -43,7 +44,7 @@ export async function PATCH(
     }
 
     const question = await prisma.assessmentQuestion.update({
-      where: { id: params.qid },
+      where: { id: qid },
       data: {
         ...(questionText !== undefined && { questionText }),
         ...(questionType !== undefined && { questionType }),
@@ -67,9 +68,10 @@ export async function PATCH(
 // DELETE /api/assessments/[id]/questions/[qid] - حذف سوال (ADMIN)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; qid: string } }
+  { params }: { params: Promise<{ id: string; qid: string }> }
 ) {
   try {
+    const { id, qid } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -81,7 +83,7 @@ export async function DELETE(
 
     // Check if question exists
     const existingQuestion = await prisma.assessmentQuestion.findUnique({
-      where: { id: params.qid },
+      where: { id: qid },
     });
 
     if (!existingQuestion) {
@@ -92,7 +94,7 @@ export async function DELETE(
     }
 
     // Verify question belongs to the assessment
-    if (existingQuestion.assessmentId !== params.id) {
+    if (existingQuestion.assessmentId !== id) {
       return NextResponse.json(
         { error: "Question does not belong to this assessment" },
         { status: 400 }
@@ -100,12 +102,12 @@ export async function DELETE(
     }
 
     await prisma.assessmentQuestion.delete({
-      where: { id: params.qid },
+      where: { id: qid },
     });
 
     // Reorder remaining questions
     const remainingQuestions = await prisma.assessmentQuestion.findMany({
-      where: { assessmentId: params.id },
+      where: { assessmentId: id },
       orderBy: { order: "asc" },
     });
 

@@ -347,6 +347,88 @@ export default function EditAssessmentPage() {
         </div>
       </div>
 
+      {/* Edit Question Dialog */}
+      {editingQuestion && (
+        <AlertDialog open={!!editingQuestion} onOpenChange={() => setEditingQuestion(null)}>
+          <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <AlertDialogHeader>
+              <AlertDialogTitle>ویرایش سوال</AlertDialogTitle>
+              <AlertDialogDescription>
+                توجه: برای آزمون‌های MBTI و DISC که از seed ساخته شده‌اند، ویرایش سوالات ممکن است بر روی محاسبات تأثیر بگذارد.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">متن سوال</label>
+                <input
+                  type="text"
+                  value={editingQuestion.questionText}
+                  onChange={(e) => setEditingQuestion({
+                    ...editingQuestion,
+                    questionText: e.target.value
+                  })}
+                  className="w-full mt-1 px-3 py-2 border rounded-md"
+                />
+              </div>
+
+              {editingQuestion.options && Array.isArray(editingQuestion.options) && (
+                <div>
+                  <label className="text-sm font-medium">گزینه‌ها</label>
+                  <div className="space-y-2 mt-2">
+                    {editingQuestion.options.map((option: any, index: number) => (
+                      <div key={index} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={option.text}
+                          onChange={(e) => {
+                            const newOptions = [...editingQuestion.options];
+                            newOptions[index] = { ...option, text: e.target.value };
+                            setEditingQuestion({
+                              ...editingQuestion,
+                              options: newOptions
+                            });
+                          }}
+                          className="flex-1 px-3 py-2 border rounded-md text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>انصراف</AlertDialogCancel>
+              <AlertDialogAction onClick={async () => {
+                try {
+                  const response = await fetch(
+                    `/api/assessments/${assessmentId}/questions/${editingQuestion.id}`,
+                    {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        questionText: editingQuestion.questionText,
+                        options: editingQuestion.options,
+                      }),
+                    }
+                  );
+
+                  if (!response.ok) throw new Error("Failed to update question");
+
+                  toast.success("سوال به‌روزرسانی شد");
+                  setEditingQuestion(null);
+                  await fetchAssessment();
+                } catch (error) {
+                  console.error("Error updating question:", error);
+                  toast.error("خطا در به‌روزرسانی سوال");
+                }
+              }}>
+                ذخیره تغییرات
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       {/* Delete Question Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
