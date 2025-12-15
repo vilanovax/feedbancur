@@ -120,6 +120,7 @@ export async function POST(
         instructions: assessment.instructions,
         timeLimit: assessment.timeLimit,
         showResults: assessment.showResults,
+        totalQuestions: assessment.questions.length,
       },
       questions: assessment.questions.map((q) => ({
         id: q.id,
@@ -127,6 +128,8 @@ export async function POST(
         questionType: q.questionType,
         options: q.options,
         order: q.order,
+        isRequired: q.isRequired || false,
+        image: q.image || null,
       })),
       progress: {
         id: progress.id,
