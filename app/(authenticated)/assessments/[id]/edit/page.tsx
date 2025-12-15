@@ -143,59 +143,55 @@ export default function EditAssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50" dir="rtl">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <AppHeader />
-          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
-          </main>
-        </div>
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+        </main>
       </div>
     );
   }
 
   if (!assessment) {
     return (
-      <div className="flex h-screen bg-gray-50" dir="rtl">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
         <Sidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <AppHeader />
-          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
-            <p className="text-gray-600">آزمون یافت نشد</p>
-          </main>
-        </div>
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <p className="text-gray-600 dark:text-gray-400">آزمون یافت نشد</p>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AppHeader />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="container mx-auto max-w-7xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/assessments")}
-          className="mb-4"
-        >
-          <ArrowRight className="w-4 h-4 ml-2" />
-          بازگشت
-        </Button>
-        <h1 className="text-3xl font-bold">ویرایش آزمون</h1>
-      </div>
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/assessments")}
+                className="mb-4"
+              >
+                <ArrowRight className="w-4 h-4 ml-2" />
+                بازگشت
+              </Button>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">ویرایش آزمون</h1>
+            </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Left Column - Assessment Form */}
-        <div className="md:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>مشخصات آزمون</CardTitle>
-            </CardHeader>
-            <CardContent>
+            <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
+              {/* Left Column - Assessment Form */}
+              <div className="md:col-span-1">
+                <Card className="bg-white dark:bg-gray-800">
+                  <CardHeader>
+                    <CardTitle className="text-gray-900 dark:text-white">مشخصات آزمون</CardTitle>
+                  </CardHeader>
+                  <CardContent>
               <AssessmentForm
                 initialData={assessment}
                 onSubmit={handleUpdateAssessment}
@@ -251,17 +247,17 @@ export default function EditAssessmentPage() {
           </Card>
         </div>
 
-        {/* Right Column - Questions List */}
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>سوالات آزمون</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {questions.length} سوال
-                  </p>
-                </div>
+              {/* Right Column - Questions List */}
+              <div className="md:col-span-2">
+                <Card className="bg-white dark:bg-gray-800">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-gray-900 dark:text-white">سوالات آزمون</CardTitle>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {questions.length} سوال
+                        </p>
+                      </div>
                 <Button
                   onClick={() =>
                     router.push(`/assessments/${assessmentId}/questions/new`)
@@ -275,31 +271,31 @@ export default function EditAssessmentPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {questions.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>هنوز سوالی اضافه نشده است</p>
-                  <p className="text-sm mt-2">
-                    این آزمون از seed script ساخته شده است
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {questions.map((question, index) => (
-                    <div
-                      key={question.id}
-                      className="flex items-start gap-3 p-4 border rounded-lg hover:bg-gray-50"
-                    >
+                    {questions.length === 0 ? (
+                      <div className="text-center py-12 text-gray-600 dark:text-gray-400">
+                        <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>هنوز سوالی اضافه نشده است</p>
+                        <p className="text-sm mt-2">
+                          این آزمون از seed script ساخته شده است
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {questions.map((question, index) => (
+                          <div
+                            key={question.id}
+                            className="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          >
                       <div className="flex-shrink-0 mt-1">
-                        <GripVertical className="w-5 h-5 text-muted-foreground cursor-move" />
+                        <GripVertical className="w-5 h-5 text-gray-500 dark:text-gray-400 cursor-move" />
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium">#{index + 1}</span>
-                              <Badge variant="secondary" className="text-xs">
+                              <span className="font-medium text-gray-900 dark:text-white">#{index + 1}</span>
+                              <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
                                 {getQuestionTypeLabel(question.questionType)}
                               </Badge>
                               {question.isRequired && (
@@ -308,11 +304,11 @@ export default function EditAssessmentPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm">{question.questionText}</p>
+                            <p className="text-sm text-gray-900 dark:text-white">{question.questionText}</p>
                             {question.options &&
                               Array.isArray(question.options) &&
                               question.options.length > 0 && (
-                                <div className="mt-2 text-xs text-muted-foreground">
+                                <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
                                   {question.options.length} گزینه
                                 </div>
                               )}
@@ -323,7 +319,7 @@ export default function EditAssessmentPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setEditingQuestion(question)}
-                              className="text-blue-500 hover:text-blue-700"
+                              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -331,7 +327,7 @@ export default function EditAssessmentPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setDeleteId(question.id)}
-                              className="text-red-500 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -339,13 +335,13 @@ export default function EditAssessmentPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
 
       {/* Edit Question Dialog */}
       {editingQuestion && (
@@ -449,8 +445,8 @@ export default function EditAssessmentPage() {
         </AlertDialogContent>
       </AlertDialog>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

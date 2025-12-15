@@ -69,7 +69,7 @@ export function AssessmentForm({
       {/* بخش اطلاعات اصلی */}
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="title" className="text-sm font-medium text-gray-900">
+          <Label htmlFor="title" className="text-sm font-medium text-gray-900 dark:text-white">
             عنوان آزمون <span className="text-red-500">*</span>
           </Label>
           <Input
@@ -83,7 +83,7 @@ export function AssessmentForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="type" className="text-sm font-medium text-gray-900">
+          <Label htmlFor="type" className="text-sm font-medium text-gray-900 dark:text-white">
             نوع آزمون <span className="text-red-500">*</span>
           </Label>
           <Select
@@ -105,13 +105,13 @@ export function AssessmentForm({
               <SelectItem value="CUSTOM">سفارشی</SelectItem>
             </SelectContent>
           </Select>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             نوع آزمون تعیین می‌کند که نتایج چگونه محاسبه شوند
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description" className="text-sm font-medium text-gray-900">
+          <Label htmlFor="description" className="text-sm font-medium text-gray-900 dark:text-white">
             توضیحات
           </Label>
           <Textarea
@@ -127,7 +127,7 @@ export function AssessmentForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="instructions" className="text-sm font-medium text-gray-900">
+          <Label htmlFor="instructions" className="text-sm font-medium text-gray-900 dark:text-white">
             دستورالعمل
           </Label>
           <Textarea
@@ -140,19 +140,19 @@ export function AssessmentForm({
             rows={4}
             className="text-base resize-none"
           />
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             این متن قبل از شروع آزمون به کاربران نمایش داده می‌شود
           </p>
         </div>
       </div>
 
       {/* بخش تنظیمات زمان و نمره */}
-      <div className="space-y-4 border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900">تنظیمات زمان و نمره</h3>
+      <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">تنظیمات زمان و نمره</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="timeLimit" className="text-sm font-medium text-gray-900">
+            <Label htmlFor="timeLimit" className="text-sm font-medium text-gray-900 dark:text-white">
               محدودیت زمانی (دقیقه)
             </Label>
             <Input
@@ -169,13 +169,13 @@ export function AssessmentForm({
               placeholder="بدون محدودیت"
               className="text-base"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               خالی بگذارید برای بدون محدودیت
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="passingScore" className="text-sm font-medium text-gray-900">
+            <Label htmlFor="passingScore" className="text-sm font-medium text-gray-900 dark:text-white">
               نمره قبولی (درصد)
             </Label>
             <Input
@@ -195,7 +195,7 @@ export function AssessmentForm({
               placeholder="بدون نمره قبولی"
               className="text-base"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               برای آزمون‌های شخصیت‌سنجی معمولاً نیازی نیست
             </p>
           </div>
@@ -203,16 +203,16 @@ export function AssessmentForm({
       </div>
 
       {/* بخش تنظیمات */}
-      <div className="space-y-4 border-t pt-6">
-        <h3 className="text-lg font-semibold text-gray-900">تنظیمات دسترسی</h3>
+      <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">تنظیمات دسترسی</h3>
 
-        <div className="space-y-4 bg-gray-50 rounded-lg p-4">
+        <div className="space-y-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
           <div className="flex items-center justify-between py-2">
             <div className="space-y-0.5">
-              <Label htmlFor="isActive" className="text-base font-medium text-gray-900 cursor-pointer">
+              <Label htmlFor="isActive" className="text-base font-medium text-gray-900 dark:text-white cursor-pointer">
                 فعال بودن آزمون
               </Label>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 آزمون برای کاربران قابل دسترسی باشد
               </p>
             </div>
@@ -225,14 +225,14 @@ export function AssessmentForm({
             />
           </div>
 
-          <div className="border-t border-gray-200" />
+          <div className="border-t border-gray-200 dark:border-gray-700" />
 
           <div className="flex items-center justify-between py-2">
             <div className="space-y-0.5">
-              <Label htmlFor="allowRetake" className="text-base font-medium text-gray-900 cursor-pointer">
+              <Label htmlFor="allowRetake" className="text-base font-medium text-gray-900 dark:text-white cursor-pointer">
                 امکان تکرار آزمون
               </Label>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 کاربران می‌توانند آزمون را دوباره انجام دهند
               </p>
             </div>
@@ -245,14 +245,14 @@ export function AssessmentForm({
             />
           </div>
 
-          <div className="border-t border-gray-200" />
+          <div className="border-t border-gray-200 dark:border-gray-700" />
 
           <div className="flex items-center justify-between py-2">
             <div className="space-y-0.5">
-              <Label htmlFor="showResults" className="text-base font-medium text-gray-900 cursor-pointer">
+              <Label htmlFor="showResults" className="text-base font-medium text-gray-900 dark:text-white cursor-pointer">
                 نمایش نتایج
               </Label>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 نتایج به کاربران نمایش داده شود
               </p>
             </div>
@@ -268,7 +268,7 @@ export function AssessmentForm({
       </div>
 
       {/* دکمه‌های عملیات */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
         {onCancel && (
           <Button
             type="button"

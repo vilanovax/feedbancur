@@ -86,28 +86,29 @@ export default function AssessmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
       <Sidebar />
       <AppHeader />
-      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های شخصیت‌سنجی</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
-              </p>
+      <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)]">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های شخصیت‌سنجی</h1>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+                  مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
+                </p>
+              </div>
+              {session?.user.role === "ADMIN" && (
+                <Button onClick={() => router.push("/assessments/new")} className="w-full sm:w-auto">
+                  <Plus className="w-4 h-4 ml-2" />
+                  آزمون جدید
+                </Button>
+              )}
             </div>
-            {session?.user.role === "ADMIN" && (
-              <Button onClick={() => router.push("/assessments/new")} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 ml-2" />
-                آزمون جدید
-              </Button>
-            )}
-          </div>
 
-          {/* Filters */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
+            {/* Filters */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -146,11 +147,11 @@ export default function AssessmentsPage() {
 
           {/* Assessments Grid */}
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-64 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           ) : assessments.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <p className="text-gray-600 dark:text-gray-400">هیچ آزمونی یافت نشد</p>
               {session?.user.role === "ADMIN" && (
                 <Button
@@ -164,7 +165,7 @@ export default function AssessmentsPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {assessments.map((assessment) => (
                 <AssessmentCard
                   key={assessment.id}
@@ -215,6 +216,7 @@ export default function AssessmentsPage() {
               ))}
             </div>
           )}
+          </div>
         </div>
       </main>
     </div>
