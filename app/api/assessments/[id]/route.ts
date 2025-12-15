@@ -15,8 +15,59 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Check permissions based on role
+    if (session.user.role === "ADMIN") {
+      // Admins have access to all assessments
+    } else if (session.user.role === "MANAGER" || session.user.role === "EMPLOYEE") {
+      // For managers and employees, check if they have access through department assignment
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { departmentId: true },
+      });
+
+      if (!user?.departmentId) {
+        console.error(`User ${session.user.id} has no departmentId`);
+        return NextResponse.json(
+          { error: "شما به بخشی اختصاص داده نشده‌اید" },
+          { status: 403 }
+        );
+      }
+
+      // Check if assessment is assigned to user's department
+      const assignment = await prisma.assessmentAssignment.findUnique({
+        where: {
+          assessmentId_departmentId: {
+            assessmentId: id,
+            departmentId: user.departmentId,
+          },
+        },
+      });
+
+      if (!assignment) {
+        console.error(`Assessment ${id} not assigned to department ${user.departmentId} for user ${session.user.id}`);
+        // Also check if assessment exists
+        const assessmentExists = await prisma.assessment.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+        
+        if (!assessmentExists) {
+          return NextResponse.json(
+            { error: "آزمون یافت نشد" },
+            { status: 404 }
+          );
+        }
+        
+        return NextResponse.json(
+          { error: "شما دسترسی به این آزمون ندارید. این آزمون به بخش شما اختصاص داده نشده است" },
+          { status: 403 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { error: "دسترسی غیرمجاز" },
+        { status: 403 }
+      );
     }
 
     const assessment = await prisma.assessment.findUnique({
@@ -61,10 +112,18 @@ export async function GET(
     }
 
     return NextResponse.json(assessment);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching assessment:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "خطا در دریافت اطلاعات آزمون",
+        details: process.env.NODE_ENV === "development" ? error?.message : undefined
+      },
       { status: 500 }
     );
   }

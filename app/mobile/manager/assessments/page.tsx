@@ -203,10 +203,7 @@ export default function ManagerAssessmentsPage() {
                   )}
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    ایجاد شده توسط: {assessment.createdBy.name}
-                  </span>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end">
                   <div
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       assessment.isActive

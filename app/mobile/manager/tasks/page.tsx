@@ -879,7 +879,7 @@ export default function ManagerTasksPage() {
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4"
               >
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:[color:var(--color-amber-100)] flex-1">
                     {feedback.title}
                   </h3>
                   <div className="flex items-center gap-2">

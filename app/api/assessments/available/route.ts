@@ -100,6 +100,11 @@ export async function GET(request: NextRequest) {
             },
           });
 
+          const hasCompleted = !!result;
+          const hasProgress = !!progress;
+          // اگر آزمون تکمیل شده باشد، دیگر در حال انجام نیست
+          const inProgress = hasProgress && !hasCompleted;
+
           return {
             ...assessment,
             assignment: {
@@ -108,9 +113,9 @@ export async function GET(request: NextRequest) {
               endDate: assignment.endDate,
             },
             userStatus: {
-              hasCompleted: !!result,
+              hasCompleted,
               canRetake: assessment.allowRetake,
-              inProgress: !!progress,
+              inProgress,
               lastQuestion: progress?.lastQuestion || 0,
               completedAt: result?.completedAt || null,
             },

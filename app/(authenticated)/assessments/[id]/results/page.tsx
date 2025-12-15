@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -94,22 +96,39 @@ export default function AssessmentResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)]">
+          <div className="flex items-center justify-center h-screen">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">خطا در بارگذاری داده‌ها</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)]">
+          <div className="flex items-center justify-center h-screen">
+            <p className="text-muted-foreground">خطا در بارگذاری داده‌ها</p>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
+      <Sidebar />
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)]">
+        <div className="p-4 sm:p-6 lg:p-8">
+          <div className="container mx-auto max-w-7xl">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -225,7 +244,7 @@ export default function AssessmentResultsPage() {
                 </thead>
                 <tbody>
                   {data.results.map((result: any) => (
-                    <tr key={result.id} className="border-b hover:bg-gray-50">
+                    <tr key={result.id} className="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="py-3 px-4">{result.user.name}</td>
                       <td className="py-3 px-4">
                         {result.user.department?.name || "-"}
@@ -265,6 +284,9 @@ export default function AssessmentResultsPage() {
           )}
         </CardContent>
       </Card>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

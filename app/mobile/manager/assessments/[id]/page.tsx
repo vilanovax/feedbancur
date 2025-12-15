@@ -16,7 +16,9 @@ import {
   XCircle,
   User,
   Play,
+  CheckCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Assessment {
   id: string;
@@ -52,6 +54,8 @@ export default function AssessmentDetailPage() {
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [hasCompleted, setHasCompleted] = useState(false);
+  const [canStart, setCanStart] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -67,6 +71,12 @@ export default function AssessmentDetailPage() {
     }
   }, [session, assessmentId]);
 
+  useEffect(() => {
+    if (assessment) {
+      checkCompletionStatus();
+    }
+  }, [assessment]);
+
   const fetchAssessment = async () => {
     try {
       const response = await fetch(`/api/assessments/${assessmentId}`);
@@ -74,14 +84,55 @@ export default function AssessmentDetailPage() {
         const data = await response.json();
         setAssessment(data);
       } else {
-        setError("خطا در بارگذاری اطلاعات آزمون");
+        const errorData = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          setError("آزمون یافت نشد یا شما دسترسی به این آزمون ندارید");
+        } else if (response.status === 403) {
+          setError("شما دسترسی به این آزمون ندارید");
+        } else {
+          setError(errorData.error || "خطا در بارگذاری اطلاعات آزمون");
+        }
       }
     } catch (error) {
       console.error("Error fetching assessment:", error);
-      setError("خطا در بارگذاری اطلاعات آزمون");
+      setError("خطا در اتصال به سرور. لطفاً دوباره تلاش کنید");
     } finally {
       setLoading(false);
     }
+  };
+
+  const checkCompletionStatus = async () => {
+    if (!assessment) return;
+    
+    try {
+      const response = await fetch(`/api/assessments/${assessmentId}/result`);
+      if (response.ok) {
+        const result = await response.json();
+        setHasCompleted(true);
+        // اگر آزمون تکمیل شده و allowRetake false است، اجازه شروع مجدد نده
+        if (!assessment.allowRetake) {
+          setCanStart(false);
+        } else {
+          setCanStart(true);
+        }
+      } else if (response.status === 404) {
+        // آزمون تکمیل نشده است
+        setHasCompleted(false);
+        setCanStart(true);
+      }
+    } catch (error) {
+      console.error("Error checking completion status:", error);
+      // در صورت خطا، اجازه شروع بده
+      setCanStart(true);
+    }
+  };
+
+  const handleStartAssessment = () => {
+    if (!canStart) {
+      toast.error("شما قبلاً این آزمون را تکمیل کرده‌اید و امکان تکرار وجود ندارد");
+      return;
+    }
+    router.push(`/assessments/${assessmentId}/take`);
   };
 
   if (status === "loading" || loading) {
@@ -322,16 +373,40 @@ export default function AssessmentDetailPage() {
 
         {/* Start Button */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
-          <button
-            onClick={() => router.push(`/assessments/${assessmentId}/take`)}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-semibold rounded-lg flex items-center justify-center gap-3 transition-colors"
-          >
-            <Play className="w-6 h-6" />
-            شروع آزمون
-          </button>
-          <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
-            با کلیک روی دکمه بالا، آزمون شروع می‌شود
-          </p>
+          {hasCompleted && !assessment.allowRetake ? (
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 mb-3">
+                <CheckCircle className="w-6 h-6" />
+                <span className="text-lg font-semibold">آزمون تکمیل شده</span>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                شما قبلاً این آزمون را تکمیل کرده‌اید و امکان تکرار وجود ندارد
+              </p>
+              <button
+                onClick={() => router.push(`/assessments/${assessmentId}/result`)}
+                className="w-full px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                مشاهده نتیجه
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={handleStartAssessment}
+                disabled={!canStart}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-6 text-lg font-semibold rounded-lg flex items-center justify-center gap-3 transition-colors"
+              >
+                <Play className="w-6 h-6" />
+                {hasCompleted ? "تکرار آزمون" : "شروع آزمون"}
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+                {hasCompleted 
+                  ? "با کلیک روی دکمه بالا، می‌توانید آزمون را دوباره انجام دهید"
+                  : "با کلیک روی دکمه بالا، آزمون شروع می‌شود"
+                }
+              </p>
+            </>
+          )}
         </div>
       </div>
     </MobileLayout>

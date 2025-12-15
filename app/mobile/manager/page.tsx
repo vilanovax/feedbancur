@@ -6,13 +6,28 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import Image from "next/image";
-import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList } from "lucide-react";
+import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+interface AssessmentResult {
+  id: string;
+  assessmentId: string;
+  assessment: {
+    id: string;
+    title: string;
+    type: string;
+  };
+  result: any;
+  score: number | null;
+  isPassed: boolean | null;
+  completedAt: Date;
+}
 
 export default function ManagerMobilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [assessmentResults, setAssessmentResults] = useState<AssessmentResult[]>([]);
   const [stats, setStats] = useState({
     myFeedbacks: 0,
     forwardedFeedbacks: 0,
@@ -35,6 +50,7 @@ export default function ManagerMobilePage() {
   useEffect(() => {
     if (session?.user.role === "MANAGER") {
       fetchStats();
+      fetchAssessmentResults();
     }
   }, [session]);
 
@@ -83,6 +99,27 @@ export default function ManagerMobilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAssessmentResults = async () => {
+    try {
+      const response = await fetch("/api/assessments/my-results");
+      if (response.ok) {
+        const results = await response.json();
+        setAssessmentResults(results);
+      }
+    } catch (error) {
+      console.error("Error fetching assessment results:", error);
+    }
+  };
+
+  const getResultDisplay = (result: AssessmentResult) => {
+    if (result.assessment.type === "MBTI" && result.result) {
+      return result.result.type || "N/A";
+    } else if (result.assessment.type === "DISC" && result.result) {
+      return result.result.type || "N/A";
+    }
+    return "N/A";
   };
 
   if (status === "loading" || loading) {
@@ -232,6 +269,44 @@ export default function ManagerMobilePage() {
             )}
           </Link>
         </div>
+
+        {/* Assessment Results */}
+        {assessmentResults.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+              نتایج آزمون‌های شما
+            </h3>
+            <div className="grid grid-cols-1 gap-3">
+              {assessmentResults.map((result) => (
+                <Link
+                  key={result.id}
+                  href={`/assessments/${result.assessmentId}/result`}
+                  className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-indigo-600 dark:border-indigo-500"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ClipboardList className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                        <h4 className="font-semibold text-gray-800 dark:text-white">
+                          {result.assessment.title}
+                        </h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                          {getResultDisplay(result)}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          ({result.assessment.type})
+                        </span>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="space-y-3">

@@ -68,7 +68,7 @@ export default function MyAssessmentsPage() {
     (a) => !a.userStatus.hasCompleted && !a.userStatus.inProgress
   );
   const inProgressAssessments = assessments.filter(
-    (a) => a.userStatus.inProgress
+    (a) => a.userStatus.inProgress && !a.userStatus.hasCompleted
   );
   const completedAssessments = assessments.filter(
     (a) => a.userStatus.hasCompleted

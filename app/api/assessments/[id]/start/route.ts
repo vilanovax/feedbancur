@@ -64,7 +64,7 @@ export async function POST(
     }
 
     // بررسی وجود پیشرفت قبلی
-    const existingProgress = await prisma.assessmentProgress.findFirst({
+    let existingProgress = await prisma.assessmentProgress.findFirst({
       where: {
         assessmentId: id,
         userId: session.user.id,
@@ -89,23 +89,75 @@ export async function POST(
 
     // اگر پیشرفت جدیدی شروع می‌شود، progress قبلی را پاک کنیم
     if (existingResult && assessment.allowRetake && existingProgress) {
-      await prisma.assessmentProgress.delete({
-        where: { id: existingProgress.id },
-      });
+      try {
+        await prisma.assessmentProgress.deleteMany({
+          where: {
+            assessmentId: id,
+            userId: session.user.id,
+          },
+        });
+        existingProgress = null;
+      } catch (deleteError: any) {
+        console.error('Error deleting existing progress:', deleteError);
+        // Continue anyway - we'll try to create/update below
+      }
     }
 
     // ایجاد یا به‌روزرسانی پیشرفت
     let progress;
     if (!existingProgress || (existingResult && assessment.allowRetake)) {
-      progress = await prisma.assessmentProgress.create({
-        data: {
-          assessmentId: id,
-          userId: session.user.id,
-          startedAt: new Date(),
-          answers: {},
-          lastQuestion: 0,
-        },
-      });
+      // حذف همه progress های قبلی برای این کاربر و آزمون
+      try {
+        await prisma.assessmentProgress.deleteMany({
+          where: {
+            assessmentId: id,
+            userId: session.user.id,
+          },
+        });
+      } catch (deleteError: any) {
+        console.error('Error deleting old progress:', deleteError);
+        // Continue anyway
+      }
+      
+      // ایجاد progress جدید
+      try {
+        progress = await prisma.assessmentProgress.create({
+          data: {
+            assessmentId: id,
+            userId: session.user.id,
+            startedAt: new Date(),
+            answers: {},
+            lastQuestion: 0,
+          },
+        });
+      } catch (createError: any) {
+        console.error('Error creating progress:', createError);
+        // اگر create با خطا مواجه شد (مثلاً unique constraint)، سعی می‌کنیم update کنیم
+        if (createError.code === 'P2002') {
+          // Unique constraint violation - try to update existing
+          const existing = await prisma.assessmentProgress.findFirst({
+            where: {
+              assessmentId: id,
+              userId: session.user.id,
+            },
+          });
+          
+          if (existing) {
+            progress = await prisma.assessmentProgress.update({
+              where: { id: existing.id },
+              data: {
+                startedAt: new Date(),
+                answers: {},
+                lastQuestion: 0,
+              },
+            });
+          } else {
+            throw createError;
+          }
+        } else {
+          throw createError;
+        }
+      }
     } else {
       progress = existingProgress;
     }
