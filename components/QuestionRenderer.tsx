@@ -23,12 +23,14 @@ interface QuestionRendererProps {
   };
   value?: string;
   onChange: (value: string) => void;
+  onAutoNext?: () => void;
 }
 
 export function QuestionRenderer({
   question,
   value,
   onChange,
+  onAutoNext,
 }: QuestionRendererProps) {
   const [rating, setRating] = useState<number>(
     value ? parseInt(value) : 0
@@ -118,13 +120,23 @@ export function QuestionRenderer({
       );
     }
 
+    const handleValueChange = (newValue: string) => {
+      onChange(newValue);
+      // Auto navigate to next question after a short delay
+      if (onAutoNext) {
+        setTimeout(() => {
+          onAutoNext();
+        }, 300); // 300ms delay for better UX
+      }
+    };
+
     return (
-      <RadioGroup value={value} onValueChange={onChange}>
+      <RadioGroup value={value} onValueChange={handleValueChange}>
         <div className="space-y-3">
           {normalizedOptions.map((option: QuestionOption, index: number) => (
             <div
               key={index}
-              className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="flex items-center gap-[5px] p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <RadioGroupItem
                 value={option.value}

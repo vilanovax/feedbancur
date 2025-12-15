@@ -166,11 +166,11 @@ export default function MyAssessmentsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-gray-50" dir="rtl">
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <AppHeader />
-          <main className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+          <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)] overflow-y-auto p-6 flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
           </main>
         </div>
@@ -179,23 +179,23 @@ export default function MyAssessmentsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex" dir="rtl">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)] overflow-y-auto p-6">
           <div className="container mx-auto max-w-7xl">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">آزمون‌های من</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های من</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">
                 مشاهده و انجام آزمون‌های اختصاص یافته
               </p>
             </div>
 
             {assessments.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-                <AlertCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600">
+              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <AlertCircle className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
                   هیچ آزمونی برای شما تعریف نشده است
                 </p>
               </div>
@@ -215,8 +215,9 @@ export default function MyAssessmentsPage() {
 
               <TabsContent value="available" className="mt-6">
                 {availableAssessments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">
+                  <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <AlertCircle className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 text-lg">
                       همه آزمون‌های موجود را انجام داده‌اید
                     </p>
                   </div>
@@ -229,8 +230,9 @@ export default function MyAssessmentsPage() {
 
               <TabsContent value="in-progress" className="mt-6">
                 {inProgressAssessments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">
+                  <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <AlertCircle className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 text-lg">
                       هیچ آزمون ناتمامی ندارید
                     </p>
                   </div>
@@ -243,8 +245,9 @@ export default function MyAssessmentsPage() {
 
               <TabsContent value="completed" className="mt-6">
                 {completedAssessments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">
+                  <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <AlertCircle className="w-16 h-16 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400 text-lg">
                       هنوز هیچ آزمونی را تکمیل نکرده‌اید
                     </p>
                   </div>

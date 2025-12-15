@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { QuestionRenderer } from "./QuestionRenderer";
@@ -51,6 +51,39 @@ export function AssessmentTaker({
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  
+  // بررسی اینکه آیا همه سوالات پاسخ داده شده‌اند
+  const allQuestionsAnswered = questions.every(
+    (q) => answers[q.id] && answers[q.id] !== ""
+  );
+
+  // Auto-navigate to first unanswered question if current question is already answered
+  // استفاده از useRef برای جلوگیری از infinite loop
+  const navigationRef = useRef(false);
+  
+  useEffect(() => {
+    if (!currentQuestion || navigationRef.current) return;
+    
+    const currentAnswer = answers[currentQuestion.id];
+    const isAnswered = currentAnswer && currentAnswer !== "";
+
+    if (isAnswered) {
+      // پیدا کردن اولین سوال پاسخ داده نشده
+      const firstUnansweredIndex = questions.findIndex(
+        (q) => !answers[q.id] || answers[q.id] === ""
+      );
+
+      // اگر سوال پاسخ داده نشده پیدا شد و با سوال فعلی متفاوت است، navigate کن
+      if (firstUnansweredIndex !== -1 && firstUnansweredIndex !== currentQuestionIndex) {
+        navigationRef.current = true;
+        setCurrentQuestionIndex(firstUnansweredIndex);
+        // Reset flag after navigation
+        setTimeout(() => {
+          navigationRef.current = false;
+        }, 100);
+      }
+    }
+  }, [currentQuestionIndex, answers, questions, currentQuestion]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -111,6 +144,26 @@ export function AssessmentTaker({
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
       saveProgress();
+    } else {
+      // اگر به آخرین سوال رسیدیم، بررسی می‌کنیم که آیا سوالات پاسخ داده نشده وجود دارد
+      const unansweredQuestions = questions.filter(
+        (q) => !answers[q.id] || answers[q.id] === ""
+      );
+      
+      if (unansweredQuestions.length > 0) {
+        // پیدا کردن index اولین سوال پاسخ داده نشده
+        const firstUnansweredIndex = questions.findIndex(
+          (q) => !answers[q.id] || answers[q.id] === ""
+        );
+        
+        if (firstUnansweredIndex !== -1) {
+          setCurrentQuestionIndex(firstUnansweredIndex);
+          saveProgress();
+        }
+      } else {
+        // اگر همه سوالات پاسخ داده شده‌اند، پیشرفت را ذخیره می‌کنیم
+        saveProgress();
+      }
     }
   };
 
@@ -224,6 +277,11 @@ export function AssessmentTaker({
             question={currentQuestion}
             value={answers[currentQuestion.id]}
             onChange={(value) => handleAnswerChange(currentQuestion.id, value)}
+            onAutoNext={
+              currentQuestion.questionType === "MULTIPLE_CHOICE"
+                ? handleNext
+                : undefined
+            }
           />
         </div>
 
@@ -238,7 +296,17 @@ export function AssessmentTaker({
             قبلی
           </Button>
 
-          {currentQuestionIndex === questions.length - 1 ? (
+          {allQuestionsAnswered ? (
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting} 
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Send className="w-4 h-4 ml-2" />
+              {isSubmitting ? "در حال ثبت..." : "آماده نمایش پاسخ"}
+            </Button>
+          ) : currentQuestionIndex === questions.length - 1 ? (
             <Button onClick={handleSubmit} disabled={isSubmitting} size="lg">
               <Send className="w-4 h-4 ml-2" />
               {isSubmitting ? "در حال ثبت..." : "ثبت نهایی"}
