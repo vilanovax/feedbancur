@@ -103,45 +103,161 @@ export async function POST(
           userId: session.user.id,
           startedAt: new Date(),
           answers: {},
-          currentQuestion: 0,
+          lastQuestion: 0,
         },
       });
     } else {
       progress = existingProgress;
     }
 
+    // Process questions and ensure options are properly formatted
+    const processedQuestions = assessment.questions.map((q) => {
+      try {
+        // Prisma returns Json fields as parsed objects, but we need to ensure it's serializable
+        let options: any = q.options;
+        
+        // Debug log for first question
+        if (q.order === 1) {
+          console.log('Processing first question:', q.id);
+          console.log('Options type:', typeof options);
+          console.log('Options value:', JSON.stringify(options, null, 2));
+        }
+        
+        // If options is null or undefined, set to empty array
+        if (options === null || options === undefined) {
+          options = [];
+        }
+        
+        // If options is already an array, use it directly
+        if (Array.isArray(options)) {
+          // Ensure all items are serializable
+          options = options.map((opt: any, index: number) => {
+            if (typeof opt === 'string') {
+              return { text: opt, value: String(index) };
+            }
+            if (typeof opt === 'object' && opt !== null) {
+              return {
+                text: opt.text || opt.label || opt.content || String(opt),
+                value: opt.value || opt.id || String(index),
+                score: opt.score || undefined,
+              };
+            }
+            return { text: String(opt), value: String(index) };
+          });
+        }
+        // If options is an object (not array), try to convert
+        else if (typeof options === 'object' && options !== null) {
+          const keys = Object.keys(options);
+          if (keys.length > 0) {
+            // Check if first key contains an array
+            const firstKey = keys[0];
+            if (Array.isArray(options[firstKey])) {
+              options = options[firstKey];
+            } else {
+              // Convert object to array
+              options = Object.values(options);
+            }
+          } else {
+            options = [];
+          }
+        }
+        // If options is a string, try to parse
+        else if (typeof options === 'string') {
+          try {
+            const parsed = JSON.parse(options);
+            options = Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            console.error('Error parsing options string:', e, 'Question ID:', q.id);
+            options = [];
+          }
+        }
+        // Fallback to empty array
+        else {
+          options = [];
+        }
+        
+        return {
+          id: q.id,
+          questionText: q.questionText || '',
+          questionType: q.questionType,
+          options: Array.isArray(options) ? options : [],
+          order: q.order || 0,
+          isRequired: q.isRequired !== undefined ? q.isRequired : true,
+          image: q.image || null,
+        };
+      } catch (error: any) {
+        console.error('Error processing question:', q.id, error?.message);
+        // Return question with empty options if there's an error
+        return {
+          id: q.id,
+          questionText: q.questionText || '',
+          questionType: q.questionType,
+          options: [],
+          order: q.order || 0,
+          isRequired: q.isRequired !== undefined ? q.isRequired : true,
+          image: q.image || null,
+        };
+      }
+    });
+
+    // Process progress answers
+    let progressAnswers: Record<string, any> = {};
+    try {
+      if (progress.answers && typeof progress.answers === 'object') {
+        progressAnswers = progress.answers as Record<string, any>;
+      }
+    } catch (e) {
+      console.error('Error processing progress answers:', e);
+      progressAnswers = {};
+    }
+
     // بازگرداندن داده‌های آزمون
-    return NextResponse.json({
+    const responseData = {
       assessment: {
         id: assessment.id,
-        title: assessment.title,
-        description: assessment.description,
+        title: assessment.title || '',
+        description: assessment.description || null,
         type: assessment.type,
-        instructions: assessment.instructions,
-        timeLimit: assessment.timeLimit,
-        showResults: assessment.showResults,
-        totalQuestions: assessment.questions.length,
+        instructions: assessment.instructions || null,
+        timeLimit: assessment.timeLimit || null,
+        showResults: assessment.showResults !== undefined ? assessment.showResults : true,
+        totalQuestions: processedQuestions.length,
       },
-      questions: assessment.questions.map((q) => ({
-        id: q.id,
-        questionText: q.questionText,
-        questionType: q.questionType,
-        options: q.options,
-        order: q.order,
-        isRequired: q.isRequired || false,
-        image: q.image || null,
-      })),
+      questions: processedQuestions,
       progress: {
         id: progress.id,
-        answers: progress.answers,
-        lastQuestion: progress.currentQuestion,
-        startedAt: progress.startedAt,
+        answers: progressAnswers,
+        lastQuestion: progress.lastQuestion || 0,
+        startedAt: progress.startedAt ? progress.startedAt.toISOString() : new Date().toISOString(),
       },
-    });
-  } catch (error) {
+    };
+
+    // Try to serialize to check for errors
+    try {
+      JSON.stringify(responseData);
+    } catch (serializeError: any) {
+      console.error('Error serializing response data:', serializeError);
+      throw new Error(`Serialization error: ${serializeError?.message}`);
+    }
+
+    return NextResponse.json(responseData);
+  } catch (error: any) {
     console.error("Error starting assessment:", error);
+    console.error("Error stack:", error?.stack);
+    console.error("Error message:", error?.message);
+    console.error("Error name:", error?.name);
+    
+    // Try to get more details about the error
+    let errorDetails = error?.message || "Unknown error";
+    if (error?.cause) {
+      errorDetails += ` | Cause: ${error.cause}`;
+    }
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
+      },
       { status: 500 }
     );
   }

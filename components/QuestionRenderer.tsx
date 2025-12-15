@@ -40,25 +40,100 @@ export function QuestionRenderer({
   };
 
   const renderMultipleChoice = () => {
-    const options = Array.isArray(question.options)
-      ? question.options
-      : [];
+    // Parse options - handle different formats
+    let options: QuestionOption[] = [];
+    
+    // Debug log
+    console.log('Question options raw:', question.options, 'Type:', typeof question.options);
+    
+    if (!question.options) {
+      console.warn('No options found for question:', question.id);
+      return (
+        <div className="text-sm text-gray-500 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          گزینه‌ای برای این سوال تعریف نشده است
+        </div>
+      );
+    }
+
+    // If options is already an array
+    if (Array.isArray(question.options)) {
+      options = question.options;
+    }
+    // If options is a string (JSON), parse it
+    else if (typeof question.options === 'string') {
+      try {
+        const parsed = JSON.parse(question.options);
+        options = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error('Error parsing options:', e);
+        options = [];
+      }
+    }
+    // If options is an object, try to convert to array
+    else if (typeof question.options === 'object') {
+      // Check if it's an object with array-like structure
+      if (question.options && typeof question.options === 'object' && !Array.isArray(question.options)) {
+        // Try to extract array from object
+        const keys = Object.keys(question.options);
+        if (keys.length > 0 && Array.isArray(question.options[keys[0]])) {
+          options = question.options[keys[0]];
+        } else {
+          // Convert object to array if it has numeric keys
+          options = Object.values(question.options) as QuestionOption[];
+        }
+      }
+    }
+
+    // Normalize options - ensure each has text and value
+    const normalizedOptions = options.map((option: any, index: number) => {
+      // If option is a string, convert to object
+      if (typeof option === 'string') {
+        return {
+          text: option,
+          value: String(index),
+        };
+      }
+      // If option is an object but missing value, use index
+      if (option && typeof option === 'object') {
+        return {
+          text: option.text || option.label || option.content || String(option),
+          value: option.value || option.id || String(index),
+          score: option.score,
+        };
+      }
+      return {
+        text: String(option),
+        value: String(index),
+      };
+    });
+
+    console.log('Normalized options:', normalizedOptions);
+
+    if (normalizedOptions.length === 0) {
+      console.warn('No normalized options for question:', question.id);
+      return (
+        <div className="text-sm text-gray-500 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          گزینه‌ای برای این سوال تعریف نشده است. لطفاً با مدیر سیستم تماس بگیرید.
+        </div>
+      );
+    }
 
     return (
       <RadioGroup value={value} onValueChange={onChange}>
         <div className="space-y-3">
-          {options.map((option: QuestionOption, index: number) => (
+          {normalizedOptions.map((option: QuestionOption, index: number) => (
             <div
               key={index}
-              className="flex items-center space-x-2 space-x-reverse"
+              className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <RadioGroupItem
                 value={option.value}
-                id={`${question.id}-${option.value}`}
+                id={`${question.id}-${option.value}-${index}`}
+                className="flex-shrink-0"
               />
               <Label
-                htmlFor={`${question.id}-${option.value}`}
-                className="flex-1 cursor-pointer"
+                htmlFor={`${question.id}-${option.value}-${index}`}
+                className="flex-1 cursor-pointer text-gray-900 dark:text-white font-medium"
               >
                 {option.text}
               </Label>
@@ -99,15 +174,15 @@ export function QuestionRenderer({
     return (
       <RadioGroup value={value} onValueChange={onChange}>
         <div className="flex gap-4">
-          <div className="flex items-center space-x-2 space-x-reverse">
+          <div className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex-1">
             <RadioGroupItem value="true" id={`${question.id}-true`} />
-            <Label htmlFor={`${question.id}-true`} className="cursor-pointer">
+            <Label htmlFor={`${question.id}-true`} className="cursor-pointer text-gray-900 dark:text-white font-medium">
               بله
             </Label>
           </div>
-          <div className="flex items-center space-x-2 space-x-reverse">
+          <div className="flex items-center space-x-2 space-x-reverse p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors flex-1">
             <RadioGroupItem value="false" id={`${question.id}-false`} />
-            <Label htmlFor={`${question.id}-false`} className="cursor-pointer">
+            <Label htmlFor={`${question.id}-false`} className="cursor-pointer text-gray-900 dark:text-white font-medium">
               خیر
             </Label>
           </div>
@@ -123,6 +198,7 @@ export function QuestionRenderer({
         onChange={(e) => onChange(e.target.value)}
         placeholder="پاسخ خود را وارد کنید..."
         rows={4}
+        className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 placeholder-gray-400 dark:placeholder-gray-500"
       />
     );
   };
@@ -130,7 +206,7 @@ export function QuestionRenderer({
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h3 className="text-lg font-medium">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white leading-relaxed">
           {question.questionText}
           {question.isRequired && (
             <span className="text-red-500 mr-1">*</span>
@@ -142,13 +218,13 @@ export function QuestionRenderer({
             <img
               src={question.image}
               alt="تصویر سوال"
-              className="max-w-full h-auto rounded-lg"
+              className="max-w-full h-auto rounded-lg shadow-sm"
             />
           </div>
         )}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-6">
         {question.questionType === "MULTIPLE_CHOICE" && renderMultipleChoice()}
         {question.questionType === "RATING_SCALE" && renderRatingScale()}
         {question.questionType === "TRUE_FALSE" && renderTrueFalse()}

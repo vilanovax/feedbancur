@@ -167,19 +167,21 @@ export function AssessmentTaker({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">{assessment.title}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{assessment.title}</h1>
             <div className="flex items-center gap-4">
               {timeRemaining !== null && (
                 <div className="flex items-center gap-2 text-lg font-mono">
-                  <Clock className="w-5 h-5" />
+                  <Clock className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                   <span
                     className={
-                      timeRemaining < 300 ? "text-red-500" : "text-gray-700"
+                      timeRemaining < 300 
+                        ? "text-red-500 dark:text-red-400" 
+                        : "text-gray-700 dark:text-gray-300"
                     }
                   >
                     {formatTime(timeRemaining)}
@@ -191,6 +193,7 @@ export function AssessmentTaker({
                 size="sm"
                 onClick={handleSaveAndExit}
                 disabled={isSaving}
+                className="border-gray-300 dark:border-gray-600"
               >
                 <Save className="w-4 h-4 ml-2" />
                 ذخیره و خروج
@@ -199,7 +202,7 @@ export function AssessmentTaker({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
               <span>
                 سوال {currentQuestionIndex + 1} از {questions.length}
               </span>
@@ -212,9 +215,9 @@ export function AssessmentTaker({
 
       {/* Question */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <div className="mb-2 text-sm text-muted-foreground">
-            سوال {currentQuestion.order}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+          <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 font-medium">
+            سوال {currentQuestion.order || currentQuestionIndex + 1}
           </div>
 
           <QuestionRenderer
@@ -249,8 +252,8 @@ export function AssessmentTaker({
         </div>
 
         {/* Unanswered questions indicator */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-medium mb-2">وضعیت پاسخ‌ها:</h3>
+        <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium mb-2 text-gray-900 dark:text-white">وضعیت پاسخ‌ها:</h3>
           <div className="flex flex-wrap gap-2">
             {questions.map((q, index) => {
               const isAnswered = answers[q.id] && answers[q.id] !== "";
@@ -260,12 +263,12 @@ export function AssessmentTaker({
                   onClick={() => setCurrentQuestionIndex(index)}
                   className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                     index === currentQuestionIndex
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-blue-600 text-white dark:bg-blue-500"
                       : isAnswered
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700"
                       : q.isRequired
-                      ? "bg-red-50 text-red-800 border border-red-200"
-                      : "bg-gray-100 text-gray-600"
+                      ? "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
                   }`}
                 >
                   {index + 1}
@@ -273,7 +276,7 @@ export function AssessmentTaker({
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
             سبز: پاسخ داده شده | قرمز: اجباری | خاکستری: اختیاری
           </p>
         </div>

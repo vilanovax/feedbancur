@@ -39,18 +39,35 @@ export default function TakeAssessmentPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">در حال بارگذاری آزمون...</p>
+        </div>
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">خطا در بارگذاری آزمون</p>
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">خطا در بارگذاری آزمون</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            تلاش مجدد
+          </button>
+        </div>
       </div>
     );
+  }
+
+  // Debug: Log questions to see if options are present
+  if (data.questions && data.questions.length > 0) {
+    console.log('Assessment questions:', data.questions);
+    console.log('First question options:', data.questions[0]?.options);
   }
 
   return (

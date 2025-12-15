@@ -17,6 +17,7 @@ import {
   GripVertical,
   AlertCircle,
   Edit,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -173,14 +174,22 @@ export default function EditAssessmentPage() {
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-6">
-              <Button
-                variant="ghost"
-                onClick={() => router.push("/assessments")}
-                className="mb-4"
-              >
-                <ArrowRight className="w-4 h-4 ml-2" />
-                بازگشت
-              </Button>
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => router.push("/assessments")}
+                >
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                  بازگشت
+                </Button>
+                <Button
+                  onClick={() => router.push(`/assessments/${assessmentId}/take`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Play className="w-4 h-4 ml-2" />
+                  شروع آزمون
+                </Button>
+              </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">ویرایش آزمون</h1>
             </div>
 
@@ -284,7 +293,7 @@ export default function EditAssessmentPage() {
                         {questions.map((question, index) => (
                           <div
                             key={question.id}
-                            className="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                            className="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/70 transition-colors"
                           >
                       <div className="flex-shrink-0 mt-1">
                         <GripVertical className="w-5 h-5 text-gray-500 dark:text-gray-400 cursor-move" />
@@ -294,8 +303,8 @@ export default function EditAssessmentPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium text-gray-900 dark:text-white">#{index + 1}</span>
-                              <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                              <span className="font-semibold text-gray-900 dark:text-white">#{index + 1}</span>
+                              <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
                                 {getQuestionTypeLabel(question.questionType)}
                               </Badge>
                               {question.isRequired && (
@@ -304,11 +313,11 @@ export default function EditAssessmentPage() {
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-gray-900 dark:text-white">{question.questionText}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">{question.questionText}</p>
                             {question.options &&
                               Array.isArray(question.options) &&
                               question.options.length > 0 && (
-                                <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                <div className="mt-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                                   {question.options.length} گزینه
                                 </div>
                               )}
@@ -346,16 +355,16 @@ export default function EditAssessmentPage() {
       {/* Edit Question Dialog */}
       {editingQuestion && (
         <AlertDialog open={!!editingQuestion} onOpenChange={() => setEditingQuestion(null)}>
-          <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-white dark:bg-gray-800">
             <AlertDialogHeader>
-              <AlertDialogTitle>ویرایش سوال</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-gray-900 dark:text-white">ویرایش سوال</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
                 توجه: برای آزمون‌های MBTI و DISC که از seed ساخته شده‌اند، ویرایش سوالات ممکن است بر روی محاسبات تأثیر بگذارد.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">متن سوال</label>
+                <label className="text-sm font-medium text-gray-900 dark:text-white">متن سوال</label>
                 <input
                   type="text"
                   value={editingQuestion.questionText}
@@ -363,13 +372,13 @@ export default function EditAssessmentPage() {
                     ...editingQuestion,
                     questionText: e.target.value
                   })}
-                  className="w-full mt-1 px-3 py-2 border rounded-md"
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {editingQuestion.options && Array.isArray(editingQuestion.options) && (
                 <div>
-                  <label className="text-sm font-medium">گزینه‌ها</label>
+                  <label className="text-sm font-medium text-gray-900 dark:text-white">گزینه‌ها</label>
                   <div className="space-y-2 mt-2">
                     {editingQuestion.options.map((option: any, index: number) => (
                       <div key={index} className="flex gap-2">
@@ -384,7 +393,7 @@ export default function EditAssessmentPage() {
                               options: newOptions
                             });
                           }}
-                          className="flex-1 px-3 py-2 border rounded-md text-sm"
+                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
                     ))}
@@ -427,10 +436,10 @@ export default function EditAssessmentPage() {
 
       {/* Delete Question Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-white dark:bg-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>حذف سوال</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-white">حذف سوال</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-300">
               آیا از حذف این سوال مطمئن هستید؟ این عمل قابل بازگشت نیست.
             </AlertDialogDescription>
           </AlertDialogHeader>

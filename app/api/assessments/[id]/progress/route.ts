@@ -39,8 +39,7 @@ export async function POST(
       where: { id: existingProgress.id },
       data: {
         answers: answers,
-        currentQuestion: lastQuestion,
-        lastActivity: new Date(),
+        lastQuestion: lastQuestion,
       },
     });
 

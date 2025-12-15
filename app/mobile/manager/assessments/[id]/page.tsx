@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   XCircle,
   User,
+  Play,
 } from "lucide-react";
 
 interface Assessment {
@@ -305,7 +306,7 @@ export default function AssessmentDetailPage() {
                   </div>
                   {question.options && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-5">
-                      {question.options.length} گزینه
+                      {Array.isArray(question.options) ? question.options.length : 0} گزینه
                     </p>
                   )}
                 </div>
@@ -318,6 +319,20 @@ export default function AssessmentDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Start Button */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+          <button
+            onClick={() => router.push(`/assessments/${assessmentId}/take`)}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-semibold rounded-lg flex items-center justify-center gap-3 transition-colors"
+          >
+            <Play className="w-6 h-6" />
+            شروع آزمون
+          </button>
+          <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-3">
+            با کلیک روی دکمه بالا، آزمون شروع می‌شود
+          </p>
+        </div>
       </div>
     </MobileLayout>
   );
