@@ -3,119 +3,137 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/assessments/[id]/start - شروع آزمون (USER)
+// POST /api/assessments/[id]/start - شروع یا ادامه آزمون
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
+
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if assessment exists and is active
+    // بررسی دسترسی کاربر به آزمون
     const assessment = await prisma.assessment.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         questions: {
           orderBy: { order: "asc" },
-          select: {
-            id: true,
-            questionText: true,
-            questionType: true,
-            order: true,
-            isRequired: true,
-            options: true,
-            image: true,
+        },
+        assignments: {
+          where: {
+            departmentId: session.user.departmentId || undefined,
           },
         },
       },
     });
 
-    if (!assessment || !assessment.isActive) {
+    if (!assessment) {
       return NextResponse.json(
-        { error: "Assessment not found or not active" },
+        { error: "Assessment not found" },
         { status: 404 }
       );
     }
 
-    // Check if user has access to this assessment (via department assignment)
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { departmentId: true },
-    });
-
-    if (!user?.departmentId) {
+    // بررسی فعال بودن آزمون
+    if (!assessment.isActive) {
       return NextResponse.json(
-        { error: "User not assigned to any department" },
+        { error: "این آزمون غیرفعال است" },
         { status: 403 }
       );
     }
 
-    const assignment = await prisma.assessmentAssignment.findUnique({
+    // بررسی تخصیص آزمون به بخش کاربر (برای غیر ادمین)
+    if (session.user.role !== "ADMIN") {
+      if (!session.user.departmentId) {
+        return NextResponse.json(
+          { error: "شما به هیچ بخشی تخصیص داده نشده‌اید" },
+          { status: 403 }
+        );
+      }
+
+      if (assessment.assignments.length === 0) {
+        return NextResponse.json(
+          { error: "این آزمون به بخش شما تخصیص داده نشده است" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // بررسی وجود پیشرفت قبلی
+    const existingProgress = await prisma.assessmentProgress.findFirst({
       where: {
-        assessmentId_departmentId: {
-          assessmentId: params.id,
-          departmentId: user.departmentId,
-        },
+        assessmentId: id,
+        userId: session.user.id,
       },
     });
 
-    if (!assignment) {
-      return NextResponse.json(
-        { error: "Assessment not assigned to your department" },
-        { status: 403 }
-      );
-    }
-
-    // Check if already completed
+    // بررسی نتیجه قبلی
     const existingResult = await prisma.assessmentResult.findFirst({
       where: {
-        assessmentId: params.id,
+        assessmentId: id,
         userId: session.user.id,
       },
     });
 
+    // اگر قبلاً تکمیل کرده و allowRetake فالس است
     if (existingResult && !assessment.allowRetake) {
       return NextResponse.json(
-        { error: "You have already completed this assessment" },
-        { status: 400 }
+        { error: "شما قبلاً این آزمون را تکمیل کرده‌اید و امکان تکرار وجود ندارد" },
+        { status: 403 }
       );
     }
 
-    // Create or get progress
-    const progress = await prisma.assessmentProgress.upsert({
-      where: {
-        assessmentId_userId: {
-          assessmentId: params.id,
-          userId: session.user.id,
-        },
-      },
-      update: {
-        startedAt: new Date(),
-        lastQuestion: 0,
-        answers: {},
-      },
-      create: {
-        assessmentId: params.id,
-        userId: session.user.id,
-        answers: {},
-        lastQuestion: 0,
-      },
-    });
+    // اگر پیشرفت جدیدی شروع می‌شود، progress قبلی را پاک کنیم
+    if (existingResult && assessment.allowRetake && existingProgress) {
+      await prisma.assessmentProgress.delete({
+        where: { id: existingProgress.id },
+      });
+    }
 
+    // ایجاد یا به‌روزرسانی پیشرفت
+    let progress;
+    if (!existingProgress || (existingResult && assessment.allowRetake)) {
+      progress = await prisma.assessmentProgress.create({
+        data: {
+          assessmentId: id,
+          userId: session.user.id,
+          startedAt: new Date(),
+          answers: {},
+          currentQuestion: 0,
+        },
+      });
+    } else {
+      progress = existingProgress;
+    }
+
+    // بازگرداندن داده‌های آزمون
     return NextResponse.json({
-      progress,
       assessment: {
         id: assessment.id,
         title: assessment.title,
         description: assessment.description,
+        type: assessment.type,
         instructions: assessment.instructions,
         timeLimit: assessment.timeLimit,
-        totalQuestions: assessment.questions.length,
+        showResults: assessment.showResults,
       },
-      questions: assessment.questions,
+      questions: assessment.questions.map((q) => ({
+        id: q.id,
+        questionText: q.questionText,
+        questionType: q.questionType,
+        options: q.options,
+        order: q.order,
+      })),
+      progress: {
+        id: progress.id,
+        answers: progress.answers,
+        lastQuestion: progress.currentQuestion,
+        startedAt: progress.startedAt,
+      },
     });
   } catch (error) {
     console.error("Error starting assessment:", error);
