@@ -74,6 +74,7 @@ export default function AssessmentDetailPage() {
   };
 
   const handleStartAssessment = () => {
+    // ریدایرکت به صفحه انجام آزمون در بخش authenticated
     router.push(`/assessments/${assessmentId}/take`);
   };
 

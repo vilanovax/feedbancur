@@ -38,7 +38,7 @@ export async function POST(
     }
 
     // محاسبه نمره
-    const result = calculateAssessmentScore(assessment, answers);
+    const calculationResult = calculateAssessmentScore(assessment, answers);
 
     // ذخیره نتیجه
     const assessmentResult = await prisma.assessmentResult.create({
@@ -46,8 +46,12 @@ export async function POST(
         assessmentId: id,
         userId: session.user.id,
         answers: answers,
-        score: result.score,
-        personality: result.personality,
+        result: calculationResult.details || {}, // ذخیره جزئیات کامل در result
+        score: calculationResult.score,
+        isPassed: assessment.passingScore
+          ? calculationResult.score >= assessment.passingScore
+          : null,
+        startedAt: new Date(), // TODO: باید از progress گرفته شود
         completedAt: new Date(),
       },
     });
@@ -65,10 +69,8 @@ export async function POST(
       result: {
         id: assessmentResult.id,
         score: assessmentResult.score,
-        personality: assessmentResult.personality,
-        passed: assessment.passingScore
-          ? assessmentResult.score >= assessment.passingScore
-          : true,
+        personality: calculationResult.personality,
+        passed: assessmentResult.isPassed,
       },
     });
   } catch (error) {

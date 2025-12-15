@@ -48,7 +48,9 @@ export async function GET(
     return NextResponse.json({
       id: result.id,
       score: result.score,
-      personality: result.personality,
+      result: result.result, // جزئیات کامل (MBTI/DISC details)
+      isPassed: result.isPassed,
+      timeTaken: result.timeTaken,
       completedAt: result.completedAt,
       assessment: result.assessment,
     });

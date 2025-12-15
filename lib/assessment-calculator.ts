@@ -19,10 +19,22 @@ export function calculateAssessmentScore(
   answers: Record<string, string>
 ): CalculationResult {
   switch (assessment.type) {
-    case "MBTI":
-      return calculateMBTI(assessment.questions, answers);
-    case "DISC":
-      return calculateDISC(assessment.questions, answers);
+    case "MBTI": {
+      const mbtiResult = calculateMBTI(answers, assessment.questions);
+      return {
+        score: 100, // MBTI doesn't have a numeric score
+        personality: mbtiResult.type,
+        details: mbtiResult,
+      };
+    }
+    case "DISC": {
+      const discResult = calculateDISC(answers, assessment.questions);
+      return {
+        score: 100, // DISC doesn't have a numeric score
+        personality: discResult.type,
+        details: discResult,
+      };
+    }
     case "CUSTOM":
       return calculateCustom(assessment.questions, answers);
     default:
