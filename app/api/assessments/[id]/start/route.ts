@@ -17,19 +17,35 @@ export async function POST(
     }
 
     // بررسی دسترسی کاربر به آزمون
-    const assessment = await prisma.assessment.findUnique({
-      where: { id },
-      include: {
-        questions: {
-          orderBy: { order: "asc" },
-        },
-        assignments: {
-          where: {
-            departmentId: session.user.departmentId || undefined,
+    let assessment;
+    try {
+      assessment = await prisma.assessment.findUnique({
+        where: { id },
+        include: {
+          questions: {
+            orderBy: { order: "asc" },
+          },
+          assignments: {
+            where: {
+              departmentId: session.user.departmentId || undefined,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (dbError: any) {
+      console.error("Database error fetching assessment:", dbError);
+      // اگر خطا مربوط به enum است، احتمالاً Prisma Client به‌روز نشده
+      if (dbError.message?.includes("not found in enum") || dbError.code === "P2003") {
+        return NextResponse.json(
+          { 
+            error: "Database schema mismatch. Please restart the server.",
+            details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+          },
+          { status: 500 }
+        );
+      }
+      throw dbError;
+    }
 
     if (!assessment) {
       return NextResponse.json(

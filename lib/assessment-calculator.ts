@@ -1,6 +1,7 @@
 import { calculateMBTI } from "./assessment-calculators/mbti";
 import { calculateDISC } from "./assessment-calculators/disc";
 import { calculateHolland } from "./assessment-calculators/holland";
+import { calculateMSQ } from "./assessment-calculators/msq";
 
 interface Assessment {
   id: string;
@@ -42,6 +43,14 @@ export function calculateAssessmentScore(
         score: 100, // Holland doesn't have a numeric score
         personality: hollandResult.type,
         details: hollandResult,
+      };
+    }
+    case "MSQ": {
+      const msqResult = calculateMSQ(answers, assessment.questions);
+      return {
+        score: msqResult.percentages.total,
+        personality: msqResult.level,
+        details: msqResult,
       };
     }
     case "CUSTOM":

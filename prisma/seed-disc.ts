@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const defaultPrisma = new PrismaClient();
 
-async function seedDISC() {
+async function seedDISC(prismaInstance?: PrismaClient) {
+  const prisma = prismaInstance || defaultPrisma;
   console.log("Starting DISC assessment seed...");
 
   // Find or create admin user
@@ -696,32 +697,42 @@ async function seedDISC() {
     },
   ];
 
-  // Create all questions
-  for (const question of questions) {
-    await prisma.assessmentQuestion.upsert({
-      where: { id: question.id },
-      update: {},
-      create: {
-        id: question.id,
-        assessmentId: discAssessment.id,
-        questionText: question.questionText,
-        questionType: "MULTIPLE_CHOICE",
-        order: question.order,
-        isRequired: true,
-        options: question.options,
-      },
-    });
-    console.log(`Question ${question.order} created`);
-  }
+  // حذف سوالات قبلی
+  await prisma.assessmentQuestion.deleteMany({
+    where: { assessmentId: discAssessment.id },
+  });
 
+  // Create all questions
+  const questionsData = questions.map((q) => ({
+    id: q.id,
+    assessmentId: discAssessment.id,
+    questionText: q.questionText,
+    questionType: "MULTIPLE_CHOICE" as const,
+    order: q.order,
+    isRequired: true,
+    options: q.options,
+  }));
+
+  await prisma.assessmentQuestion.createMany({
+    data: questionsData,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${questions.length} DISC questions`);
   console.log("DISC assessment seed completed successfully!");
 }
 
-seedDISC()
-  .catch((e) => {
-    console.error("Error seeding DISC assessment:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Export for use in main seed.ts
+export { seedDISC };
+
+// Run directly if called standalone
+if (require.main === module) {
+  seedDISC()
+    .catch((e) => {
+      console.error("Error seeding DISC assessment:", e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await defaultPrisma.$disconnect();
+    });
+}

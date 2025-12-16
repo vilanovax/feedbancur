@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const defaultPrisma = new PrismaClient();
 
-async function seedHolland() {
+async function seedHolland(prismaInstance?: PrismaClient) {
+  const prisma = prismaInstance || defaultPrisma;
   console.log("🌱 Seeding Holland Assessment...");
 
   // پیدا کردن یا ایجاد کاربر ادمین برای creator
@@ -1319,12 +1320,18 @@ async function seedHolland() {
   console.log("✅ Holland Assessment seeding completed!");
 }
 
-seedHolland()
-  .catch((e) => {
-    console.error("❌ Error seeding Holland assessment:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Export for use in main seed.ts
+export { seedHolland };
+
+// Run directly if called standalone
+if (require.main === module) {
+  seedHolland()
+    .catch((e) => {
+      console.error("❌ Error seeding Holland assessment:", e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await defaultPrisma.$disconnect();
+    });
+}
 

@@ -460,6 +460,7 @@ enum AssessmentType {
   MBTI
   DISC
   HOLLAND
+  MSQ
   CUSTOM
 }
 

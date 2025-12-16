@@ -111,8 +111,25 @@ export default function EmployeeMobilePage() {
       return result.result.type || "N/A";
     } else if (result.assessment.type === "DISC" && result.result) {
       return result.result.type || "N/A";
+    } else if (result.assessment.type === "HOLLAND" && result.result) {
+      return result.result.type || "N/A";
+    } else if (result.assessment.type === "MSQ" && result.result) {
+      return result.result.level || `${result.result.totalPercentage}%` || "N/A";
+    } else if (result.score !== null) {
+      return `${result.score}%`;
     }
     return "N/A";
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      MBTI: "MBTI",
+      DISC: "DISC",
+      HOLLAND: "هالند",
+      MSQ: "MSQ",
+      CUSTOM: "سفارشی",
+    };
+    return labels[type] || type;
   };
 
   if (status === "loading" || loading) {
@@ -271,7 +288,7 @@ export default function EmployeeMobilePage() {
                           {getResultDisplay(result)}
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                          ({result.assessment.type})
+                          ({getTypeLabel(result.assessment.type)})
                         </span>
                       </div>
                     </div>

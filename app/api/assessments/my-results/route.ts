@@ -12,15 +12,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // دریافت تمام نتایج آزمون‌های MBTI و DISC کاربر
+    // دریافت تمام نتایج آزمون‌های کاربر
     const results = await prisma.assessmentResult.findMany({
       where: {
         userId: session.user.id,
-        assessment: {
-          type: {
-            in: ["MBTI", "DISC"],
-          },
-        },
       },
       include: {
         assessment: {

@@ -18,13 +18,53 @@ async function main() {
   await prisma.task.deleteMany();
   await prisma.feedback.deleteMany();
   await prisma.employee.deleteMany();
+  await prisma.assessmentQuestion.deleteMany();
+  await prisma.assessmentAssignment.deleteMany();
+  await prisma.assessmentResult.deleteMany();
+  await prisma.assessmentProgress.deleteMany();
+  await prisma.assessment.deleteMany();
+  await prisma.pollResponse.deleteMany();
+  await prisma.pollOption.deleteMany();
+  await prisma.poll.deleteMany();
   await prisma.user.deleteMany();
   await prisma.department.deleteMany();
-  await prisma.settings.deleteMany();
   await prisma.oTP.deleteMany();
+
+  // حفظ تنظیمات Object Storage موجود قبل از پاک کردن
+  console.log('💾 حفظ تنظیمات Object Storage...');
+  const existingSettings = await prisma.settings.findFirst();
+  const preservedObjectStorage = existingSettings?.objectStorageSettings
+    ? (typeof existingSettings.objectStorageSettings === 'string'
+        ? JSON.parse(existingSettings.objectStorageSettings)
+        : existingSettings.objectStorageSettings)
+    : null;
+
+  // پاک کردن تنظیمات (بعد از حفظ Object Storage)
+  await prisma.settings.deleteMany();
 
   // ایجاد تنظیمات
   console.log('⚙️  ایجاد تنظیمات...');
+  
+  // استفاده از تنظیمات Object Storage حفظ شده یا مقادیر پیش‌فرض
+  const objectStorageSettings = preservedObjectStorage && 
+    preservedObjectStorage.accessKeyId && 
+    preservedObjectStorage.secretAccessKey
+    ? preservedObjectStorage // استفاده از تنظیمات حفظ شده
+    : {
+        enabled: false, // به صورت پیش‌فرض غیرفعال - باید در تنظیمات فعال شود
+        endpoint: 'https://storage.iran.liara.space',
+        bucket: 'feedban-uploads',
+        region: 'us-east-1',
+        accessKeyId: '', // باید در تنظیمات وارد شود
+        secretAccessKey: '' // باید در تنظیمات وارد شود
+      };
+
+  if (preservedObjectStorage && preservedObjectStorage.accessKeyId) {
+    console.log('✅ تنظیمات Object Storage حفظ شد');
+  } else {
+    console.log('ℹ️  استفاده از تنظیمات پیش‌فرض Object Storage');
+  }
+
   const settings = await prisma.settings.create({
     data: {
       siteName: 'سیستم مدیریت فیدبک',
@@ -69,12 +109,7 @@ async function main() {
         maxFileSize: 10,
         allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
       },
-      objectStorageSettings: {
-        enabled: true,
-        endpoint: 'https://storage.iran.liara.space',
-        bucket: 'feedban-uploads',
-        region: 'us-east-1'
-      }
+      objectStorageSettings: objectStorageSettings
     }
   });
 
@@ -585,6 +620,8 @@ async function main() {
   console.log(`   - 4 فیدبک`);
   console.log(`   - 2 تسک`);
   console.log(`   - 3 نوتیفیکیشن`);
+  console.log('\n💡 برای اضافه کردن آزمون‌ها، از فایل seed-assessments.ts استفاده کنید:');
+  console.log('   npx tsx prisma/seed-assessments.ts');
   console.log('\n🔑 اطلاعات ورود:');
   console.log('   رمز عبور همه کاربران: 123456');
   console.log(`   ادمین: 09123456789`);

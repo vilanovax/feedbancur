@@ -100,7 +100,7 @@ export default function AssessmentsPage() {
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های شخصیت‌سنجی</h1>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-                  مدیریت آزمون‌های MBTI، DISC، هالند و سایر آزمون‌ها
+                  مدیریت آزمون‌های MBTI، DISC، هالند، MSQ و سایر آزمون‌ها
                 </p>
               </div>
               {session?.user.role === "ADMIN" && (
@@ -127,6 +127,7 @@ export default function AssessmentsPage() {
                     <SelectItem value="MBTI">MBTI - مایرز بریگز</SelectItem>
                     <SelectItem value="DISC">DISC - رفتارشناسی</SelectItem>
                     <SelectItem value="HOLLAND">هالند - استعدادیابی شغلی</SelectItem>
+                    <SelectItem value="MSQ">MSQ - رضایت شغلی مینه‌سوتا</SelectItem>
                     <SelectItem value="CUSTOM">سفارشی</SelectItem>
                   </SelectContent>
                 </Select>

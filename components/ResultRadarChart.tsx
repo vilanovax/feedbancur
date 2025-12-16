@@ -20,6 +20,12 @@ export function ResultRadarChart({ data, maxValue = 100 }: RadarChartProps) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // بررسی صحت داده‌ها
+    if (!data || !data.labels || !data.values || data.labels.length === 0 || data.values.length === 0) {
+      console.error("Invalid chart data:", data);
+      return;
+    }
+
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 

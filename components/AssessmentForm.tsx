@@ -18,7 +18,7 @@ import { Loader2 } from "lucide-react";
 interface AssessmentFormData {
   title: string;
   description?: string;
-  type: "MBTI" | "DISC" | "HOLLAND" | "CUSTOM";
+  type: "MBTI" | "DISC" | "HOLLAND" | "MSQ" | "CUSTOM";
   instructions?: string;
   isActive: boolean;
   allowRetake: boolean;
@@ -88,7 +88,7 @@ export function AssessmentForm({
           </Label>
             <Select
             value={formData.type}
-            onValueChange={(value: "MBTI" | "DISC" | "HOLLAND" | "CUSTOM") =>
+            onValueChange={(value: "MBTI" | "DISC" | "HOLLAND" | "MSQ" | "CUSTOM") =>
               setFormData({ ...formData, type: value })
             }
           >
@@ -97,6 +97,7 @@ export function AssessmentForm({
                 {formData.type === "MBTI" && "MBTI - مایرز بریگز"}
                 {formData.type === "DISC" && "DISC - رفتارشناسی"}
                 {formData.type === "HOLLAND" && "هالند - استعدادیابی شغلی"}
+                {formData.type === "MSQ" && "MSQ - رضایت شغلی مینه‌سوتا"}
                 {formData.type === "CUSTOM" && "سفارشی"}
               </SelectValue>
             </SelectTrigger>
@@ -104,6 +105,7 @@ export function AssessmentForm({
               <SelectItem value="MBTI">MBTI - مایرز بریگز</SelectItem>
               <SelectItem value="DISC">DISC - رفتارشناسی</SelectItem>
               <SelectItem value="HOLLAND">هالند - استعدادیابی شغلی</SelectItem>
+              <SelectItem value="MSQ">MSQ - رضایت شغلی مینه‌سوتا</SelectItem>
               <SelectItem value="CUSTOM">سفارشی</SelectItem>
             </SelectContent>
           </Select>

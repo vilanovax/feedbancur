@@ -13,24 +13,32 @@ async function main() {
       description: "بخش فناوری اطلاعات",
       keywords: ["کامپیوتر","سیستم","شبکه","اینترنت","نرم‌افزار","IT"],
       allowDirectFeedback: false,
+      canCreateAnnouncement: true,
+      allowedAnnouncementDepartments: [],
     },
     {
       name: "مالی",
       description: "بخش مالی و حسابداری",
       keywords: ["مالی","حقوق","پرداخت","حساب","فیش","پول"],
       allowDirectFeedback: false,
+      canCreateAnnouncement: true,
+      allowedAnnouncementDepartments: [],
     },
     {
       name: "اداری",
       description: "امور اداری",
       keywords: ["اداری","مدارک","نامه","چراغ","برق","تعمیرات"],
       allowDirectFeedback: false,
+      canCreateAnnouncement: true,
+      allowedAnnouncementDepartments: [],
     },
     {
       name: "آشپزخانه",
       description: "مدیریت امور آشپزخانه و غذا",
       keywords: ["آشپزخانه","غذا","نهار","صبحانه","ناهار","شام"],
       allowDirectFeedback: false,
+      canCreateAnnouncement: true,
+      allowedAnnouncementDepartments: [],
     },
   ];
 
@@ -187,7 +195,7 @@ async function main() {
         where: { id: department.id },
         data: { managerId: manager.id },
       });
-      console.log(`✅ مدیر به بخش "${dept.name}" اختصاص داده شد`);
+      console.log(`✅ مدیر به بخش "${department.name}" اختصاص داده شد`);
     }
   }
 

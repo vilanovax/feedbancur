@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const defaultPrisma = new PrismaClient();
 
-async function seedMBTI() {
+async function seedMBTI(prismaInstance?: PrismaClient) {
+  const prisma = prismaInstance || defaultPrisma;
   console.log("🌱 Seeding MBTI Assessment...");
 
   // پیدا کردن یا ایجاد کاربر ادمین برای creator
@@ -526,34 +527,42 @@ async function seedMBTI() {
     },
   ];
 
-  // ایجاد سوالات
-  let createdQuestionsCount = 0;
-  for (const q of questions) {
-    await prisma.assessmentQuestion.upsert({
-      where: { id: `mbti-q-${q.order}` },
-      update: {},
-      create: {
-        id: `mbti-q-${q.order}`,
-        assessmentId: mbtiAssessment.id,
-        questionText: q.questionText,
-        questionType: "MULTIPLE_CHOICE",
-        order: q.order,
-        isRequired: true,
-        options: q.options,
-      },
-    });
-    createdQuestionsCount++;
-  }
+  // حذف سوالات قبلی
+  await prisma.assessmentQuestion.deleteMany({
+    where: { assessmentId: mbtiAssessment.id },
+  });
 
-  console.log(`✅ Created ${createdQuestionsCount} MBTI questions`);
+  // ایجاد سوالات
+  const questionsData = questions.map((q) => ({
+    id: `mbti-q-${q.order}`,
+    assessmentId: mbtiAssessment.id,
+    questionText: q.questionText,
+    questionType: "MULTIPLE_CHOICE" as const,
+    order: q.order,
+    isRequired: true,
+    options: q.options,
+  }));
+
+  await prisma.assessmentQuestion.createMany({
+    data: questionsData,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${questions.length} MBTI questions`);
   console.log(`\n🎉 MBTI Assessment seeding completed successfully!`);
 }
 
-seedMBTI()
-  .catch((e) => {
-    console.error("❌ Error seeding MBTI:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// Export for use in main seed.ts
+export { seedMBTI };
+
+// Run directly if called standalone
+if (require.main === module) {
+  seedMBTI()
+    .catch((e) => {
+      console.error("❌ Error seeding MBTI:", e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await defaultPrisma.$disconnect();
+    });
+}

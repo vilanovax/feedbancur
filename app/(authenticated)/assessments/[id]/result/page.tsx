@@ -314,31 +314,31 @@ export default function AssessmentResultPage() {
                 <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
               </button>
             </div>
-          </CardHeader>
+            </CardHeader>
           <CardContent 
             className="px-2 sm:px-3 md:px-4 lg:px-6 pb-3 sm:pb-4 md:pb-6 pt-3 sm:pt-4 md:pt-6 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 cursor-pointer"
             onClick={() => setIsChartModalOpen(true)}
           >
             <div className="w-full h-48 sm:h-56 md:h-64 lg:h-80">
-              <ResultRadarChart
-                data={{
-                  labels: ["سلطه‌گری (D)", "تأثیرگذاری (I)", "پایداری (S)", "وظیفه‌شناسی (C)"],
-                  values: [
-                    percentages.D || 0,
-                    percentages.I || 0,
-                    percentages.S || 0,
-                    percentages.C || 0,
-                  ],
-                }}
-              />
-            </div>
+                <ResultRadarChart
+                  data={{
+                    labels: ["سلطه‌گری (D)", "تأثیرگذاری (I)", "پایداری (S)", "وظیفه‌شناسی (C)"],
+                    values: [
+                      percentages.D || 0,
+                      percentages.I || 0,
+                      percentages.S || 0,
+                      percentages.C || 0,
+                    ],
+                  }}
+                />
+              </div>
             <div className="mt-2 text-center">
               <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 برای مشاهده کامل نمودار کلیک کنید
               </span>
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
         {/* مودال نمودار */}
         {isChartModalOpen && (
@@ -392,7 +392,7 @@ export default function AssessmentResultPage() {
             <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-900 dark:text-white font-bold">
               امتیازات DISC
             </CardTitle>
-          </CardHeader>
+            </CardHeader>
             <CardContent className="space-y-3 sm:space-y-4 px-2 sm:px-3 md:px-4 lg:px-6 pb-3 sm:pb-4 md:pb-6 pt-3 sm:pt-4 md:pt-6">
               {/* D - Dominance */}
               <div className="space-y-2 p-2 sm:p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30">
@@ -790,7 +790,7 @@ export default function AssessmentResultPage() {
                   style={{ width: `${percentages.E || 0}%` }}
                 />
               </div>
-            </div>
+        </div>
 
             {/* C - Conventional */}
             <div className="space-y-2 p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-gray-900/20 border border-gray-100 dark:border-gray-800/30">
@@ -891,6 +891,233 @@ export default function AssessmentResultPage() {
     );
   };
 
+  const renderMSQResult = (resultData: any) => {
+    const { scores, percentages, level, description, intrinsicDescription, extrinsicDescription, recommendations } = resultData;
+
+    const getLevelColor = (level: string) => {
+      switch (level) {
+        case "خیلی بالا":
+          return {
+            bg: "from-green-500 to-emerald-500",
+            text: "text-green-700 dark:text-green-300",
+            badge: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+          };
+        case "بالا":
+          return {
+            bg: "from-blue-500 to-cyan-500",
+            text: "text-blue-700 dark:text-blue-300",
+            badge: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+          };
+        case "متوسط":
+          return {
+            bg: "from-yellow-500 to-orange-500",
+            text: "text-yellow-700 dark:text-yellow-300",
+            badge: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+          };
+        case "پایین":
+          return {
+            bg: "from-orange-500 to-red-500",
+            text: "text-orange-700 dark:text-orange-300",
+            badge: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+          };
+        case "خیلی پایین":
+          return {
+            bg: "from-red-500 to-pink-500",
+            text: "text-red-700 dark:text-red-300",
+            badge: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+          };
+        default:
+          return {
+            bg: "from-gray-500 to-slate-500",
+            text: "text-gray-700 dark:text-gray-300",
+            badge: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+          };
+      }
+    };
+
+    const levelColor = getLevelColor(level);
+
+    // داده‌های برای نمودار
+    const chartData = {
+      labels: ["رضایت درونی", "رضایت بیرونی", "رضایت کل"],
+      values: [percentages.intrinsic, percentages.extrinsic, percentages.total],
+    };
+
+    return (
+      <>
+        {/* کارت اصلی */}
+        <Card className={`mb-3 sm:mb-4 md:mb-6 bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/40 dark:via-amber-900/40 dark:to-yellow-900/40 border-2 border-orange-300 dark:border-orange-700 shadow-xl overflow-hidden`}>
+          <CardHeader className="text-center px-3 sm:px-4 md:px-6 py-4 sm:py-5 md:py-8">
+            <div className="mb-3 sm:mb-4 md:mb-6">
+              <div className="inline-flex items-center justify-center">
+                <div className={`relative bg-gradient-to-br ${levelColor.bg} rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl transform hover:scale-105 transition-transform duration-300`}>
+                  <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white drop-shadow-lg">
+                    {percentages.total}%
+                  </div>
+                  <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 bg-white rounded-full opacity-80 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            <CardTitle className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 px-2">
+              سطح رضایت شغلی: {level}
+            </CardTitle>
+            <Badge className={`${levelColor.badge} text-sm sm:text-base px-3 py-1 mb-3 sm:mb-4`}>
+              {level}
+            </Badge>
+            <CardDescription className="text-sm sm:text-base md:text-lg text-gray-900 dark:text-white font-medium leading-relaxed max-w-2xl mx-auto px-2">
+              {description}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        {/* نمودار رضایت */}
+        <Card className="mb-3 sm:mb-4 md:mb-6 bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 shadow-xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-orange-200 to-amber-200 dark:from-orange-800/50 dark:to-amber-800/50 border-b-2 border-orange-300 dark:border-orange-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl text-orange-900 dark:text-orange-100 font-bold flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-br from-orange-500 to-amber-600 dark:from-orange-600 dark:to-amber-600 rounded-lg shadow-md shrink-0">
+                  <Trophy className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                </div>
+                <span>نمودار رضایت شغلی</span>
+              </CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsChartModalOpen(true)}
+                className="text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent 
+            className="px-2 sm:px-3 md:px-4 lg:px-6 pb-3 sm:pb-4 md:pb-6 pt-3 sm:pt-4 md:pt-6 bg-white/50 dark:bg-gray-800/50 cursor-pointer"
+            onClick={() => setIsChartModalOpen(true)}
+          >
+            <div className="h-48 sm:h-56 md:h-64 lg:h-80">
+              <ResultRadarChart data={chartData} />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* امتیازات تفصیلی */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-3 sm:mb-4 md:mb-6">
+          {/* رضایت درونی */}
+          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/40 dark:to-cyan-900/40 border-2 border-blue-300 dark:border-blue-700 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-200 to-cyan-200 dark:from-blue-800/50 dark:to-cyan-800/50 border-b-2 border-blue-300 dark:border-blue-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+              <CardTitle className="text-sm sm:text-base md:text-lg text-blue-900 dark:text-blue-100 font-bold">
+                رضایت درونی
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-4 md:px-6 py-4 sm:py-5 md:py-6">
+              <div className="mb-3 sm:mb-4">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+                  {percentages.intrinsic}%
+                </div>
+                <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  امتیاز: {scores.intrinsic} از {12 * 5}
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 sm:h-4 mb-3">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 sm:h-4 rounded-full transition-all duration-500"
+                  style={{ width: `${percentages.intrinsic}%` }}
+                ></div>
+              </div>
+              <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                {intrinsicDescription}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* رضایت بیرونی */}
+          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/40 dark:to-pink-900/40 border-2 border-purple-300 dark:border-purple-700 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-200 to-pink-200 dark:from-purple-800/50 dark:to-pink-800/50 border-b-2 border-purple-300 dark:border-purple-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+              <CardTitle className="text-sm sm:text-base md:text-lg text-purple-900 dark:text-purple-100 font-bold">
+                رضایت بیرونی
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-4 md:px-6 py-4 sm:py-5 md:py-6">
+              <div className="mb-3 sm:mb-4">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+                  {percentages.extrinsic}%
+                </div>
+                <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                  امتیاز: {scores.extrinsic} از {8 * 5}
+                </div>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 sm:h-4 mb-3">
+                <div
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 sm:h-4 rounded-full transition-all duration-500"
+                  style={{ width: `${percentages.extrinsic}%` }}
+                ></div>
+              </div>
+              <p className="text-xs sm:text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                {extrinsicDescription}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* توصیه‌ها */}
+        {recommendations && recommendations.length > 0 && (
+          <Card className="mb-3 sm:mb-4 md:mb-6 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 dark:from-teal-900/40 dark:via-cyan-900/40 dark:to-blue-900/40 border-2 border-teal-300 dark:border-teal-700 shadow-xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-teal-200 to-cyan-200 dark:from-teal-800/50 dark:to-cyan-800/50 border-b-2 border-teal-300 dark:border-teal-700 px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
+              <CardTitle className="text-sm sm:text-base md:text-lg lg:text-xl text-teal-900 dark:text-teal-100 font-bold flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 bg-gradient-to-br from-teal-500 to-cyan-600 dark:from-teal-600 dark:to-cyan-600 rounded-lg shadow-md shrink-0">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
+                </div>
+                <span>توصیه‌ها و پیشنهادات</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2 sm:px-3 md:px-4 lg:px-6 pb-3 sm:pb-4 md:pb-6 pt-3 sm:pt-4 md:pt-6 bg-white/50 dark:bg-gray-800/50">
+              <ul className="space-y-2 sm:space-y-3 md:space-y-4">
+                {recommendations.map((rec: string, index: number) => (
+                  <li key={index} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors bg-white/70 dark:bg-gray-800/70 border border-teal-200 dark:border-teal-800">
+                    <span className="text-teal-600 dark:text-teal-400 mt-0.5 sm:mt-1 font-bold text-base sm:text-lg flex-shrink-0">✓</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs sm:text-sm md:text-base break-words">{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* مودال نمودار */}
+        {isChartModalOpen && (
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
+            onClick={() => setIsChartModalOpen(false)}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl md:rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-gradient-to-r from-orange-200 to-amber-200 dark:from-orange-800/50 dark:to-amber-800/50 border-b-2 border-orange-300 dark:border-orange-700 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-orange-900 dark:text-orange-100">
+                  نمودار کامل رضایت شغلی
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsChartModalOpen(false)}
+                  className="text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              <div className="p-4 sm:p-6 md:p-8">
+                <div className="h-96 sm:h-[500px] md:h-[600px]">
+                  <ResultRadarChart data={chartData} maxValue={100} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
   const renderCustomResult = (resultData: any) => {
     return (
       <Card>
@@ -937,7 +1164,7 @@ export default function AssessmentResultPage() {
         )}
         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2">
           {result?.assessment?.title || "نتیجه آزمون"}
-        </h1>
+          </h1>
         {result && (
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 mt-3 text-xs sm:text-sm">
             <div className="flex items-center gap-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
@@ -952,14 +1179,15 @@ export default function AssessmentResultPage() {
             )}
           </div>
         )}
-      </div>
+        </div>
 
       {result && result.assessment && (
         <>
-          {result.assessment.type === "MBTI" && renderMBTIResult(result.result)}
-          {result.assessment.type === "DISC" && renderDISCResult(result.result)}
+        {result.assessment.type === "MBTI" && renderMBTIResult(result.result)}
+        {result.assessment.type === "DISC" && renderDISCResult(result.result)}
           {result.assessment.type === "HOLLAND" && renderHollandResult(result.result)}
-          {result.assessment.type === "CUSTOM" && renderCustomResult(result.result)}
+          {result.assessment.type === "MSQ" && renderMSQResult(result.result)}
+        {result.assessment.type === "CUSTOM" && renderCustomResult(result.result)}
         </>
       )}
     </>

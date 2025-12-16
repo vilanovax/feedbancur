@@ -20,7 +20,9 @@ import {
   Trophy,
   CheckCircle,
   Clock,
-  Archive
+  Archive,
+  ClipboardList,
+  ArrowLeft
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -41,6 +43,7 @@ export default function Dashboard() {
     activePolls: 0,
     newPolls: 0,
   });
+  const [assessmentResults, setAssessmentResults] = useState<any[]>([]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -51,6 +54,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === "authenticated") {
       fetchStats();
+      fetchAssessmentResults();
     }
   }, [status]);
 
@@ -66,6 +70,44 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAssessmentResults = async () => {
+    try {
+      const response = await fetch("/api/assessments/my-results");
+      if (response.ok) {
+        const results = await response.json();
+        setAssessmentResults(results);
+      }
+    } catch (error) {
+      console.error("Error fetching assessment results:", error);
+    }
+  };
+
+  const getResultDisplay = (result: any) => {
+    if (result.assessment.type === "MBTI" && result.result) {
+      return result.result.type || "N/A";
+    } else if (result.assessment.type === "DISC" && result.result) {
+      return result.result.type || "N/A";
+    } else if (result.assessment.type === "HOLLAND" && result.result) {
+      return result.result.type || "N/A";
+    } else if (result.assessment.type === "MSQ" && result.result) {
+      return result.result.level || `${result.result.totalPercentage}%` || "N/A";
+    } else if (result.score !== null) {
+      return `${result.score}%`;
+    }
+    return "N/A";
+  };
+
+  const getTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      MBTI: "MBTI",
+      DISC: "DISC",
+      HOLLAND: "هالند",
+      MSQ: "MSQ",
+      CUSTOM: "سفارشی",
+    };
+    return labels[type] || type;
   };
 
   if (status === "loading" || loading) {
@@ -248,6 +290,51 @@ export default function Dashboard() {
             </div>
           </Link>
         </div>
+
+        {/* نتایج آزمون‌ها */}
+        {assessmentResults.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              نتایج آزمون‌های شما
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {assessmentResults.map((result) => (
+                <Link
+                  key={result.id}
+                  href={`/assessments/${result.assessmentId}/result`}
+                  className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-r-4 border-indigo-600 dark:border-indigo-500"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-indigo-100 dark:bg-indigo-900 p-3 rounded-lg">
+                        <ClipboardList className="text-indigo-600 dark:text-indigo-400" size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800 dark:text-white text-lg">
+                          {result.assessment.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {getTypeLabel(result.assessment.type)}
+                        </p>
+                      </div>
+                    </div>
+                    <ArrowLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+                      {getResultDisplay(result)}
+                    </div>
+                    {result.completedAt && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(result.completedAt).toLocaleDateString("fa-IR")}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Link

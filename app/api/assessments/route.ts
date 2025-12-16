@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type"); // MBTI, DISC, HOLLAND, CUSTOM
+    const type = searchParams.get("type"); // MBTI, DISC, HOLLAND, MSQ, CUSTOM
     const isActive = searchParams.get("isActive");
 
     // For MANAGER, only show assessments assigned to their department
