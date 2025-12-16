@@ -1,5 +1,6 @@
 import { calculateMBTI } from "./assessment-calculators/mbti";
 import { calculateDISC } from "./assessment-calculators/disc";
+import { calculateHolland } from "./assessment-calculators/holland";
 
 interface Assessment {
   id: string;
@@ -33,6 +34,14 @@ export function calculateAssessmentScore(
         score: 100, // DISC doesn't have a numeric score
         personality: discResult.type,
         details: discResult,
+      };
+    }
+    case "HOLLAND": {
+      const hollandResult = calculateHolland(answers, assessment.questions);
+      return {
+        score: 100, // Holland doesn't have a numeric score
+        personality: hollandResult.type,
+        details: hollandResult,
       };
     }
     case "CUSTOM":

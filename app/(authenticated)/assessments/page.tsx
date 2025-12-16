@@ -44,6 +44,7 @@ export default function AssessmentsPage() {
     all: "همه انواع",
     MBTI: "MBTI - مایرز بریگز",
     DISC: "DISC - رفتارشناسی",
+    HOLLAND: "هالند - استعدادیابی شغلی",
     CUSTOM: "سفارشی",
   };
 
@@ -69,13 +70,16 @@ export default function AssessmentsPage() {
         params.append("isActive", statusFilter === "active" ? "true" : "false");
 
       const response = await fetch(`/api/assessments?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch assessments");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch assessments: ${response.status}`);
+      }
 
       const data = await response.json();
       setAssessments(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching assessments:", error);
-      toast.error("خطا در دریافت آزمون‌ها");
+      toast.error(error.message || "خطا در دریافت آزمون‌ها");
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +100,7 @@ export default function AssessmentsPage() {
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">آزمون‌های شخصیت‌سنجی</h1>
                 <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-                  مدیریت آزمون‌های MBTI، DISC و سایر آزمون‌ها
+                  مدیریت آزمون‌های MBTI، DISC، هالند و سایر آزمون‌ها
                 </p>
               </div>
               {session?.user.role === "ADMIN" && (
@@ -122,6 +126,7 @@ export default function AssessmentsPage() {
                     <SelectItem value="all">همه انواع</SelectItem>
                     <SelectItem value="MBTI">MBTI - مایرز بریگز</SelectItem>
                     <SelectItem value="DISC">DISC - رفتارشناسی</SelectItem>
+                    <SelectItem value="HOLLAND">هالند - استعدادیابی شغلی</SelectItem>
                     <SelectItem value="CUSTOM">سفارشی</SelectItem>
                   </SelectContent>
                 </Select>

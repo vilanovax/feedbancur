@@ -459,6 +459,7 @@ enum KeywordPriority {
 enum AssessmentType {
   MBTI
   DISC
+  HOLLAND
   CUSTOM
 }
 

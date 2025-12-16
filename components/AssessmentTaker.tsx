@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { QuestionRenderer } from "./QuestionRenderer";
@@ -57,33 +57,7 @@ export function AssessmentTaker({
     (q) => answers[q.id] && answers[q.id] !== ""
   );
 
-  // Auto-navigate to first unanswered question if current question is already answered
-  // استفاده از useRef برای جلوگیری از infinite loop
-  const navigationRef = useRef(false);
-  
-  useEffect(() => {
-    if (!currentQuestion || navigationRef.current) return;
-    
-    const currentAnswer = answers[currentQuestion.id];
-    const isAnswered = currentAnswer && currentAnswer !== "";
-
-    if (isAnswered) {
-      // پیدا کردن اولین سوال پاسخ داده نشده
-      const firstUnansweredIndex = questions.findIndex(
-        (q) => !answers[q.id] || answers[q.id] === ""
-      );
-
-      // اگر سوال پاسخ داده نشده پیدا شد و با سوال فعلی متفاوت است، navigate کن
-      if (firstUnansweredIndex !== -1 && firstUnansweredIndex !== currentQuestionIndex) {
-        navigationRef.current = true;
-        setCurrentQuestionIndex(firstUnansweredIndex);
-        // Reset flag after navigation
-        setTimeout(() => {
-          navigationRef.current = false;
-        }, 100);
-      }
-    }
-  }, [currentQuestionIndex, answers, questions, currentQuestion]);
+  // Removed auto-navigation useEffect - users should be able to view answered questions
 
   // Auto-save every 30 seconds
   useEffect(() => {

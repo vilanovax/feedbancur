@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get("type"); // MBTI, DISC, CUSTOM
+    const type = searchParams.get("type"); // MBTI, DISC, HOLLAND, CUSTOM
     const isActive = searchParams.get("isActive");
 
     // For MANAGER, only show assessments assigned to their department
@@ -107,10 +107,10 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(assessments);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching assessments:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error.message || "Internal server error", details: error.stack },
       { status: 500 }
     );
   }
