@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Bell, ArrowRight, AlertCircle, Info, AlertTriangle, Send, MessageSquare, X, Paperclip, Download, FileText, Image as ImageIcon } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import MobileLayout from "@/components/MobileLayout";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function AnnouncementDetailPage() {
@@ -22,8 +23,28 @@ export default function AnnouncementDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // تشخیص موبایل
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // تعیین مسیر بازگشت بر اساس نقش کاربر و موبایل
+  const getBackPath = () => {
+    if (isMobile) {
+      return "/mobile/announcements";
+    }
+    return "/announcements";
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -191,7 +212,25 @@ export default function AnnouncementDetailPage() {
     return <FileText size={20} />;
   };
 
+  // تشخیص موبایل برای loading state
+  const [isMobileLoading, setIsMobileLoading] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMobileLoading(window.innerWidth < 1024);
+    }
+  }, []);
+
   if (status === "loading" || loading) {
+    if (isMobileLoading && session?.user?.role) {
+      const userRole = session.user.role === "EMPLOYEE" ? "EMPLOYEE" : "MANAGER";
+      return (
+        <MobileLayout role={userRole} title="اعلان">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-xl">در حال بارگذاری...</div>
+          </div>
+        </MobileLayout>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">در حال بارگذاری...</div>
@@ -203,20 +242,17 @@ export default function AnnouncementDetailPage() {
     return null;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
-      <Sidebar />
-      <AppHeader />
-      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Back Button */}
-          <Link
-            href="/announcements"
-            className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-6"
-          >
-            <ArrowRight size={20} />
-            <span>بازگشت به لیست اعلانات</span>
-          </Link>
+  // محتوای صفحه
+  const pageContent = (
+    <>
+      {/* Back Button */}
+      <Link
+        href={getBackPath()}
+        className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-6"
+      >
+        <ArrowRight size={20} />
+        <span>بازگشت به لیست اعلانات</span>
+      </Link>
 
           {/* Announcement Card */}
           <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6 ${getPriorityColor(announcement.priority)}`}>
@@ -309,29 +345,22 @@ export default function AnnouncementDetailPage() {
             </div>
           </div>
 
-          {/* Messages Section */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquare size={20} className="text-gray-600 dark:text-gray-400" />
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                پیام‌های اعلان
-              </h2>
-              {messages.length > 0 && (
+          {/* Messages Section - Only show if there are messages */}
+          {messages.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare size={20} className="text-gray-600 dark:text-gray-400" />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  پیام‌های اعلان
+                </h2>
                 <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-full">
                   {messages.length}
                 </span>
-              )}
-            </div>
+              </div>
 
-            {/* Messages List */}
-            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-              {messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <MessageSquare size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>هنوز پیامی برای این اعلان ارسال نشده است.</p>
-                </div>
-              ) : (
-                messages.map((message) => (
+              {/* Messages List */}
+              <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                {messages.map((message) => (
                   <div
                     key={message.id}
                     className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border-r-4 border-blue-500"
@@ -393,15 +422,14 @@ export default function AnnouncementDetailPage() {
                       </div>
                     )}
                   </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
 
-            {/* Add Message Form (Only for ADMIN and MANAGER who created the announcement) */}
-            {(session?.user.role === "ADMIN" ||
-              (session?.user.role === "MANAGER" && announcement.createdById === session?.user.id)) && (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              {/* Add Message Form (Only for ADMIN and MANAGER who created the announcement) */}
+              {(session?.user.role === "ADMIN" ||
+                (session?.user.role === "MANAGER" && announcement.createdById === session?.user.id)) && (
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <textarea
@@ -460,9 +488,38 @@ export default function AnnouncementDetailPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   برای ارسال، Ctrl+Enter را فشار دهید
                 </p>
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
+    </>
+  );
+
+  // Mobile view
+  if (isMobile && session?.user?.role) {
+    const userRole = session.user.role === "EMPLOYEE" ? "EMPLOYEE" : "MANAGER";
+    return (
+      <MobileLayout 
+        role={userRole} 
+        title={announcement.title}
+        showBackButton={true}
+        backHref={getBackPath()}
+      >
+        <div className="px-2">
+          {pageContent}
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  // Desktop view
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+      <Sidebar />
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto">
+          {pageContent}
         </div>
       </main>
     </div>

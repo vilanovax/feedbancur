@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 const messageSchema = z.object({
   content: z.string().optional(),
@@ -132,6 +134,7 @@ export async function POST(
 
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
+    console.log("Processing message for feedback:", resolvedParams.id);
 
     // بررسی اینکه آیا FormData است یا JSON
     const contentType = req.headers.get("content-type") || "";
@@ -191,33 +194,67 @@ export async function POST(
         const buffer = Buffer.from(bytes);
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 15);
-        const fileExtension = imageFile.name.split('.').pop() || 'jpg';
+        // استخراج پسوند فایل از نام یا نوع MIME
+        let fileExtension = 'jpg';
+        if (imageFile.name && imageFile.name.includes('.')) {
+          fileExtension = imageFile.name.split('.').pop() || 'jpg';
+        } else if (imageFile.type) {
+          // استخراج پسوند از MIME type
+          const mimeToExt: { [key: string]: string } = {
+            'image/jpeg': 'jpg',
+            'image/jpg': 'jpg',
+            'image/png': 'png',
+            'image/gif': 'gif',
+            'image/webp': 'webp',
+          };
+          fileExtension = mimeToExt[imageFile.type] || 'jpg';
+        }
         const fileName = `message-${timestamp}-${randomString}.${fileExtension}`;
         
-        // بررسی فعال بودن Object Storage
-        if (!objectStorageSettings.enabled) {
-          return NextResponse.json(
-            { error: "Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید." },
-            { status: 400 }
-          );
+        // بررسی کامل بودن تنظیمات Object Storage
+        const hasValidObjectStorage = 
+          objectStorageSettings.enabled &&
+          objectStorageSettings.accessKeyId &&
+          objectStorageSettings.secretAccessKey &&
+          objectStorageSettings.endpoint &&
+          objectStorageSettings.bucket;
+
+        if (hasValidObjectStorage) {
+          // آپلود به لیارا
+          try {
+            imageUrl = await uploadToLiara(
+              buffer,
+              fileName,
+              imageFile.type,
+              objectStorageSettings,
+              "messages"
+            );
+            console.log("Image uploaded to Liara:", imageUrl);
+          } catch (storageError: any) {
+            console.error("Error uploading to Liara:", storageError);
+            // اگر آپلود به Object Storage ناموفق بود، به آپلود محلی fallback می‌کنیم
+            console.log("Falling back to local upload...");
+          }
         }
 
-        // آپلود به لیارا
-        try {
-          imageUrl = await uploadToLiara(
-            buffer,
-            fileName,
-            imageFile.type,
-            objectStorageSettings,
-            "messages"
-          );
-          console.log("Image uploaded to Liara:", imageUrl);
-        } catch (storageError: any) {
-          console.error("Error uploading to Liara:", storageError);
-          return NextResponse.json(
-            { error: `خطا در آپلود تصویر: ${storageError.message || "خطای نامشخص"}` },
-            { status: 500 }
-          );
+        // اگر Object Storage غیرفعال است یا آپلود ناموفق بود، آپلود محلی
+        if (!imageUrl) {
+          try {
+            const uploadsDir = join(process.cwd(), "public", "uploads", "messages");
+            await mkdir(uploadsDir, { recursive: true });
+
+            const filePath = join(uploadsDir, fileName);
+            await writeFile(filePath, buffer);
+
+            imageUrl = `/uploads/messages/${fileName}`;
+            console.log("Image uploaded locally:", imageUrl);
+          } catch (localUploadError: any) {
+            console.error("Error uploading image locally:", localUploadError);
+            return NextResponse.json(
+              { error: `خطا در آپلود تصویر: ${localUploadError.message || "خطای نامشخص"}` },
+              { status: 500 }
+            );
+          }
         }
       }
       
@@ -225,14 +262,38 @@ export async function POST(
         content: content || undefined,
         image: imageUrl,
       };
+      console.log("Data prepared from FormData:", {
+        hasContent: !!data.content,
+        contentLength: data.content?.length || 0,
+        hasImage: !!data.image,
+      });
     } else {
       // اگر JSON است
-      const body = await req.json();
-      data = messageSchema.parse(body);
+      try {
+        const body = await req.json();
+        data = messageSchema.parse(body);
+        console.log("Data prepared from JSON:", {
+          hasContent: !!data.content,
+          contentLength: data.content?.length || 0,
+          hasImage: !!data.image,
+        });
+      } catch (jsonError: any) {
+        console.error("Error parsing JSON body:", jsonError);
+        return NextResponse.json(
+          { error: "فرمت درخواست نامعتبر است" },
+          { status: 400 }
+        );
+      }
     }
     
+    console.log("Final data before validation:", {
+      hasContent: !!data.content,
+      contentValue: data.content,
+      hasImage: !!data.image,
+    });
+    
     // حداقل یکی از content یا image باید وجود داشته باشد
-    if (!data.content && !data.image) {
+    if ((!data.content || data.content.trim() === "") && !data.image) {
       return NextResponse.json(
         { error: "متن پیام یا تصویر الزامی است" },
         { status: 400 }
@@ -270,26 +331,41 @@ export async function POST(
     }
 
     // ایجاد پیام
-    const message = await prisma.message.create({
-      data: {
-        feedbackId: resolvedParams.id,
-        senderId: session.user.id,
-        content: data.content || "",
-        image: data.image,
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
+    try {
+      const message = await prisma.message.create({
+        data: {
+          feedbackId: resolvedParams.id,
+          senderId: session.user.id,
+          content: (data.content && data.content.trim()) ? data.content.trim() : "",
+          image: data.image || null,
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    console.log("Message created with image URL:", message.image);
-    return NextResponse.json(message, { status: 201 });
+      console.log("Message created successfully:", {
+        id: message.id,
+        hasContent: !!message.content,
+        hasImage: !!message.image,
+      });
+      return NextResponse.json(message, { status: 201 });
+    } catch (dbError: any) {
+      console.error("Database error creating message:", dbError);
+      return NextResponse.json(
+        { 
+          error: "خطا در ایجاد پیام",
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

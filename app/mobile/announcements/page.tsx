@@ -200,10 +200,10 @@ export default function MobileAnnouncementsPage() {
         ) : (
           <div className="space-y-3">
             {sortedAnnouncements.map((announcement) => (
-              <Link
+              <div
                 key={announcement.id}
-                href={`/announcements/${announcement.id}`}
-                className={`block w-full text-right bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all ${getPriorityColor(
+                onClick={() => openModal(announcement)}
+                className={`block w-full text-right bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all cursor-pointer ${getPriorityColor(
                   announcement.priority
                 )}`}
               >
@@ -248,7 +248,7 @@ export default function MobileAnnouncementsPage() {
                     </p>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
