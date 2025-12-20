@@ -233,7 +233,11 @@ export default function MobilePollDetailPage({ params }: PageProps) {
         {(poll.visibilityMode === "PUBLIC" || session.user.role === "ADMIN" || poll.createdById === session.user.id) && hasVoted && (
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
             <button
-              onClick={() => window.location.href = `/polls/${poll.id}`}
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.location.href = `/polls/${poll.id}`;
+                }
+              }}
               className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
             >
               مشاهده نتایج

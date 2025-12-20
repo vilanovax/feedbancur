@@ -68,7 +68,9 @@ export default function ChangePasswordPage() {
       if (res.ok) {
         // بعد از تغییر موفق رمز، session را refresh کن و به صفحه اصلی redirect کن
         // چون mustChangePassword در دیتابیس false شده، دیگر redirect به این صفحه نمی‌شود
-        window.location.href = "/";
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
       } else {
         setError(data.error || "خطا در تغییر رمز عبور");
       }

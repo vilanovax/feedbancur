@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -196,13 +198,13 @@ export async function POST(request: NextRequest) {
               : settings.objectStorageSettings)
           : { enabled: false };
 
-        // بررسی فعال بودن Object Storage
-        if (!objectStorageSettings.enabled) {
-          return NextResponse.json(
-            { error: "Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید." },
-            { status: 400 }
-          );
-        }
+        // بررسی کامل بودن تنظیمات Object Storage
+        const hasValidObjectStorage = 
+          objectStorageSettings.enabled &&
+          objectStorageSettings.accessKeyId &&
+          objectStorageSettings.secretAccessKey &&
+          objectStorageSettings.endpoint &&
+          objectStorageSettings.bucket;
 
         for (let i = 0; i < imageCount; i++) {
           const imageFile = formData.get(`image_${i}`) as File | null;
@@ -229,26 +231,65 @@ export async function POST(request: NextRequest) {
 
             // نام فایل
             const timestamp = Date.now();
-            const extension = imageFile.name.split(".").pop();
-            const filename = `feedback-${timestamp}-${i}-${Math.random().toString(36).substring(7)}.${extension}`;
+            const randomString = Math.random().toString(36).substring(2, 15);
+            // استخراج پسوند فایل از نام یا نوع MIME
+            let fileExtension = 'jpg';
+            if (imageFile.name && imageFile.name.includes('.')) {
+              fileExtension = imageFile.name.split('.').pop() || 'jpg';
+            } else if (imageFile.type) {
+              const mimeToExt: { [key: string]: string } = {
+                'image/jpeg': 'jpg',
+                'image/jpg': 'jpg',
+                'image/png': 'png',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+              };
+              fileExtension = mimeToExt[imageFile.type] || 'jpg';
+            }
+            const filename = `feedback-${timestamp}-${i}-${randomString}.${fileExtension}`;
 
-            try {
+            let imageUrl: string | undefined;
+
+            if (hasValidObjectStorage) {
               // آپلود به لیارا
-              const imageUrl = await uploadToLiara(
-                buffer,
-                filename,
-                imageFile.type,
-                objectStorageSettings,
-                "feedback"
-              );
+              try {
+                imageUrl = await uploadToLiara(
+                  buffer,
+                  filename,
+                  imageFile.type,
+                  objectStorageSettings,
+                  "feedback"
+                );
+                console.log("Feedback image uploaded to Liara:", imageUrl);
+              } catch (uploadError: any) {
+                console.error("Error uploading feedback image to Liara:", uploadError);
+                // اگر آپلود به Object Storage ناموفق بود، به آپلود محلی fallback می‌کنیم
+                console.log("Falling back to local upload...");
+              }
+            }
+
+            // اگر Object Storage غیرفعال است یا آپلود ناموفق بود، آپلود محلی
+            if (!imageUrl) {
+              try {
+                const uploadsDir = join(process.cwd(), "public", "uploads", "feedback");
+                await mkdir(uploadsDir, { recursive: true });
+
+                const filePath = join(uploadsDir, filename);
+                await writeFile(filePath, buffer);
+
+                imageUrl = `/uploads/feedback/${filename}`;
+                console.log("Feedback image uploaded locally:", imageUrl);
+              } catch (localUploadError: any) {
+                console.error("Error uploading feedback image locally:", localUploadError);
+                return NextResponse.json(
+                  { error: `خطا در آپلود تصویر: ${localUploadError.message || "خطای نامشخص"}` },
+                  { status: 500 }
+                );
+              }
+            }
+
+            if (imageUrl) {
               imageUrls.push(imageUrl);
-              console.log("Feedback image uploaded to Liara:", imageUrl);
-            } catch (uploadError: any) {
-              console.error("Error uploading feedback image to Liara:", uploadError);
-              return NextResponse.json(
-                { error: `خطا در آپلود تصویر: ${uploadError.message || "خطای نامشخص"}` },
-                { status: 500 }
-              );
             }
           }
         }
@@ -264,9 +305,23 @@ export async function POST(request: NextRequest) {
         image: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
       };
 
+      console.log("FormData parsed:", {
+        hasTitle: !!data.title,
+        hasContent: !!data.content,
+        type: data.type,
+        isAnonymous: data.isAnonymous,
+        departmentId: data.departmentId,
+        imageCount: imageUrls.length,
+      });
+
       validatedData = feedbackSchema.parse(data);
     } else {
       const body = await request.json();
+      console.log("JSON body received:", {
+        hasTitle: !!body.title,
+        hasContent: !!body.content,
+        type: body.type,
+      });
       validatedData = feedbackSchema.parse(body);
       // اگر image به صورت array است، آن را به JSON string تبدیل کن
       if (Array.isArray(validatedData.image)) {
@@ -275,24 +330,40 @@ export async function POST(request: NextRequest) {
     }
 
     // بررسی بخش و مدیر آن
-    const department = await prisma.department.findUnique({
-      where: { id: validatedData.departmentId },
-      select: {
-        id: true,
-        name: true,
-        allowDirectFeedback: true,
-        managerId: true,
-        users: {
-          where: {
-            role: "MANAGER",
-          },
-          take: 1,
-          select: {
-            id: true,
+    let department;
+    try {
+      department = await prisma.department.findUnique({
+        where: { id: validatedData.departmentId },
+        select: {
+          id: true,
+          name: true,
+          allowDirectFeedback: true,
+          managerId: true,
+          users: {
+            where: {
+              role: "MANAGER",
+            },
+            take: 1,
+            select: {
+              id: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (deptError: any) {
+      console.error("Error fetching department:", deptError);
+      return NextResponse.json(
+        { error: "خطا در دریافت اطلاعات بخش" },
+        { status: 500 }
+      );
+    }
+
+    if (!department) {
+      return NextResponse.json(
+        { error: "بخش یافت نشد" },
+        { status: 404 }
+      );
+    }
 
     // اگر بخش اجازه ارسال مستقیم دارد و مدیر دارد، فیدبک را مستقیم به مدیر ارسال کن
     let forwardedToId = null;
@@ -317,19 +388,21 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const feedback = await prisma.feedback.create({
-      data: {
-        title: validatedData.title,
-        content: validatedData.content,
-        image: validatedData.image,
-        type: validatedData.type,
-        isAnonymous: validatedData.isAnonymous,
-        departmentId: validatedData.departmentId,
-        userId: session.user.id,
-        forwardedToId: forwardedToId,
-        forwardedAt: forwardedToId ? new Date() : null,
-        status: forwardedToId ? "REVIEWED" : "PENDING",
-      },
+    let feedback;
+    try {
+      feedback = await prisma.feedback.create({
+        data: {
+          title: validatedData.title,
+          content: validatedData.content,
+          image: validatedData.image,
+          type: validatedData.type,
+          isAnonymous: validatedData.isAnonymous,
+          departmentId: validatedData.departmentId,
+          userId: session.user.id,
+          forwardedToId: forwardedToId,
+          forwardedAt: forwardedToId ? new Date() : null,
+          status: forwardedToId ? "REVIEWED" : "PENDING",
+        },
       include: {
         user: {
           select: {
@@ -352,7 +425,25 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    });
+      });
+      console.log("Feedback created successfully:", {
+        id: feedback.id,
+        title: feedback.title,
+        departmentId: feedback.departmentId,
+        forwardedToId: feedback.forwardedToId,
+      });
+    } catch (dbError: any) {
+      console.error("Database error creating feedback:", dbError);
+      console.error("Error details:", dbError.message);
+      console.error("Error code:", dbError.code);
+      return NextResponse.json(
+        { 
+          error: "خطا در ایجاد فیدبک",
+          details: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+        },
+        { status: 500 }
+      );
+    }
 
     // اگر فیدبک مستقیم به بخش ارسال شد، نوتیفیکیشن برای ادمین ایجاد کن (بر اساس تنظیمات)
     if (isDirectFeedback && forwardedToId) {

@@ -1,8 +1,8 @@
 {
-  "platform": "nextjs",
-  "app": "feedbancur",
+  "platform": "next",
+  "app": "feedbanx",
   "build": {
-    "command": "npm run build"
+    "command": "npx prisma generate && npm run build"
   },
   "start": {
     "command": "npm start"

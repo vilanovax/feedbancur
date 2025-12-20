@@ -36,13 +36,18 @@ export const metadata: Metadata = {
   title: "سیستم فیدبک کارمندان",
   description: "سیستم مدیریت و اندازه‌گیری فیدبک کارمندان",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "فیدبک کارمندان",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({

@@ -54,7 +54,11 @@ export default function TakeAssessmentPage() {
         <div className="text-center">
           <p className="text-gray-600 dark:text-gray-400 mb-4">خطا در بارگذاری آزمون</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.location.reload();
+              }
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             تلاش مجدد

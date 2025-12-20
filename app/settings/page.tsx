@@ -1886,7 +1886,9 @@ export default function SettingsPage() {
 
                               if (res.ok) {
                                 toast.success("دیتابیس با موفقیت بازیابی شد. لطفاً صفحه را رفرش کنید.");
-                                window.location.reload();
+                                if (typeof window !== "undefined") {
+                  window.location.reload();
+                }
                               } else {
                                 toast.error(data.error || "خطا در بازیابی دیتابیس");
                               }

@@ -16,9 +16,15 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    console.log("Forward request - session:", JSON.stringify(session?.user, null, 2));
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!session.user.id) {
+      console.error("Session user has no id:", session.user);
+      return NextResponse.json({ error: "Invalid session - missing user id" }, { status: 401 });
     }
 
     // فقط ADMIN و MANAGER می‌توانند فیدبک ارجاع دهند
@@ -92,25 +98,107 @@ export async function POST(
     }
 
     // ایجاد تسک از روی فیدبک و ارجاع به مدیر
+    // اطمینان از اینکه content خالی نباشد
+    const feedbackContent = feedback.content || "بدون توضیحات";
     const taskDescription = data.notes
-      ? `${feedback.content}\n\n---\nیادداشت ارجاع‌دهنده: ${data.notes}`
-      : feedback.content;
+      ? `${feedbackContent}\n\n---\nیادداشت ارجاع‌دهنده: ${data.notes}`
+      : feedbackContent;
 
-    const task = await prisma.task.create({
-      data: {
-        title: `ارجاع: ${feedback.title}`,
-        description: taskDescription,
-        status: "PENDING",
-        priority: feedback.type === "CRITICAL" ? "HIGH" : "MEDIUM",
-        feedbackId: feedback.id,
-        departmentId: targetManager.departmentId || feedback.departmentId,
-        createdById: session.user.id,
-        assignedTo: {
-          create: {
-            userId: data.managerId,
+    // تعیین departmentId - باید حتماً مقدار داشته باشد
+    const taskDepartmentId = targetManager.departmentId || feedback.departmentId;
+    if (!taskDepartmentId) {
+      console.error("No department ID available", {
+        targetManagerDepartmentId: targetManager.departmentId,
+        feedbackDepartmentId: feedback.departmentId,
+      });
+      return NextResponse.json(
+        { error: "بخش برای ایجاد تسک مشخص نشده است" },
+        { status: 400 }
+      );
+    }
+
+    console.log("Creating task with:", {
+      title: `ارجاع: ${feedback.title}`,
+      descriptionLength: taskDescription.length,
+      status: "PENDING",
+      priority: feedback.type === "CRITICAL" ? "HIGH" : "MEDIUM",
+      feedbackId: feedback.id,
+      departmentId: taskDepartmentId,
+      createdById: session.user.id,
+    });
+
+    // ایجاد تسک
+    let task;
+    try {
+      task = await prisma.task.create({
+        data: {
+          title: `ارجاع: ${feedback.title}`,
+          description: taskDescription,
+          // status از default استفاده می‌کند (PENDING)
+          priority: feedback.type === "CRITICAL" ? "HIGH" : "MEDIUM",
+          feedbackId: feedback.id,
+          departmentId: taskDepartmentId,
+          createdById: session.user.id,
+        },
+        include: {
+          department: true,
+          feedback: true,
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              mobile: true,
+              role: true,
+            },
           },
         },
-      },
+      });
+      console.log("Task created successfully:", task.id);
+    } catch (taskError: any) {
+      console.error("Error creating task:", taskError);
+      console.error("Task error message:", taskError.message);
+      console.error("Task error code:", taskError.code);
+      console.error("Task error meta:", taskError.meta);
+      return NextResponse.json(
+        { 
+          error: "خطا در ایجاد تسک",
+          details: process.env.NODE_ENV === 'development' ? taskError.message : undefined
+        },
+        { status: 500 }
+      );
+    }
+
+    // تخصیص تسک به مدیر
+    try {
+      await prisma.taskAssignment.create({
+        data: {
+          taskId: task.id,
+          userId: data.managerId,
+        },
+      });
+      console.log("Task assignment created successfully");
+    } catch (assignmentError: any) {
+      console.error("Error creating task assignment:", assignmentError);
+      console.error("Assignment error message:", assignmentError.message);
+      console.error("Assignment error code:", assignmentError.code);
+      // حذف task در صورت خطا
+      try {
+        await prisma.task.delete({ where: { id: task.id } });
+      } catch (deleteError) {
+        console.error("Error deleting task:", deleteError);
+      }
+      return NextResponse.json(
+        { 
+          error: "خطا در اختصاص تسک به مدیر",
+          details: process.env.NODE_ENV === 'development' ? assignmentError.message : undefined
+        },
+        { status: 500 }
+      );
+    }
+
+    // خواندن task با assignedTo
+    const taskWithAssignments = await prisma.task.findUnique({
+      where: { id: task.id },
       include: {
         assignedTo: {
           include: {
@@ -126,6 +214,14 @@ export async function POST(
         },
         department: true,
         feedback: true,
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            mobile: true,
+            role: true,
+          },
+        },
       },
     });
 
@@ -154,7 +250,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: "فیدبک با موفقیت ارجاع داده شد",
-      task,
+      task: taskWithAssignments,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -165,8 +261,13 @@ export async function POST(
     }
 
     console.error("Error forwarding feedback:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
-      { error: "خطا در ارجاع فیدبک" },
+      {
+        error: "خطا در ارجاع فیدبک",
+        details: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

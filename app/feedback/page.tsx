@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +15,7 @@ import { getCompletionTime, WorkingHoursSettings } from "@/lib/working-hours-uti
 import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
 
-export default function FeedbacksPage() {
+function FeedbacksPageContent() {
   const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -65,11 +65,13 @@ export default function FeedbacksPage() {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(() => {
     // بارگذاری status از URL query parameter
-    if (typeof window !== "undefined") {
-      const urlStatus = new URLSearchParams(window.location.search).get("status");
+    try {
+      const urlStatus = searchParams.get("status");
       if (urlStatus && ["PENDING", "REVIEWED", "COMPLETED", "DEFERRED", "ARCHIVED"].includes(urlStatus)) {
         return urlStatus;
       }
+    } catch (e) {
+      // در SSR ممکن است searchParams در دسترس نباشد
     }
     return "";
   });
@@ -1649,6 +1651,26 @@ export default function FeedbacksPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function FeedbacksPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-xl">در حال بارگذاری...</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
+      <FeedbacksPageContent />
+    </Suspense>
   );
 }
 

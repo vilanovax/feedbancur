@@ -854,7 +854,7 @@ export default function ManagerForwardedFeedbacksPage() {
                           // برای تصاویر محلی
                           imageUrl = selectedImageUrl.startsWith("http") 
                             ? selectedImageUrl 
-                            : `${window.location.origin}${selectedImageUrl}`;
+                            : `${typeof window !== "undefined" ? window.location.origin : ""}${selectedImageUrl}`;
                         }
                         
                         // دریافت تصویر و دانلود
