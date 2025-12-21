@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 const voteSchema = z.object({
   optionId: z.string().optional(),
@@ -30,7 +31,7 @@ export async function POST(
     const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
-        options: true,
+        poll_options: true,
       },
     });
 
@@ -66,7 +67,7 @@ export async function POST(
     }
 
     // بررسی رای قبلی
-    const existingVotes = await prisma.pollResponse.findMany({
+    const existingVotes = await prisma.poll_responses.findMany({
       where: {
         pollId: id,
         userId: session.user.id,
@@ -93,7 +94,7 @@ export async function POST(
       }
 
       // بررسی معتبر بودن گزینه
-      const option = poll.options.find((opt) => opt.id === validatedData.optionId);
+      const option = poll.poll_options.find((opt) => opt.id === validatedData.optionId);
       if (!option) {
         return NextResponse.json(
           { error: 'گزینه نامعتبر است' },
@@ -103,7 +104,7 @@ export async function POST(
 
       // اگر allowMultipleVotes فعال است، رای‌های قبلی را حذف کن
       if (poll.allowMultipleVotes) {
-        await prisma.pollResponse.deleteMany({
+        await prisma.poll_responses.deleteMany({
           where: {
             pollId: id,
             userId: session.user.id,
@@ -112,12 +113,14 @@ export async function POST(
       }
 
       // ثبت رای
-      await prisma.pollResponse.create({
+      await prisma.poll_responses.create({
         data: {
+          id: crypto.randomUUID(),
           pollId: id,
           userId: session.user.id,
           optionId: validatedData.optionId,
           comment: validatedData.comment,
+          updatedAt: new Date(),
         },
       });
     } else if (poll.type === 'MULTIPLE_CHOICE') {
@@ -130,7 +133,7 @@ export async function POST(
 
       // بررسی معتبر بودن گزینه‌ها
       const validOptions = validatedData.optionIds.filter((optId) =>
-        poll.options.some((opt) => opt.id === optId)
+        poll.poll_options.some((opt) => opt.id === optId)
       );
 
       if (validOptions.length !== validatedData.optionIds.length) {
@@ -142,7 +145,7 @@ export async function POST(
 
       // اگر allowMultipleVotes فعال است، رای‌های قبلی را حذف کن
       if (poll.allowMultipleVotes) {
-        await prisma.pollResponse.deleteMany({
+        await prisma.poll_responses.deleteMany({
           where: {
             pollId: id,
             userId: session.user.id,
@@ -151,12 +154,14 @@ export async function POST(
       }
 
       // ثبت رای‌ها
-      await prisma.pollResponse.createMany({
+      await prisma.poll_responses.createMany({
         data: validOptions.map((optionId) => ({
+          id: crypto.randomUUID(),
           pollId: id,
           userId: session.user.id,
           optionId,
           comment: validatedData.comment,
+          updatedAt: new Date(),
         })),
       });
     } else if (poll.type === 'RATING_SCALE') {
@@ -180,7 +185,7 @@ export async function POST(
 
       // اگر allowMultipleVotes فعال است، رای‌های قبلی را حذف کن
       if (poll.allowMultipleVotes) {
-        await prisma.pollResponse.deleteMany({
+        await prisma.poll_responses.deleteMany({
           where: {
             pollId: id,
             userId: session.user.id,
@@ -189,12 +194,14 @@ export async function POST(
       }
 
       // ثبت رای
-      await prisma.pollResponse.create({
+      await prisma.poll_responses.create({
         data: {
+          id: crypto.randomUUID(),
           pollId: id,
           userId: session.user.id,
           ratingValue: validatedData.ratingValue,
           comment: validatedData.comment,
+          updatedAt: new Date(),
         },
       });
     } else if (poll.type === 'TEXT_INPUT') {
@@ -218,7 +225,7 @@ export async function POST(
 
       // اگر allowMultipleVotes فعال است، رای‌های قبلی را حذف کن
       if (poll.allowMultipleVotes) {
-        await prisma.pollResponse.deleteMany({
+        await prisma.poll_responses.deleteMany({
           where: {
             pollId: id,
             userId: session.user.id,
@@ -227,12 +234,14 @@ export async function POST(
       }
 
       // ثبت رای
-      await prisma.pollResponse.create({
+      await prisma.poll_responses.create({
         data: {
+          id: crypto.randomUUID(),
           pollId: id,
           userId: session.user.id,
           textValue: validatedData.textValue,
           comment: validatedData.comment,
+          updatedAt: new Date(),
         },
       });
     }
@@ -287,7 +296,7 @@ export async function DELETE(
     }
 
     // حذف رای‌های کاربر
-    await prisma.pollResponse.deleteMany({
+    await prisma.poll_responses.deleteMany({
       where: {
         pollId: id,
         userId: session.user.id,

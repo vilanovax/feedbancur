@@ -55,18 +55,18 @@ export async function GET(
     const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
-        options: {
+        poll_options: {
           orderBy: {
             order: 'asc',
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
           },
         },
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -75,7 +75,7 @@ export async function GET(
         },
         _count: {
           select: {
-            responses: true,
+            poll_responses: true,
           },
         },
       },
@@ -89,13 +89,13 @@ export async function GET(
     }
 
     // بررسی رای کاربر
-    const userResponse = await prisma.pollResponse.findMany({
+    const userResponse = await prisma.poll_responses.findMany({
       where: {
         pollId: id,
         userId: session.user.id,
       },
       include: {
-        option: true,
+        poll_options: true,
       },
     });
 
@@ -113,8 +113,19 @@ export async function GET(
       poll.visibilityMode === 'PUBLIC' ||
       (poll.showResultsMode === 'LIVE' && userResponse.length > 0);
 
+    // تبدیل نام‌های Prisma به فرمت سازگار با frontend
+    const pollFormatted = {
+      ...poll,
+      options: poll.poll_options,
+      department: poll.departments,
+      createdBy: poll.users,
+      _count: {
+        responses: poll._count.poll_responses,
+      },
+    };
+
     return NextResponse.json({
-      poll,
+      poll: pollFormatted,
       userResponse: userResponse.length > 0 ? userResponse : null,
       canVote,
       canViewResults,
@@ -187,15 +198,15 @@ export async function PATCH(
           : undefined,
       },
       include: {
-        options: true,
-        createdBy: {
+        poll_options: true,
+        users: {
           select: {
             id: true,
             name: true,
             role: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -204,7 +215,15 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updatedPoll);
+    // تبدیل نام‌ها
+    const formatted = {
+      ...updatedPoll,
+      options: updatedPoll.poll_options,
+      createdBy: updatedPoll.users,
+      department: updatedPoll.departments,
+    };
+
+    return NextResponse.json(formatted);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -238,7 +257,7 @@ export async function PUT(
     const existingPoll = await prisma.polls.findUnique({
       where: { id },
       include: {
-        options: true,
+        poll_options: true,
       },
     });
 
@@ -270,7 +289,7 @@ export async function PUT(
     }
 
     // حذف گزینه‌های قبلی و ایجاد گزینه‌های جدید
-    await prisma.pollOption.deleteMany({
+    await prisma.poll_options.deleteMany({
       where: { pollId: id },
     });
 
@@ -298,7 +317,7 @@ export async function PUT(
         maxRating: validatedData.maxRating,
         ...(validatedData.options && validatedData.options.length > 0
           ? {
-              options: {
+              poll_options: {
                 create: validatedData.options.map(opt => ({
                   text: opt.text,
                   order: opt.order,
@@ -308,15 +327,15 @@ export async function PUT(
           : {}),
       },
       include: {
-        options: true,
-        createdBy: {
+        poll_options: true,
+        users: {
           select: {
             id: true,
             name: true,
             role: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -325,7 +344,15 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updatedPoll);
+    // تبدیل نام‌ها
+    const formatted = {
+      ...updatedPoll,
+      options: updatedPoll.poll_options,
+      createdBy: updatedPoll.users,
+      department: updatedPoll.departments,
+    };
+
+    return NextResponse.json(formatted);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

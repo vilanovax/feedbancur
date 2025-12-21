@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Plus, Edit2, Trash2, Search, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, Filter, Download } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 
@@ -20,7 +20,7 @@ interface AnalyticsKeyword {
   description?: string;
   isActive: boolean;
   departmentId?: string;
-  department?: {
+  departments?: {
     id: string;
     name: string;
   };
@@ -56,6 +56,7 @@ export default function AnalyticsKeywordsPage() {
   const [keywords, setKeywords] = useState<AnalyticsKeyword[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingKeyword, setEditingKeyword] = useState<AnalyticsKeyword | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -192,6 +193,39 @@ export default function AnalyticsKeywordsPage() {
     });
   };
 
+  const handleImportSeed = async () => {
+    if (!confirm("آیا می‌خواهید تمام کلمات کلیدی پیش‌فرض (عمومی، IT، آشپزخانه) را import کنید؟\nکلمات موجود نادیده گرفته می‌شوند.")) {
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const res = await fetch("/api/analytics-keywords/seed", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(
+          `✅ Import با موفقیت انجام شد!\n\n` +
+          `عمومی: ${data.results.general.created} ایجاد شد، ${data.results.general.skipped} نادیده گرفته شد\n` +
+          `IT: ${data.results.it.created} ایجاد شد، ${data.results.it.skipped} نادیده گرفته شد\n` +
+          `آشپزخانه: ${data.results.kitchen.created} ایجاد شد، ${data.results.kitchen.skipped} نادیده گرفته شد\n\n` +
+          `مجموع: ${data.results.total.created} ایجاد شد، ${data.results.total.skipped} نادیده گرفته شد`
+        );
+        fetchKeywords();
+      } else {
+        alert(`❌ خطا در import: ${data.error || "مشکلی رخ داد"}`);
+      }
+    } catch (error) {
+      console.error("Error importing seed keywords:", error);
+      alert("❌ خطا در ارتباط با سرور");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const filteredKeywords = keywords.filter((kw) => {
     const matchesSearch = kw.keyword.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === "all" || kw.type === filterType;
@@ -221,17 +255,27 @@ export default function AnalyticsKeywordsPage() {
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
               مدیریت کلمات کلیدی تحلیلی
             </h1>
-            <button
-              onClick={() => {
-                setEditingKeyword(null);
-                resetForm();
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-              <Plus size={20} />
-              افزودن کلمه کلیدی
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleImportSeed}
+                disabled={importing}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={20} />
+                {importing ? "در حال import..." : "Import کلمات پیش‌فرض"}
+              </button>
+              <button
+                onClick={() => {
+                  setEditingKeyword(null);
+                  resetForm();
+                  setShowModal(true);
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              >
+                <Plus size={20} />
+                افزودن کلمه کلیدی
+              </button>
+            </div>
           </div>
 
           {/* فیلترها */}
@@ -349,7 +393,7 @@ export default function AnalyticsKeywordsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {keyword.department ? keyword.department.name : "عمومی"}
+                        {keyword.departments ? keyword.departments.name : "عمومی"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {KEYWORD_PRIORITIES[keyword.priority as keyof typeof KEYWORD_PRIORITIES]}

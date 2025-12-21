@@ -53,7 +53,7 @@ async function seedKeywords() {
 
   // ایجاد کلمات کلیدی حساس
   for (const kw of sensitiveKeywords) {
-    await prisma.analyticsKeyword.upsert({
+    await prisma.analytics_keywords.upsert({
       where: { id: `seed-sensitive-${kw.keyword}` },
       update: {},
       create: {
@@ -63,6 +63,7 @@ async function seedKeywords() {
         priority: "HIGH", // اولویت زیاد
         description: kw.description,
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     createdCount++;
@@ -70,7 +71,7 @@ async function seedKeywords() {
 
   // ایجاد کلمات کلیدی مثبت
   for (const kw of positiveKeywords) {
-    await prisma.analyticsKeyword.upsert({
+    await prisma.analytics_keywords.upsert({
       where: { id: `seed-positive-${kw.keyword}` },
       update: {},
       create: {
@@ -80,6 +81,7 @@ async function seedKeywords() {
         priority: "MEDIUM", // اولویت متوسط
         description: kw.description,
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     createdCount++;
@@ -87,7 +89,7 @@ async function seedKeywords() {
 
   // ایجاد کلمات کلیدی منفی
   for (const kw of negativeKeywords) {
-    await prisma.analyticsKeyword.upsert({
+    await prisma.analytics_keywords.upsert({
       where: { id: `seed-negative-${kw.keyword}` },
       update: {},
       create: {
@@ -97,6 +99,7 @@ async function seedKeywords() {
         priority: "HIGH", // اولویت زیاد
         description: kw.description,
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     createdCount++;
@@ -104,7 +107,7 @@ async function seedKeywords() {
 
   // ایجاد کلمات کلیدی موضوعی
   for (const kw of topicKeywords) {
-    await prisma.analyticsKeyword.upsert({
+    await prisma.analytics_keywords.upsert({
       where: { id: `seed-topic-${kw.keyword}` },
       update: {},
       create: {
@@ -114,6 +117,7 @@ async function seedKeywords() {
         priority: "MEDIUM", // اولویت متوسط
         description: kw.description,
         isActive: true,
+        updatedAt: new Date(),
       },
     });
     createdCount++;

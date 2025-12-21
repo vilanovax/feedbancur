@@ -258,7 +258,7 @@ export default function AnnouncementForm({
           />
           <label
             htmlFor="useSchedule"
-            className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+            className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
           >
             زمان‌بندی انتشار
           </label>
@@ -301,7 +301,7 @@ export default function AnnouncementForm({
           />
           <label
             htmlFor="isActive"
-            className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+            className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
           >
             فعال (نمایش اعلان)
           </label>

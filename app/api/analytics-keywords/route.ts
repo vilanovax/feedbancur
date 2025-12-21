@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 // GET - دریافت لیست کلمات کلیدی
 export async function GET(request: NextRequest) {
@@ -38,10 +39,10 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === "true";
     }
 
-    const keywords = await prisma.analyticsKeyword.findMany({
+    const keywords = await prisma.analytics_keywords.findMany({
       where,
       include: {
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -101,18 +102,20 @@ export async function POST(request: NextRequest) {
 
     // ایجاد چندین کلمه کلیدی به صورت دسته‌ای
     const createdKeywords = await Promise.all(
-      keywords.map((kw) =>
-        prisma.analyticsKeyword.create({
+      keywords.map((kw: string) =>
+        prisma.analytics_keywords.create({
           data: {
+            id: crypto.randomUUID(),
             keyword: kw,
             type,
             priority: priority || "MEDIUM",
             description,
             isActive: isActive !== undefined ? isActive : true,
             departmentId: departmentId || null,
+            updatedAt: new Date(),
           },
           include: {
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,

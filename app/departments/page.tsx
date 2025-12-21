@@ -360,7 +360,7 @@ export default function DepartmentsPage() {
                       </h3>
                       <button
                         onClick={() => openUsersModal(dept)}
-                        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1"
+                        className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center gap-1.5"
                         title="مشاهده لیست پرسنل"
                       >
                         <Users size={16} />
@@ -516,7 +516,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="allowDirectFeedback"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         ارسال مستقیم فیدبک به مدیر بخش
                       </label>
@@ -533,7 +533,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="canCreateAnnouncement"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         اجازه ایجاد اعلان برای مدیر بخش
                       </label>
@@ -567,7 +567,7 @@ export default function DepartmentsPage() {
                               />
                               <label
                                 htmlFor={`dept-create-${dept.id}`}
-                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                                className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                               >
                                 {dept.name}
                               </label>
@@ -591,7 +591,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="canCreatePoll"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         اجازه ایجاد نظرسنجی برای مدیر بخش
                       </label>
@@ -625,7 +625,7 @@ export default function DepartmentsPage() {
                               />
                               <label
                                 htmlFor={`dept-poll-create-${dept.id}`}
-                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                                className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                               >
                                 {dept.name}
                               </label>
@@ -732,7 +732,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="editAllowDirectFeedback"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         ارسال مستقیم فیدبک به مدیر بخش
                       </label>
@@ -749,7 +749,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="editCanCreateAnnouncement"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         اجازه ایجاد اعلان برای مدیر بخش
                       </label>
@@ -783,7 +783,7 @@ export default function DepartmentsPage() {
                               />
                               <label
                                 htmlFor={`dept-edit-${dept.id}`}
-                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                                className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                               >
                                 {dept.name}
                               </label>
@@ -807,7 +807,7 @@ export default function DepartmentsPage() {
                       />
                       <label
                         htmlFor="editCanCreatePoll"
-                        className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                        className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                       >
                         اجازه ایجاد نظرسنجی برای مدیر بخش
                       </label>
@@ -841,7 +841,7 @@ export default function DepartmentsPage() {
                               />
                               <label
                                 htmlFor={`dept-poll-edit-${dept.id}`}
-                                className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+                                className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
                               >
                                 {dept.name}
                               </label>

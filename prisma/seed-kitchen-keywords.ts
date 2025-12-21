@@ -6,7 +6,7 @@ async function seedKitchenKeywords() {
   console.log("🌱 Seeding Kitchen/Cleaning department keywords...");
 
   // ابتدا بخش آشپزخانه را پیدا می‌کنیم (یا ایجاد می‌کنیم)
-  let kitchenDepartment = await prisma.department.findFirst({
+  let kitchenDepartment = await prisma.departments.findFirst({
     where: {
       OR: [
         { name: { contains: "آشپزخانه", mode: "insensitive" } },
@@ -120,7 +120,7 @@ async function seedKitchenKeywords() {
   // ایجاد کلمات کلیدی حساس
   for (const kw of sensitiveKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "SENSITIVE",
@@ -144,7 +144,7 @@ async function seedKitchenKeywords() {
   // ایجاد کلمات کلیدی منفی
   for (const kw of negativeKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "NEGATIVE",
@@ -168,7 +168,7 @@ async function seedKitchenKeywords() {
   // ایجاد کلمات کلیدی موضوعی
   for (const kw of topicKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "TOPIC",
@@ -192,7 +192,7 @@ async function seedKitchenKeywords() {
   // ایجاد کلمات کلیدی مثبت
   for (const kw of positiveKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "POSITIVE",

@@ -250,7 +250,7 @@ export default function NewFeedbackMobilePage() {
             />
             <label
               htmlFor="isAnonymous"
-              className="mr-2 block text-sm text-gray-700 dark:text-gray-300"
+              className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
             >
               ارسال به صورت ناشناس
             </label>

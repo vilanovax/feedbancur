@@ -1874,7 +1874,7 @@ export default function SettingsPage() {
                             { key: 'assessments', label: 'آزمون‌ها', icon: '📝' },
                             { key: 'announcements', label: 'اعلانات', icon: '📢' },
                             { key: 'tasks', label: 'وظایف', icon: '✅' },
-                            { key: 'analytics', label: 'تحلیل‌ها', icon: '📈' },
+                            { key: 'analytics', label: 'کلمات کلیدی و گزارشات', icon: '📈' },
                           ].map((section) => (
                             <label
                               key={section.key}
@@ -1991,7 +1991,7 @@ export default function SettingsPage() {
                             { key: 'assessments', label: 'آزمون‌ها', icon: '📝' },
                             { key: 'announcements', label: 'اعلانات', icon: '📢' },
                             { key: 'tasks', label: 'وظایف', icon: '✅' },
-                            { key: 'analytics', label: 'تحلیل‌ها', icon: '📈' },
+                            { key: 'analytics', label: 'کلمات کلیدی و گزارشات', icon: '📈' },
                           ].map((section) => (
                             <label
                               key={section.key}

@@ -6,7 +6,7 @@ async function seedITKeywords() {
   console.log("🌱 Seeding IT department keywords...");
 
   // ابتدا بخش IT را پیدا می‌کنیم (یا ایجاد می‌کنیم)
-  let itDepartment = await prisma.department.findFirst({
+  let itDepartment = await prisma.departments.findFirst({
     where: {
       OR: [
         { name: { contains: "IT", mode: "insensitive" } },
@@ -95,7 +95,7 @@ async function seedITKeywords() {
   // ایجاد کلمات کلیدی حساس
   for (const kw of sensitiveKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "SENSITIVE",
@@ -119,7 +119,7 @@ async function seedITKeywords() {
   // ایجاد کلمات کلیدی منفی
   for (const kw of negativeKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "NEGATIVE",
@@ -143,7 +143,7 @@ async function seedITKeywords() {
   // ایجاد کلمات کلیدی موضوعی
   for (const kw of topicKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "TOPIC",
@@ -167,7 +167,7 @@ async function seedITKeywords() {
   // ایجاد کلمات کلیدی مثبت
   for (const kw of positiveKeywords) {
     try {
-      await prisma.analyticsKeyword.create({
+      await prisma.analytics_keywords.create({
         data: {
           keyword: kw.keyword,
           type: "POSITIVE",

@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // GET - دریافت یک کلمه کلیدی
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,10 +19,10 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const keyword = await prisma.analyticsKeyword.findUnique({
-      where: { id: params.id },
+    const keyword = await prisma.analytics_keywords.findUnique({
+      where: { id },
       include: {
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -50,9 +51,10 @@ export async function GET(
 // PUT - ویرایش کلمه کلیدی
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -65,8 +67,8 @@ export async function PUT(
     const body = await request.json();
     const { keyword, type, priority, description, isActive, departmentId } = body;
 
-    const updatedKeyword = await prisma.analyticsKeyword.update({
-      where: { id: params.id },
+    const updatedKeyword = await prisma.analytics_keywords.update({
+      where: { id },
       data: {
         keyword,
         type,
@@ -74,9 +76,10 @@ export async function PUT(
         description,
         isActive,
         departmentId: departmentId || null,
+        updatedAt: new Date(),
       },
       include: {
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -98,9 +101,10 @@ export async function PUT(
 // DELETE - حذف کلمه کلیدی
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -110,8 +114,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.analyticsKeyword.delete({
-      where: { id: params.id },
+    await prisma.analytics_keywords.delete({
+      where: { id },
     });
 
     return NextResponse.json({ message: "Keyword deleted successfully" });

@@ -35,7 +35,7 @@ export async function analyzeFeedbacksByKeywords(
   endDate?: Date
 ): Promise<FeedbackAnalytics> {
   // دریافت کلمات کلیدی فعال
-  const keywords = await prisma.analyticsKeyword.findMany({
+  const keywords = await prisma.analytics_keywords.findMany({
     where: {
       isActive: true,
       OR: [
@@ -68,7 +68,7 @@ export async function analyzeFeedbacksByKeywords(
   }
 
   // دریافت فیدبک‌ها
-  const feedbacks = await prisma.feedback.findMany({
+  const feedbacks = await prisma.feedbacks.findMany({
     where: feedbackWhere,
     select: {
       id: true,
@@ -149,7 +149,7 @@ export async function getKeywordTrends(
   startDate.setDate(startDate.getDate() - days);
 
   // دریافت کلمات کلیدی فعال
-  const keywords = await prisma.analyticsKeyword.findMany({
+  const keywords = await prisma.analytics_keywords.findMany({
     where: {
       isActive: true,
       OR: [
@@ -174,7 +174,7 @@ export async function getKeywordTrends(
     feedbackWhere.departmentId = departmentId;
   }
 
-  const feedbacks = await prisma.feedback.findMany({
+  const feedbacks = await prisma.feedbacks.findMany({
     where: feedbackWhere,
     select: {
       id: true,
@@ -234,7 +234,7 @@ export async function getKeywordTrends(
  * مقایسه بخش‌ها بر اساس کلمات کلیدی
  */
 export async function compareKeywordsByDepartment() {
-  const departments = await prisma.department.findMany({
+  const departments = await prisma.departments.findMany({
     select: {
       id: true,
       name: true,
@@ -289,7 +289,7 @@ export async function getFeedbackCompletionSpeedByKeywords(
     ];
   }
 
-  const keywords = await prisma.analyticsKeyword.findMany({
+  const keywords = await prisma.analytics_keywords.findMany({
     where: keywordWhere,
     orderBy: {
       priority: "desc",
@@ -308,7 +308,7 @@ export async function getFeedbackCompletionSpeedByKeywords(
     feedbackWhere.departmentId = departmentId;
   }
 
-  const completedFeedbacks = await prisma.feedback.findMany({
+  const completedFeedbacks = await prisma.feedbacks.findMany({
     where: feedbackWhere,
     select: {
       id: true,
