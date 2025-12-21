@@ -22,7 +22,7 @@ export async function GET(
     const assignments = await prisma.assessment_assignments.findMany({
       where: { assessmentId: id },
       include: {
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,

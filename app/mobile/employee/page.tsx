@@ -99,7 +99,10 @@ export default function EmployeeMobilePage() {
       const response = await fetch("/api/assessments/my-results");
       if (response.ok) {
         const results = await response.json();
+        console.log("Fetched assessment results:", results);
         setAssessmentResults(results);
+      } else {
+        console.error("Failed to fetch results:", response.status, response.statusText);
       }
     } catch (error) {
       console.error("Error fetching assessment results:", error);
@@ -107,18 +110,51 @@ export default function EmployeeMobilePage() {
   };
 
   const getResultDisplay = (result: AssessmentResult) => {
+    // بررسی و لاگ برای دیباگ
+    console.log("Assessment Result:", {
+      type: result.assessment.type,
+      hasResult: !!result.result,
+      result: result.result,
+      score: result.score,
+    });
+
+    // برای آزمون‌های شخصیت‌سنجی، ابتدا result.result را بررسی کن
     if (result.assessment.type === "MBTI" && result.result) {
-      return result.result.type || "N/A";
+      // اگر result یک object است و type دارد
+      if (typeof result.result === "object" && result.result.type) {
+        return result.result.type;
+      }
+      // اگر result یک string است (مستقیماً type)
+      if (typeof result.result === "string") {
+        return result.result;
+      }
     } else if (result.assessment.type === "DISC" && result.result) {
-      return result.result.type || "N/A";
+      if (typeof result.result === "object" && result.result.type) {
+        return result.result.type;
+      }
+      if (typeof result.result === "string") {
+        return result.result;
+      }
     } else if (result.assessment.type === "HOLLAND" && result.result) {
-      return result.result.type || "N/A";
+      if (typeof result.result === "object" && result.result.type) {
+        return result.result.type;
+      }
+      if (typeof result.result === "string") {
+        return result.result;
+      }
     } else if (result.assessment.type === "MSQ" && result.result) {
-      return result.result.level || `${result.result.totalPercentage}%` || "N/A";
-    } else if (result.score !== null) {
+      if (typeof result.result === "object") {
+        return result.result.level || `${result.result.totalPercentage}%` || "N/A";
+      }
+    }
+    
+    // اگر نمره وجود دارد، آن را نمایش بده
+    if (result.score !== null && result.score !== undefined) {
       return `${result.score}%`;
     }
-    return "N/A";
+    
+    // اگر هیچ کدام وجود ندارد، "تکمیل شده" را نمایش بده
+    return "تکمیل شده";
   };
 
   const getTypeLabel = (type: string) => {
@@ -263,11 +299,11 @@ export default function EmployeeMobilePage() {
         </div>
 
         {/* Assessment Results */}
-        {assessmentResults.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              نتایج آزمون‌های شما
-            </h3>
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            نتایج آزمون‌های شما
+          </h3>
+          {assessmentResults.length > 0 ? (
             <div className="grid grid-cols-1 gap-3">
               {assessmentResults.map((result) => (
                 <Link
@@ -297,8 +333,18 @@ export default function EmployeeMobilePage() {
                 </Link>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 text-center shadow-sm">
+              <ClipboardList className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+              <p className="text-gray-600 dark:text-gray-400">
+                هنوز هیچ نتیجه‌ای ثبت نشده است
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                پس از تکمیل آزمون‌ها، نتایج در اینجا نمایش داده می‌شود
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Quick Actions */}
         <div className="space-y-3">

@@ -72,6 +72,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log(`Found ${results.length} assessment results for user ${session.user.id} (role: ${session.user.role})`);
+
     // برای هر آزمون و هر کاربر، فقط آخرین نتیجه را برگردان
     // اگر مدیر است، نتایج همه کاربران بخش را نشان بده
     // اگر کارمند است، فقط نتایج خودش را نشان بده
@@ -87,11 +89,26 @@ export async function GET(request: NextRequest) {
       );
 
       if (!existing) {
+        // بررسی ساختار result.result
+        let processedResult = result.result;
+        if (processedResult && typeof processedResult === 'object') {
+          // اگر result.result یک object است، آن را به همان صورت نگه دار
+          processedResult = processedResult;
+        } else if (processedResult && typeof processedResult === 'string') {
+          // اگر result.result یک string است، آن را به object تبدیل کن
+          try {
+            processedResult = JSON.parse(processedResult);
+          } catch (e) {
+            // اگر parse نشد، آن را به عنوان type در نظر بگیر
+            processedResult = { type: processedResult };
+          }
+        }
+
         acc.push({
           id: result.id,
           assessmentId: result.assessmentId,
           assessment: result.assessments,
-          result: result.result, // جزئیات کامل (MBTI/DISC details)
+          result: processedResult, // جزئیات کامل (MBTI/DISC details)
           score: result.score,
           isPassed: result.isPassed,
           completedAt: result.completedAt,
@@ -101,6 +118,8 @@ export async function GET(request: NextRequest) {
 
       return acc;
     }, []);
+
+    console.log(`Returning ${latestResults.length} latest results`);
 
     return NextResponse.json(latestResults);
   } catch (error) {

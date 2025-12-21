@@ -175,18 +175,23 @@ export default function AssignAssessmentPage() {
 
       // Then, create or update assignments for selected departments
       for (const deptId of selectedDepartments) {
-        const data = assignmentData[deptId];
-        await fetch(`/api/assessments/${assessmentId}/assign`, {
+        const data = assignmentData[deptId] || {};
+        const response = await fetch(`/api/assessments/${assessmentId}/assign`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             departmentId: deptId,
-            isRequired: data.isRequired,
+            isRequired: data.isRequired ?? false,
             startDate: data.startDate || null,
             endDate: data.endDate || null,
-            allowManagerView: data.allowManagerView,
+            allowManagerView: data.allowManagerView ?? false,
           }),
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to assign to department ${deptId}`);
+        }
       }
 
       toast.success("تخصیص‌ها با موفقیت ذخیره شد");

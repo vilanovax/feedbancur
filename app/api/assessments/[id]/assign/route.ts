@@ -60,44 +60,79 @@ export async function POST(
       );
     }
 
-    // Create or update assignment
-    const assignment = await prisma.assessment_assignments.upsert({
+    // Check if assignment already exists
+    const existingAssignment = await prisma.assessment_assignments.findUnique({
       where: {
         assessmentId_departmentId: {
           assessmentId: id,
           departmentId,
         },
       },
-      update: {
-        isRequired: isRequired ?? false,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        allowManagerView: allowManagerView ?? false,
-      },
-      create: {
-        assessmentId: id,
-        departmentId,
-        isRequired: isRequired ?? false,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        allowManagerView: allowManagerView ?? false,
-      },
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
-      },
     });
 
+    let assignment;
+    if (existingAssignment) {
+      // Update existing assignment
+      assignment = await prisma.assessment_assignments.update({
+        where: {
+          assessmentId_departmentId: {
+            assessmentId: id,
+            departmentId,
+          },
+        },
+        data: {
+          isRequired: isRequired ?? false,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+          allowManagerView: allowManagerView ?? false,
+        },
+        include: {
+          departments: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      });
+    } else {
+      // Create new assignment
+      assignment = await prisma.assessment_assignments.create({
+        data: {
+          assessmentId: id,
+          departmentId,
+          isRequired: isRequired ?? false,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+          allowManagerView: allowManagerView ?? false,
+        },
+        include: {
+          departments: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      });
+    }
+
     return NextResponse.json(assignment, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error assigning assessment:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+      meta: error?.meta,
+    });
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        details: process.env.NODE_ENV === "development" ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
