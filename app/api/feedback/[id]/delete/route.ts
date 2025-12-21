@@ -42,76 +42,42 @@ export async function DELETE(
       );
     }
 
-    // Soft delete
-    let deletedFeedback;
-    try {
-      deletedFeedback = await (prisma.feedbacks.update as any)({
-        where: { id },
-        data: {
-          deletedAt: new Date(),
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              mobile: true,
-            },
-          },
-          department: {
-            select: {
-              id: true,
-              name: true,
-            },
+    // Soft delete - استفاده از نام‌های صحیح relation در schema
+    const deletedFeedback = await prisma.feedbacks.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+      },
+      include: {
+        users_feedbacks_userIdTousers: {
+          select: {
+            id: true,
+            name: true,
+            mobile: true,
           },
         },
-      });
-    } catch (dbError: any) {
-      console.error("Error updating feedback with deletedAt:", dbError);
-      console.error("Error code:", dbError?.code);
-      console.error("Error message:", dbError?.message);
-      
-      // اگر فیلد deletedAt وجود نداشت، از status استفاده کن
-      if (
-        dbError?.message?.includes("deletedAt") ||
-        dbError?.code === "P2009" ||
-        dbError?.code === "P2011" ||
-        dbError?.message?.includes("Unknown field") ||
-        dbError?.message?.includes("Unknown arg") ||
-        dbError?.message?.includes("Unknown column")
-      ) {
-        console.warn("deletedAt field not found, using status instead");
-        // استفاده از status برای حذف (آرشیو کردن)
-        deletedFeedback = await prisma.feedbacks.update({
-          where: { id },
-          data: {
-            status: "ARCHIVED",
+        departments: {
+          select: {
+            id: true,
+            name: true,
           },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                mobile: true,
-              },
-            },
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        });
-      } else {
-        throw dbError;
-      }
-    }
+        },
+      },
+    });
+
+    // Transform to frontend format
+    const responseFeedback = {
+      ...deletedFeedback,
+      user: deletedFeedback.users_feedbacks_userIdTousers,
+      department: deletedFeedback.departments,
+      users_feedbacks_userIdTousers: undefined,
+      departments: undefined,
+    };
 
     return NextResponse.json({
       success: true,
       message: "فیدبک با موفقیت به سطل آشغال منتقل شد",
-      feedback: deletedFeedback,
+      feedback: responseFeedback,
     });
   } catch (error) {
     console.error("Error deleting feedback:", error);

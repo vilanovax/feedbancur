@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight, XCircle, RefreshCw } from "lucide-react";
+import { Plus, Star, Calendar, Building2, User, ArrowUpDown, Send, X, Archive, CheckCircle, Filter, Clock, Send as SendIcon, FolderArchive, Trash2, AlertTriangle, MessageCircle, Check, Paperclip, Image as ImageIcon, ArrowRight, XCircle, RefreshCw, CheckSquare, Square } from "lucide-react";
 import { format } from "date-fns";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
@@ -106,6 +106,11 @@ function FeedbacksPageContent() {
   const [completingFeedback, setCompletingFeedback] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingFeedback, setDeletingFeedback] = useState(false);
+  // Bulk selection states
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
+  const [bulkOperationLoading, setBulkOperationLoading] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedFeedbackForChat, setSelectedFeedbackForChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<Record<string, any[]>>({});
@@ -503,6 +508,7 @@ function FeedbacksPageContent() {
       if (res.ok) {
         setShowDeleteModal(false);
         setSelectedFeedback(null);
+        toast.success("فیدبک با موفقیت حذف شد");
         // پاک کردن cache برای به‌روزرسانی
         if (typeof window !== "undefined") {
           localStorage.removeItem("feedbacks_cache");
@@ -518,6 +524,101 @@ function FeedbacksPageContent() {
       toast.error("خطا در حذف فیدبک");
     } finally {
       setDeletingFeedback(false);
+    }
+  };
+
+  // Bulk selection functions
+  const toggleFeedbackSelection = (feedbackId: string) => {
+    setSelectedFeedbackIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(feedbackId)) {
+        newSet.delete(feedbackId);
+      } else {
+        newSet.add(feedbackId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedFeedbackIds.size === feedbacks.length) {
+      setSelectedFeedbackIds(new Set());
+    } else {
+      setSelectedFeedbackIds(new Set(feedbacks.map(f => f.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedFeedbackIds(new Set());
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (selectedFeedbackIds.size === 0) return;
+    setBulkOperationLoading(true);
+
+    try {
+      const res = await fetch("/api/feedback/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedFeedbackIds) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count} فیدبک با موفقیت حذف شد`);
+        setShowBulkDeleteModal(false);
+        clearSelection();
+        // پاک کردن cache
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در حذف گروهی فیدبک‌ها");
+      }
+    } catch (error) {
+      console.error("Error bulk deleting feedbacks:", error);
+      toast.error("خطا در حذف گروهی فیدبک‌ها");
+    } finally {
+      setBulkOperationLoading(false);
+    }
+  };
+
+  // Bulk archive handler
+  const handleBulkArchive = async () => {
+    if (selectedFeedbackIds.size === 0) return;
+    setBulkOperationLoading(true);
+
+    try {
+      const res = await fetch("/api/feedback/bulk-archive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedFeedbackIds) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count} فیدبک با موفقیت آرشیو شد`);
+        setShowBulkArchiveModal(false);
+        clearSelection();
+        // پاک کردن cache
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در آرشیو گروهی فیدبک‌ها");
+      }
+    } catch (error) {
+      console.error("Error bulk archiving feedbacks:", error);
+      toast.error("خطا در آرشیو گروهی فیدبک‌ها");
+    } finally {
+      setBulkOperationLoading(false);
     }
   };
 
@@ -855,6 +956,61 @@ function FeedbacksPageContent() {
           </div>
         </div>
 
+        {/* Bulk Actions Bar - فقط برای ADMIN */}
+        {session?.user?.role === "ADMIN" && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {selectedFeedbackIds.size === feedbacks.length && feedbacks.length > 0 ? (
+                    <CheckSquare size={18} className="text-blue-600" />
+                  ) : (
+                    <Square size={18} />
+                  )}
+                  {selectedFeedbackIds.size === feedbacks.length && feedbacks.length > 0
+                    ? "لغو انتخاب همه"
+                    : "انتخاب همه"}
+                </button>
+                {selectedFeedbackIds.size > 0 && (
+                  <>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedFeedbackIds.size} مورد انتخاب شده
+                    </span>
+                    <button
+                      onClick={clearSelection}
+                      className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    >
+                      پاک کردن
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {selectedFeedbackIds.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowBulkArchiveModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                  >
+                    <Archive size={16} />
+                    آرشیو گروهی ({selectedFeedbackIds.size})
+                  </button>
+                  <button
+                    onClick={() => setShowBulkDeleteModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                  >
+                    <Trash2 size={16} />
+                    حذف گروهی ({selectedFeedbackIds.size})
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -973,10 +1129,25 @@ function FeedbacksPageContent() {
             {sortFeedbacks(feedbacks).map((feedback) => (
               <div
                 key={feedback.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col"
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col relative ${
+                  selectedFeedbackIds.has(feedback.id) ? "ring-2 ring-blue-500" : ""
+                }`}
               >
+                {/* Checkbox for ADMIN */}
+                {session?.user?.role === "ADMIN" && (
+                  <button
+                    onClick={() => toggleFeedbackSelection(feedback.id)}
+                    className="absolute top-3 left-3 p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition"
+                  >
+                    {selectedFeedbackIds.has(feedback.id) ? (
+                      <CheckSquare size={20} className="text-blue-600" />
+                    ) : (
+                      <Square size={20} className="text-gray-400" />
+                    )}
+                  </button>
+                )}
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white line-clamp-2">
+                  <h3 className={`text-lg font-semibold text-gray-800 dark:text-white line-clamp-2 ${session?.user?.role === "ADMIN" ? "pr-0 ml-8" : ""}`}>
                     {feedback.title}
                   </h3>
                   <div className="flex items-center gap-2">
@@ -1644,6 +1815,96 @@ function FeedbacksPageContent() {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Delete Modal */}
+        {showBulkDeleteModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle className="text-red-500" size={24} />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  حذف گروهی فیدبک‌ها
+                </h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                آیا مطمئن هستید که می‌خواهید <span className="font-bold text-red-600">{selectedFeedbackIds.size}</span> فیدبک را حذف کنید؟
+                <br />
+                <span className="text-sm text-gray-500 dark:text-gray-400 mt-2 block">
+                  فیدبک‌ها به سطل آشغال منتقل می‌شوند و می‌توانید بعداً آن‌ها را بازگردانید.
+                </span>
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  disabled={bulkOperationLoading}
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                >
+                  انصراف
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkOperationLoading}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bulkOperationLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      در حال حذف...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      حذف {selectedFeedbackIds.size} فیدبک
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Archive Modal */}
+        {showBulkArchiveModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
+              <div className="flex items-center gap-3 mb-4">
+                <Archive className="text-gray-600 dark:text-gray-400" size={24} />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                  آرشیو گروهی فیدبک‌ها
+                </h2>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">
+                آیا مطمئن هستید که می‌خواهید <span className="font-bold text-gray-700 dark:text-gray-200">{selectedFeedbackIds.size}</span> فیدبک را آرشیو کنید؟
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowBulkArchiveModal(false)}
+                  disabled={bulkOperationLoading}
+                  className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                >
+                  انصراف
+                </button>
+                <button
+                  onClick={handleBulkArchive}
+                  disabled={bulkOperationLoading}
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {bulkOperationLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      در حال آرشیو...
+                    </>
+                  ) : (
+                    <>
+                      <Archive size={18} />
+                      آرشیو {selectedFeedbackIds.size} فیدبک
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

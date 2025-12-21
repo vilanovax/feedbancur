@@ -80,14 +80,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        console.log("JWT callback - user:", JSON.stringify({ id: user.id, mobile: user.mobile, role: user.role, mustChangePassword: (user as any).mustChangePassword }));
         token.id = user.id;
         token.mobile = user.mobile;
         token.role = user.role;
         token.departmentId = user.departmentId;
         token.statusId = (user as any).statusId ?? null;
         token.mustChangePassword = (user as any).mustChangePassword ?? false;
-        console.log("JWT callback - token.mustChangePassword:", token.mustChangePassword);
         // avatar را در JWT token نگه نمی‌داریم چون base64 string خیلی بزرگ است
         // و باعث خطای 431 (Request Header Fields Too Large) می‌شود
       }
@@ -108,7 +106,6 @@ export const authOptions: NextAuthOptions = {
             token.departmentId = updatedUser.departmentId ?? null;
             token.statusId = updatedUser.statusId ?? null;
             token.mustChangePassword = updatedUser.mustChangePassword ?? false;
-            console.log("JWT callback - updated from DB:", { name: updatedUser.name, mobile: updatedUser.mobile, role: updatedUser.role });
           }
         } catch (error) {
           console.error("Error updating JWT token from DB:", error);
@@ -124,7 +121,6 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
-        console.log("Session callback - token.mustChangePassword:", token.mustChangePassword);
         if (session.user) {
           session.user.id = token.id as string;
           session.user.name = (token.name as string) || session.user.name;
@@ -134,7 +130,6 @@ export const authOptions: NextAuthOptions = {
           session.user.departmentId = token.departmentId as string | null;
           (session.user as any).statusId = token.statusId as string | null;
           session.user.mustChangePassword = token.mustChangePassword ?? false;
-          console.log("Session callback - session.user.mustChangePassword:", session.user.mustChangePassword);
           // avatar را از دیتابیس می‌خوانیم (نه از token)
           if (token.id) {
             try {
@@ -153,7 +148,6 @@ export const authOptions: NextAuthOptions = {
                 session.user.name = user.name;
                 session.user.email = user.email ?? undefined;
                 session.user.mustChangePassword = user.mustChangePassword ?? false;
-                console.log("Session callback - updated from DB:", { name: user.name, email: user.email, mustChangePassword: user.mustChangePassword });
               }
               // statusId و status را از token می‌گیریم (از JWT callback که قبلاً از دیتابیس خوانده شده)
               (session.user as any).statusId = token.statusId ?? null;

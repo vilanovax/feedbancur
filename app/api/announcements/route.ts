@@ -27,26 +27,52 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const showAll = searchParams.get('showAll') === 'true'; // برای صفحه مدیریت
 
-    const where: any = {
-      AND: [
-        showAll ? {} : { isActive: true }, // فقط اعلانات فعال (مگر در حالت مدیریت)
-        showAll ? {} : {
-          OR: [
-            { scheduledAt: null }, // اعلانات بدون زمان‌بندی
-            { scheduledAt: { lte: new Date() } }, // اعلانات که زمانشان رسیده
-          ],
-        },
-        {
-          OR: [
-            { departmentId: null }, // اعلانات عمومی
-          ],
-        },
-      ],
-    };
+    // ساخت فیلتر اعلانات
+    const where: any = {};
 
-    // اگر کاربر در بخشی است، اعلانات آن بخش را هم نشان بده
-    if (session.user.departmentId) {
-      where.AND[2].OR.push({ departmentId: session.user.departmentId });
+    // ادمین همه اعلانات را می‌بیند
+    if (session.user.role === 'ADMIN') {
+      // اگر showAll نیست، فقط فعال‌ها و منتشر شده‌ها
+      if (!showAll) {
+        where.isActive = true;
+        where.AND = [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+        ];
+      }
+      // ادمین فیلتر بخش ندارد
+    } else {
+      // برای مدیر و کارمند
+      if (!showAll) {
+        where.isActive = true;
+        where.AND = [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+        ];
+      }
+
+      // فیلتر بخش برای غیر ادمین
+      const departmentFilter: any[] = [
+        { departmentId: null }, // اعلانات عمومی
+      ];
+
+      if (session.user.departmentId) {
+        departmentFilter.push({ departmentId: session.user.departmentId });
+      }
+
+      if (where.AND) {
+        where.AND.push({ OR: departmentFilter });
+      } else {
+        where.AND = [{ OR: departmentFilter }];
+      }
     }
 
     const announcements = await prisma.announcements.findMany({

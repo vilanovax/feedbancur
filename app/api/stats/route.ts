@@ -33,92 +33,132 @@ export async function GET() {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-    // ساخت شرط where برای اعلانات بر اساس بخش کاربر
-    const announcementWhere: any = {
-      isActive: true,
-      AND: [
-        {
-          OR: [
-            { scheduledAt: null },
-            { scheduledAt: { lte: new Date() } },
-          ],
-        },
-        {
-          OR: [
-            { departmentId: null }, // اعلانات عمومی
-          ],
-        },
-      ],
-    };
+    // ساخت شرط where برای اعلانات
+    let announcementWhere: any;
+    let newAnnouncementWhere: any;
 
-    // اگر کاربر در بخشی است، اعلانات آن بخش را هم اضافه کن
-    if (session.user.departmentId) {
-      announcementWhere.AND[1].OR.push({ departmentId: session.user.departmentId });
+    if (session.user.role === "ADMIN") {
+      // ادمین همه اعلانات فعال را می‌بیند (بدون فیلتر بخش)
+      announcementWhere = {
+        isActive: true,
+        AND: [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+        ],
+      };
+
+      newAnnouncementWhere = {
+        createdAt: { gte: oneDayAgo },
+        isActive: true,
+      };
+    } else {
+      // مدیر و کارمند فقط اعلانات عمومی و بخش خود را می‌بینند
+      const departmentFilter: any[] = [
+        { departmentId: null }, // اعلانات عمومی
+      ];
+
+      if (session.user.departmentId) {
+        departmentFilter.push({ departmentId: session.user.departmentId });
+      }
+
+      announcementWhere = {
+        isActive: true,
+        AND: [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+          {
+            OR: departmentFilter,
+          },
+        ],
+      };
+
+      newAnnouncementWhere = {
+        createdAt: { gte: oneDayAgo },
+        isActive: true,
+        AND: [
+          {
+            OR: departmentFilter,
+          },
+        ],
+      };
     }
 
-    // ساخت شرط where برای اعلانات جدید
-    const newAnnouncementWhere: any = {
-      createdAt: { gte: oneDayAgo },
-      isActive: true,
-      AND: [
-        {
-          OR: [
-            { departmentId: null }, // اعلانات عمومی
-          ],
-        },
-      ],
-    };
+    // ساخت شرط where برای نظرسنجی‌ها
+    let activePollWhere: any;
+    let newPollWhere: any;
 
-    // اگر کاربر در بخشی است، اعلانات جدید آن بخش را هم اضافه کن
-    if (session.user.departmentId) {
-      newAnnouncementWhere.AND[0].OR.push({ departmentId: session.user.departmentId });
-    }
+    if (session.user.role === "ADMIN") {
+      // ادمین همه نظرسنجی‌های فعال را می‌بیند (بدون فیلتر بخش)
+      activePollWhere = {
+        isActive: true,
+        AND: [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+          {
+            OR: [
+              { closedAt: null },
+              { closedAt: { gt: new Date() } },
+            ],
+          },
+        ],
+      };
 
-    // ساخت شرط where برای نظرسنجی‌های فعال بر اساس بخش کاربر
-    const activePollWhere: any = {
-      isActive: true,
-      AND: [
-        {
-          OR: [
-            { scheduledAt: null },
-            { scheduledAt: { lte: new Date() } },
-          ],
-        },
-        {
-          OR: [
-            { closedAt: null },
-            { closedAt: { gt: new Date() } },
-          ],
-        },
-        {
-          OR: [
-            { departmentId: null }, // نظرسنجی‌های عمومی
-          ],
-        },
-      ],
-    };
+      newPollWhere = {
+        createdAt: { gte: oneDayAgo },
+        isActive: true,
+      };
+    } else {
+      // مدیر و کارمند فقط نظرسنجی‌های عمومی و بخش خود را می‌بینند
+      const departmentFilter: any[] = [
+        { departmentId: null }, // نظرسنجی‌های عمومی
+      ];
 
-    // اگر کاربر در بخشی است، نظرسنجی‌های آن بخش را هم اضافه کن
-    if (session.user.departmentId) {
-      activePollWhere.AND[2].OR.push({ departmentId: session.user.departmentId });
-    }
+      if (session.user.departmentId) {
+        departmentFilter.push({ departmentId: session.user.departmentId });
+      }
 
-    // ساخت شرط where برای نظرسنجی‌های جدید
-    const newPollWhere: any = {
-      createdAt: { gte: oneDayAgo },
-      isActive: true,
-      AND: [
-        {
-          OR: [
-            { departmentId: null }, // نظرسنجی‌های عمومی
-          ],
-        },
-      ],
-    };
+      activePollWhere = {
+        isActive: true,
+        AND: [
+          {
+            OR: [
+              { scheduledAt: null },
+              { scheduledAt: { lte: new Date() } },
+            ],
+          },
+          {
+            OR: [
+              { closedAt: null },
+              { closedAt: { gt: new Date() } },
+            ],
+          },
+          {
+            OR: departmentFilter,
+          },
+        ],
+      };
 
-    // اگر کاربر در بخشی است، نظرسنجی‌های جدید آن بخش را هم اضافه کن
-    if (session.user.departmentId) {
-      newPollWhere.AND[0].OR.push({ departmentId: session.user.departmentId });
+      newPollWhere = {
+        createdAt: { gte: oneDayAgo },
+        isActive: true,
+        AND: [
+          {
+            OR: departmentFilter,
+          },
+        ],
+      };
     }
 
     const [

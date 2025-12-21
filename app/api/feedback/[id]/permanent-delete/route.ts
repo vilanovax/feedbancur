@@ -25,7 +25,10 @@ export async function DELETE(
     const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
-        task: true,
+        tasks: true,
+        messages: true,
+        checklist_items: true,
+        notifications: true,
       },
     });
 
@@ -44,14 +47,37 @@ export async function DELETE(
       );
     }
 
-    // حذف تسک مرتبط اگر وجود داشته باشد
-    if (feedback.task) {
+    // حذف رکوردهای وابسته به ترتیب
+    // 1. حذف نوتیفیکیشن‌ها
+    await prisma.notifications.deleteMany({
+      where: { feedbackId: id },
+    });
+
+    // 2. حذف پیام‌ها
+    await prisma.messages.deleteMany({
+      where: { feedbackId: id },
+    });
+
+    // 3. حذف چک‌لیست آیتم‌ها
+    await prisma.checklist_items.deleteMany({
+      where: { feedbackId: id },
+    });
+
+    // 4. حذف تسک مرتبط اگر وجود داشته باشد
+    if (feedback.tasks) {
+      // اول حذف task_assignments و task_comments
+      await prisma.task_assignments.deleteMany({
+        where: { taskId: feedback.tasks.id },
+      });
+      await prisma.task_comments.deleteMany({
+        where: { taskId: feedback.tasks.id },
+      });
       await prisma.tasks.delete({
-        where: { id: feedback.task.id },
+        where: { id: feedback.tasks.id },
       });
     }
 
-    // حذف کامل فیدبک
+    // 5. حذف کامل فیدبک
     await prisma.feedbacks.delete({
       where: { id },
     });
