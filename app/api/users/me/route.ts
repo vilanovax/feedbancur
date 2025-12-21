@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
     // بررسی صحت statusId (اگر ارسال شده باشد)
     let statusIdValue = data.statusId || null;
     if (statusIdValue) {
-      const status = await prisma.userStatus.findUnique({
+      const status = await prisma.user_statuses.findUnique({
         where: { id: statusIdValue },
       });
 
@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest) {
         role: true,
         avatar: true,
         statusId: true,
-        status: {
+        user_statuses: {
           select: {
             id: true,
             name: true,
@@ -102,9 +102,15 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    // Format response for frontend
+    const formattedUser = {
+      ...updatedUser,
+      status: updatedUser.user_statuses,
+    };
+
     return NextResponse.json({
       success: true,
-      user: updatedUser,
+      user: formattedUser,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
