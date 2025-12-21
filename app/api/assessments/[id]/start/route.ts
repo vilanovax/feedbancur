@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 // POST /api/assessments/[id]/start - شروع یا ادامه آزمون
 export async function POST(
@@ -71,7 +72,7 @@ export async function POST(
         );
       }
 
-      if (assessment.assignments.length === 0) {
+      if (assessment.assessment_assignments.length === 0) {
         return NextResponse.json(
           { error: "این آزمون به بخش شما تخصیص داده نشده است" },
           { status: 403 }
@@ -139,6 +140,7 @@ export async function POST(
       try {
         progress = await prisma.assessment_progress.create({
           data: {
+            id: crypto.randomUUID(),
             assessmentId: id,
             userId: session.user.id,
             startedAt: new Date(),
