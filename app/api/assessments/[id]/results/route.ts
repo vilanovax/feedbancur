@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/assessments/[id]/results - تمام نتایج (ADMIN/MANAGER با allowManagerView)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -36,7 +37,7 @@ export async function GET(
       const assignment = await prisma.assessment_assignments.findUnique({
         where: {
           assessmentId_departmentId: {
-            assessmentId: params.id,
+            assessmentId: id,
             departmentId: user.departmentId,
           },
         },
@@ -53,11 +54,11 @@ export async function GET(
     const endDate = searchParams.get("endDate");
 
     const where: any = {
-      assessmentId: params.id,
+      assessmentId: id,
     };
 
     if (departmentId) {
-      where.user = {
+      where.users = {
         departmentId,
       };
     }
@@ -76,15 +77,15 @@ export async function GET(
       };
     }
 
-    const results = await prisma.assessmentResult.findMany({
+    const results = await prisma.assessment_results.findMany({
       where,
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
             email: true,
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,
@@ -119,10 +120,14 @@ export async function GET(
           : 0,
     };
 
+    // Format response for frontend compatibility
     return NextResponse.json({
       results: results.map((r) => ({
         id: r.id,
-        user: r.user,
+        user: r.users ? {
+          ...r.users,
+          department: (r.users as any).departments,
+        } : null,
         result: r.result,
         score: r.score,
         isPassed: r.isPassed,

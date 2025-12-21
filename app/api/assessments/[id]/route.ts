@@ -115,6 +115,7 @@ export async function GET(
     const formattedAssessment = {
       ...assessment,
       createdBy: assessment.users,
+      questions: assessment.assessment_questions || [],
       assessment_assignments: assessment.assessment_assignments.map(a => ({
         ...a,
         department: (a as any).departments,

@@ -107,6 +107,9 @@ export async function GET(request: NextRequest) {
 
           return {
             ...assessment,
+            _count: {
+              questions: assessment._count.assessment_questions,
+            },
             assignment: {
               isRequired: assignment.isRequired,
               startDate: assignment.startDate,

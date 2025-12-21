@@ -48,8 +48,8 @@ const AlertDialogHeader = ({ children }: { children: React.ReactNode }) => {
   return <div className="flex flex-col space-y-2 text-center sm:text-right">{children}</div>;
 };
 
-const AlertDialogFooter = ({ children }: { children: React.ReactNode }) => {
-  return <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 sm:space-x-reverse mt-4">{children}</div>;
+const AlertDialogFooter = ({ children, className }: { children: React.ReactNode; className?: string }) => {
+  return <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 sm:space-x-reverse mt-4 ${className || ""}`}>{children}</div>;
 };
 
 const AlertDialogTitle = ({ children, className }: { children: React.ReactNode; className?: string }) => {
@@ -60,7 +60,7 @@ const AlertDialogDescription = ({ children, className }: { children: React.React
   return <p className={`text-sm text-gray-500 dark:text-gray-400 ${className || ""}`}>{children}</p>;
 };
 
-const AlertDialogAction = ({ onClick, children }: { onClick?: () => void; children: React.ReactNode }) => {
+const AlertDialogAction = ({ onClick, children, className }: { onClick?: () => void; children: React.ReactNode; className?: string }) => {
   const context = React.useContext(AlertDialogContext);
 
   return (
@@ -70,7 +70,7 @@ const AlertDialogAction = ({ onClick, children }: { onClick?: () => void; childr
         onClick?.();
         context?.setOpen(false);
       }}
-      className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+      className={`inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${className || ""}`}
     >
       {children}
     </button>
@@ -94,8 +94,34 @@ const AlertDialogCancel = ({ onClick, children }: { onClick?: () => void; childr
   );
 };
 
+interface AlertDialogTriggerProps {
+  asChild?: boolean;
+  children: React.ReactNode;
+}
+
+const AlertDialogTrigger = ({ asChild, children }: AlertDialogTriggerProps) => {
+  const context = React.useContext(AlertDialogContext);
+  if (!context) throw new Error("AlertDialogTrigger must be used within AlertDialog");
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children as React.ReactElement<any>, {
+      onClick: (e: React.MouseEvent) => {
+        (children as React.ReactElement<any>).props.onClick?.(e);
+        context.setOpen(true);
+      },
+    });
+  }
+
+  return (
+    <button type="button" onClick={() => context.setOpen(true)}>
+      {children}
+    </button>
+  );
+};
+
 export {
   AlertDialog,
+  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogFooter,

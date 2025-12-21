@@ -26,7 +26,7 @@ export async function GET(
         completedAt: "desc",
       },
       include: {
-        assessment: {
+        assessments: {
           select: {
             id: true,
             title: true,
@@ -52,7 +52,7 @@ export async function GET(
       isPassed: result.isPassed,
       timeTaken: result.timeTaken,
       completedAt: result.completedAt,
-      assessment: result.assessment,
+      assessment: result.assessments, // Map to frontend expected name
     });
   } catch (error) {
     console.error("Error fetching assessment result:", error);
