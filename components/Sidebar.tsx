@@ -24,14 +24,26 @@ import {
   Brain,
   ClipboardList,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
+
+interface UserStatus {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
+  const [userStatuses, setUserStatuses] = useState<UserStatus[]>([]);
+  const [currentStatus, setCurrentStatus] = useState<UserStatus | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => {
     if (path.includes("?")) {
@@ -51,6 +63,83 @@ export default function Sidebar() {
         ? prev.filter((m) => m !== menuName)
         : [...prev, menuName]
     );
+  };
+
+  // دریافت استتوس‌های موجود و استتوس فعلی کاربر
+  useEffect(() => {
+    if (session?.user) {
+      fetchUserStatuses();
+      fetchCurrentStatus();
+    }
+  }, [session]);
+
+  // بستن منوی استتوس با کلیک بیرون
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fetchUserStatuses = async () => {
+    try {
+      const role = session?.user?.role || "EMPLOYEE";
+      const res = await fetch(`/api/user-statuses?role=${role}&isActive=true`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatuses(data);
+      }
+    } catch (err) {
+      console.error("Error fetching user statuses:", err);
+    }
+  };
+
+  const fetchCurrentStatus = async () => {
+    try {
+      const res = await fetch("/api/users/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user?.status) {
+          setCurrentStatus(data.user.status);
+        } else if (data.status) {
+          setCurrentStatus(data.status);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching current status:", err);
+    }
+  };
+
+  const handleStatusChange = async (status: UserStatus | null) => {
+    setStatusLoading(true);
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: session?.user?.name,
+          statusId: status?.id || null,
+        }),
+      });
+
+      if (res.ok) {
+        setCurrentStatus(status);
+        setStatusMenuOpen(false);
+        await update();
+        toast.success(status ? `استتوس به "${status.name}" تغییر کرد` : "استتوس حذف شد");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "خطا در تغییر استتوس");
+      }
+    } catch (err) {
+      toast.error("خطا در تغییر استتوس");
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const navItems = [
@@ -193,13 +282,86 @@ export default function Sidebar() {
               {session.user.name}
             </p>
             <p className="text-xs text-blue-100 mt-1">{session.user.mobile}</p>
-            <span className="inline-block mt-3 px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30">
-              {session.user.role === "ADMIN"
-                ? "مدیرعامل"
-                : session.user.role === "MANAGER"
-                ? "مدیر"
-                : "کارمند"}
-            </span>
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30">
+                {session.user.role === "ADMIN"
+                  ? "مدیرعامل"
+                  : session.user.role === "MANAGER"
+                  ? "مدیر"
+                  : "کارمند"}
+              </span>
+
+              {/* Status Selector */}
+              <div className="relative" ref={statusMenuRef}>
+                <button
+                  onClick={() => setStatusMenuOpen(!statusMenuOpen)}
+                  disabled={statusLoading}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                    currentStatus
+                      ? "text-white border-white/30"
+                      : "bg-white/10 text-white/80 border-white/20 hover:bg-white/20"
+                  }`}
+                  style={currentStatus ? { backgroundColor: currentStatus.color } : {}}
+                >
+                  {statusLoading ? (
+                    <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  ) : (
+                    <>
+                      <span className={`w-2 h-2 rounded-full ${currentStatus ? "bg-white" : "bg-white/50"}`}></span>
+                      <span>{currentStatus?.name || "استتوس"}</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </>
+                  )}
+                </button>
+
+                {/* Status Dropdown */}
+                {statusMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      انتخاب استتوس
+                    </div>
+
+                    {/* بدون استتوس */}
+                    <button
+                      onClick={() => handleStatusChange(null)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
+                        !currentStatus ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                      }`}
+                    >
+                      <span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                      <span className="text-gray-700 dark:text-gray-300">بدون استتوس</span>
+                      {!currentStatus && <span className="mr-auto text-blue-600">✓</span>}
+                    </button>
+
+                    {/* لیست استتوس‌ها */}
+                    {userStatuses.map((status) => (
+                      <button
+                        key={status.id}
+                        onClick={() => handleStatusChange(status)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
+                          currentStatus?.id === status.id ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                        }`}
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: status.color }}
+                        ></span>
+                        <span className="text-gray-700 dark:text-gray-300">{status.name}</span>
+                        {currentStatus?.id === status.id && (
+                          <span className="mr-auto text-blue-600">✓</span>
+                        )}
+                      </button>
+                    ))}
+
+                    {userStatuses.length === 0 && (
+                      <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                        استتوسی تعریف نشده
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

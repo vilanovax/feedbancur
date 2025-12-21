@@ -4,6 +4,65 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
+// GET - دریافت اطلاعات پروفایل کاربر
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        role: true,
+        avatar: true,
+        statusId: true,
+        user_statuses: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
+        departments: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "کاربر یافت نشد" }, { status: 404 });
+    }
+
+    // Format response for frontend
+    const formattedUser = {
+      ...user,
+      status: user.user_statuses,
+      department: user.departments,
+    };
+
+    return NextResponse.json({
+      success: true,
+      user: formattedUser,
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return NextResponse.json(
+      { error: "خطا در دریافت اطلاعات" },
+      { status: 500 }
+    );
+  }
+}
+
 const updateProfileSchema = z.object({
   name: z.string().min(1, "نام الزامی است"),
   email: z

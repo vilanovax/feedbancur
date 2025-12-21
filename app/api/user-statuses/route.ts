@@ -116,11 +116,13 @@ export async function POST(request: NextRequest) {
 
     const status = await prisma.user_statuses.create({
       data: {
+        id: crypto.randomUUID(),
         name: data.name,
         color: data.color,
         allowedRoles: data.allowedRoles,
         isActive: data.isActive,
         order: data.order,
+        updatedAt: new Date(),
       },
     });
 
