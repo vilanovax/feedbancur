@@ -146,6 +146,7 @@ export async function POST(
             startedAt: new Date(),
             answers: {},
             lastQuestion: 0,
+            updatedAt: new Date(),
           },
         });
       } catch (createError: any) {
