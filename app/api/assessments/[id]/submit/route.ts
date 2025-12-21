@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateAssessmentScore } from "@/lib/assessment-calculator";
+import crypto from "crypto";
 
 // POST /api/assessments/[id]/submit - ثبت نهایی آزمون
 export async function POST(
@@ -43,6 +44,7 @@ export async function POST(
     // ذخیره نتیجه
     const assessmentResult = await prisma.assessment_results.create({
       data: {
+        id: crypto.randomUUID(),
         assessmentId: id,
         userId: session.user.id,
         answers: answers,
@@ -53,6 +55,7 @@ export async function POST(
           : null,
         startedAt: new Date(), // TODO: باید از progress گرفته شود
         completedAt: new Date(),
+        updatedAt: new Date(),
       },
     });
 
