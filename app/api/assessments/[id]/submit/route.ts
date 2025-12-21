@@ -55,7 +55,6 @@ export async function POST(
           : null,
         startedAt: new Date(), // TODO: باید از progress گرفته شود
         completedAt: new Date(),
-        updatedAt: new Date(),
       },
     });
 
