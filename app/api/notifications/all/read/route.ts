@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.notification.updateMany({
+    await prisma.notifications.updateMany({
       where: {
         userId: session.user.id,
         isRead: false,

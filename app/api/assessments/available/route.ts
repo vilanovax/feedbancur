@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
       select: { departmentId: true },
     });
@@ -30,10 +30,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    const assignments = await prisma.assessmentAssignment.findMany({
+    const assignments = await prisma.assessment_assignments.findMany({
       where: {
         departmentId: user.departmentId,
-        assessment: {
+        assessments: {
           isActive: true,
         },
         OR: [
@@ -60,11 +60,11 @@ export async function GET(request: NextRequest) {
         ],
       },
       include: {
-        assessment: {
+        assessments: {
           include: {
             _count: {
               select: {
-                questions: true,
+                assessment_questions: true,
               },
             },
           },
@@ -75,12 +75,12 @@ export async function GET(request: NextRequest) {
     // Filter out null assessments and get user progress/results
     const assessmentsWithStatus = await Promise.all(
       assignments
-        .filter((a) => a.assessment !== null)
+        .filter((a) => a.assessments !== null)
         .map(async (assignment) => {
-          const assessment = assignment.assessment!;
+          const assessment = assignment.assessments!;
 
           // Check if user has already completed this assessment
-          const result = await prisma.assessmentResult.findFirst({
+          const result = await prisma.assessment_results.findFirst({
             where: {
               assessmentId: assessment.id,
               userId: session.user.id,
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
           });
 
           // Check if user has progress
-          const progress = await prisma.assessmentProgress.findUnique({
+          const progress = await prisma.assessment_progress.findUnique({
             where: {
               assessmentId_userId: {
                 assessmentId: assessment.id,

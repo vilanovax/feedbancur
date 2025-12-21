@@ -19,9 +19,9 @@ export const authOptions: NextAuthOptions = {
           }
 
           console.log("🔍 Looking for user:", credentials.mobile);
-          const user = await prisma.user.findUnique({
+          const user = await prisma.users.findUnique({
             where: { mobile: credentials.mobile },
-            include: { department: true },
+            include: { departments: true },
           });
 
           if (!user) {
@@ -58,6 +58,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             departmentId: user.departmentId ?? null,
+            statusId: (user as any).statusId ?? null, // استفاده از type assertion برای جلوگیری از خطای TypeScript
             mustChangePassword: user.mustChangePassword ?? false,
             // avatar را در JWT token نگه نمی‌داریم چون base64 string خیلی بزرگ است
           };
@@ -84,6 +85,7 @@ export const authOptions: NextAuthOptions = {
         token.mobile = user.mobile;
         token.role = user.role;
         token.departmentId = user.departmentId;
+        token.statusId = (user as any).statusId ?? null;
         token.mustChangePassword = (user as any).mustChangePassword ?? false;
         console.log("JWT callback - token.mustChangePassword:", token.mustChangePassword);
         // avatar را در JWT token نگه نمی‌داریم چون base64 string خیلی بزرگ است
@@ -93,9 +95,9 @@ export const authOptions: NextAuthOptions = {
       // وقتی update() فراخوانی می‌شود، اطلاعات کاربر را از دیتابیس بخوان
       if (trigger === "update" && token.id) {
         try {
-          const updatedUser = await prisma.user.findUnique({
+          const updatedUser = await prisma.users.findUnique({
             where: { id: token.id as string },
-            include: { department: true },
+            include: { departments: true },
           });
           
           if (updatedUser) {
@@ -104,6 +106,7 @@ export const authOptions: NextAuthOptions = {
             token.email = updatedUser.email ?? undefined;
             token.role = updatedUser.role;
             token.departmentId = updatedUser.departmentId ?? null;
+            token.statusId = updatedUser.statusId ?? null;
             token.mustChangePassword = updatedUser.mustChangePassword ?? false;
             console.log("JWT callback - updated from DB:", { name: updatedUser.name, mobile: updatedUser.mobile, role: updatedUser.role });
           }
@@ -129,14 +132,20 @@ export const authOptions: NextAuthOptions = {
           session.user.email = (token.email as string) || session.user.email;
           session.user.role = token.role as string;
           session.user.departmentId = token.departmentId as string | null;
+          (session.user as any).statusId = token.statusId as string | null;
           session.user.mustChangePassword = token.mustChangePassword ?? false;
           console.log("Session callback - session.user.mustChangePassword:", session.user.mustChangePassword);
           // avatar را از دیتابیس می‌خوانیم (نه از token)
           if (token.id) {
             try {
-              const user = await prisma.user.findUnique({
+              const user = await prisma.users.findUnique({
                 where: { id: token.id as string },
-                select: { avatar: true, mustChangePassword: true, name: true, email: true },
+                select: {
+                  avatar: true,
+                  mustChangePassword: true,
+                  name: true,
+                  email: true,
+                },
               });
               (session.user as any).avatar = user?.avatar ?? undefined;
               // به‌روزرسانی اطلاعات از دیتابیس
@@ -146,10 +155,16 @@ export const authOptions: NextAuthOptions = {
                 session.user.mustChangePassword = user.mustChangePassword ?? false;
                 console.log("Session callback - updated from DB:", { name: user.name, email: user.email, mustChangePassword: user.mustChangePassword });
               }
+              // statusId و status را از token می‌گیریم (از JWT callback که قبلاً از دیتابیس خوانده شده)
+              (session.user as any).statusId = token.statusId ?? null;
             } catch (dbError) {
               console.error("Error fetching user in session callback:", dbError);
               // در صورت خطا، از مقدار token استفاده کن
+              (session.user as any).statusId = token.statusId ?? null;
             }
+          } else {
+            // اگر token.id وجود نداشت، از token استفاده کن
+            (session.user as any).statusId = token.statusId ?? null;
           }
         }
         return session;

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       where.departmentId = session.user.departmentId;
     }
 
-    const employees = await prisma.employee.findMany({
+    const employees = await prisma.employees.findMany({
       where,
       include: {
         department: true,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const employee = await prisma.employee.create({
+    const employee = await prisma.employees.create({
       data: {
         name: data.name,
         position: data.position,

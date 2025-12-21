@@ -23,7 +23,7 @@ export async function GET(
     const { id } = await params;
 
     // بررسی وجود اعلان
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id },
       include: {
         department: true,
@@ -54,7 +54,7 @@ export async function GET(
       targetUsersQuery.departmentId = announcement.departmentId;
     }
 
-    const targetUsers = await prisma.user.findMany({
+    const targetUsers = await prisma.users.findMany({
       where: targetUsersQuery,
       select: {
         id: true,

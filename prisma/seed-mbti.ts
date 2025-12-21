@@ -7,7 +7,7 @@ async function seedMBTI(prismaInstance?: PrismaClient) {
   console.log("🌱 Seeding MBTI Assessment...");
 
   // پیدا کردن یا ایجاد کاربر ادمین برای creator
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: { role: "ADMIN" },
   });
 
@@ -17,7 +17,7 @@ async function seedMBTI(prismaInstance?: PrismaClient) {
   }
 
   // ایجاد آزمون MBTI
-  const mbtiAssessment = await prisma.assessment.upsert({
+  const mbtiAssessment = await prisma.assessments.upsert({
     where: { id: "mbti-standard-assessment" },
     update: {},
     create: {
@@ -31,6 +31,7 @@ async function seedMBTI(prismaInstance?: PrismaClient) {
       timeLimit: 30, // 30 دقیقه
       showResults: true,
       createdById: adminUser.id,
+      updatedAt: new Date(),
     },
   });
 
@@ -528,7 +529,7 @@ async function seedMBTI(prismaInstance?: PrismaClient) {
   ];
 
   // حذف سوالات قبلی
-  await prisma.assessmentQuestion.deleteMany({
+  await prisma.assessment_questions.deleteMany({
     where: { assessmentId: mbtiAssessment.id },
   });
 
@@ -543,7 +544,7 @@ async function seedMBTI(prismaInstance?: PrismaClient) {
     options: q.options,
   }));
 
-  await prisma.assessmentQuestion.createMany({
+  await prisma.assessment_questions.createMany({
     data: questionsData,
     skipDuplicates: true,
   });

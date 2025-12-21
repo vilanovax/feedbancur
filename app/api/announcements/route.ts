@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { uploadToLiara } from '@/lib/liara-storage';
+import { randomUUID } from 'crypto';
 
 const createAnnouncementSchema = z.object({
   title: z.string().min(1, 'عنوان الزامی است'),
@@ -48,17 +49,17 @@ export async function GET(req: NextRequest) {
       where.AND[2].OR.push({ departmentId: session.user.departmentId });
     }
 
-    const announcements = await prisma.announcement.findMany({
+    const announcements = await prisma.announcements.findMany({
       where,
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
             role: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -71,7 +72,16 @@ export async function GET(req: NextRequest) {
       take: 50, // آخرین 50 اعلان
     });
 
-    return NextResponse.json(announcements);
+    // تبدیل به فرمت frontend
+    const responseAnnouncements = announcements.map((announcement: any) => ({
+      ...announcement,
+      createdBy: announcement.users,
+      department: announcement.departments,
+      users: undefined,
+      departments: undefined,
+    }));
+
+    return NextResponse.json(responseAnnouncements);
   } catch (error) {
     console.error('Get announcements error:', error);
     return NextResponse.json(
@@ -121,7 +131,7 @@ export async function POST(req: NextRequest) {
       }
 
       // دریافت اطلاعات بخش برای بررسی مجوز
-      managerDepartment = await prisma.department.findUnique({
+      managerDepartment = await prisma.departments.findUnique({
         where: { id: session.user.departmentId },
         select: {
           canCreateAnnouncement: true,
@@ -357,8 +367,10 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-      const announcement = await prisma.announcement.create({
+      const announcement = await prisma.announcements.create({
         data: {
+          id: randomUUID(),
+          updatedAt: new Date(),
           title: data.title,
           content: data.content,
           priority: data.priority || 'MEDIUM',
@@ -370,14 +382,14 @@ export async function POST(req: NextRequest) {
           attachments: attachmentsData,
         },
         include: {
-          createdBy: {
+          users: {
             select: {
               id: true,
               name: true,
               role: true,
             },
           },
-          department: {
+          departments: {
             select: {
               id: true,
               name: true,
@@ -387,7 +399,17 @@ export async function POST(req: NextRequest) {
       });
 
       console.log('Announcement created successfully:', announcement.id);
-      return NextResponse.json(announcement, { status: 201 });
+
+      // تبدیل به فرمت frontend
+      const responseAnnouncement = {
+        ...announcement,
+        createdBy: (announcement as any).users,
+        department: (announcement as any).departments,
+        users: undefined,
+        departments: undefined,
+      };
+
+      return NextResponse.json(responseAnnouncement, { status: 201 });
     } catch (dbError: any) {
       console.error('Database error creating announcement:', dbError);
       console.error('Error code:', dbError.code);

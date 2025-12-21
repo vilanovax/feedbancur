@@ -29,7 +29,7 @@ export async function POST(
     }
 
     // Check if assessment exists
-    const assessment = await prisma.assessment.findUnique({
+    const assessment = await prisma.assessments.findUnique({
       where: { id: params.id },
     });
 
@@ -43,7 +43,7 @@ export async function POST(
     // Update each question's order
     await prisma.$transaction(
       questionOrders.map((item) =>
-        prisma.assessmentQuestion.update({
+        prisma.assessment_questions.update({
           where: { id: item.id },
           data: { order: item.order },
         })
@@ -51,7 +51,7 @@ export async function POST(
     );
 
     // Fetch updated questions
-    const questions = await prisma.assessmentQuestion.findMany({
+    const questions = await prisma.assessment_questions.findMany({
       where: { assessmentId: params.id },
       orderBy: { order: "asc" },
     });

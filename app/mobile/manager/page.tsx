@@ -21,6 +21,11 @@ interface AssessmentResult {
   score: number | null;
   isPassed: boolean | null;
   completedAt: Date;
+  user?: {
+    id: string;
+    name: string;
+    departmentId: string | null;
+  };
 }
 
 export default function ManagerMobilePage() {
@@ -291,13 +296,13 @@ export default function ManagerMobilePage() {
         {assessmentResults.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              نتایج آزمون‌های شما
+              {session?.user.role === "MANAGER" ? "نتایج آزمون‌های بخش" : "نتایج آزمون‌های شما"}
             </h3>
             <div className="grid grid-cols-1 gap-3">
               {assessmentResults.map((result) => (
                 <Link
                   key={result.id}
-                  href={`/assessments/${result.assessmentId}/result`}
+                  href={`/assessments/${result.assessmentId}/result${result.user ? `?userId=${result.user.id}` : ''}`}
                   className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-indigo-600 dark:border-indigo-500"
                 >
                   <div className="flex items-center justify-between">
@@ -308,6 +313,11 @@ export default function ManagerMobilePage() {
                           {result.assessment.title}
                         </h4>
                       </div>
+                      {result.user && session?.user.role === "MANAGER" && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          {result.user.name}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                           {getResultDisplay(result)}

@@ -1,0 +1,166 @@
+
+> feedbancur@1.0.0 build
+> prisma generate && next build
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.0) to ./node_modules/@prisma/client in 150ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+   ▲ Next.js 16.0.7 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.5s
+   Skipping validation of types
+   Collecting page data using 7 workers ...
+   Generating static pages using 7 workers (0/76) ...
+ReferenceError: location is not defined
+    at l (.next/server/chunks/ssr/[root-of-the-server]__9599ffde._.js:7:8529)
+   Generating static pages using 7 workers (19/76) 
+   Generating static pages using 7 workers (38/76) 
+   Generating static pages using 7 workers (57/76) 
+ ✓ Generating static pages using 7 workers (76/76) in 465.9ms
+   Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /admins
+├ ○ /analytics
+├ ○ /analytics-keywords
+├ ○ /analytics-keywords/reports
+├ ○ /announcements
+├ ƒ /announcements/[id]
+├ ƒ /announcements/[id]/edit
+├ ○ /announcements/create
+├ ○ /announcements/manage
+├ ƒ /api/analytics
+├ ƒ /api/analytics-keywords
+├ ƒ /api/analytics-keywords/[id]
+├ ƒ /api/analytics-keywords/report
+├ ƒ /api/announcements
+├ ƒ /api/announcements/[id]
+├ ƒ /api/announcements/[id]/messages
+├ ƒ /api/announcements/[id]/view
+├ ƒ /api/announcements/[id]/viewers
+├ ƒ /api/assessments
+├ ƒ /api/assessments/[id]
+├ ƒ /api/assessments/[id]/assign
+├ ƒ /api/assessments/[id]/assignments
+├ ƒ /api/assessments/[id]/progress
+├ ƒ /api/assessments/[id]/questions
+├ ƒ /api/assessments/[id]/questions/[qid]
+├ ƒ /api/assessments/[id]/questions/reorder
+├ ƒ /api/assessments/[id]/result
+├ ƒ /api/assessments/[id]/results
+├ ƒ /api/assessments/[id]/start
+├ ƒ /api/assessments/[id]/submit
+├ ƒ /api/assessments/available
+├ ƒ /api/assessments/my-results
+├ ƒ /api/assessments/seed/mbti
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/backup
+├ ƒ /api/departments
+├ ƒ /api/departments/[id]
+├ ƒ /api/departments/[id]/users
+├ ƒ /api/download
+├ ƒ /api/employees
+├ ƒ /api/employees/[id]
+├ ƒ /api/feedback
+├ ƒ /api/feedback/[id]/archive
+├ ƒ /api/feedback/[id]/cancel-forward
+├ ƒ /api/feedback/[id]/checklist
+├ ƒ /api/feedback/[id]/delete
+├ ƒ /api/feedback/[id]/extract-keywords
+├ ƒ /api/feedback/[id]/forward
+├ ƒ /api/feedback/[id]/messages
+├ ƒ /api/feedback/[id]/messages/unread
+├ ƒ /api/feedback/[id]/notes
+├ ƒ /api/feedback/[id]/permanent-delete
+├ ƒ /api/feedback/[id]/restore
+├ ƒ /api/feedback/[id]/status
+├ ƒ /api/feedback/checklist/[itemId]
+├ ƒ /api/feedback/messages/unread-count
+├ ƒ /api/feedback/trash
+├ ƒ /api/feedback/trash/count
+├ ƒ /api/feedback/with-chat
+├ ƒ /api/image-proxy
+├ ƒ /api/notifications
+├ ƒ /api/notifications/[id]/read
+├ ƒ /api/notifications/all/read
+├ ƒ /api/otp/send
+├ ƒ /api/otp/verify
+├ ƒ /api/polls
+├ ƒ /api/polls/[id]
+├ ƒ /api/polls/[id]/copy
+├ ƒ /api/polls/[id]/results
+├ ƒ /api/polls/[id]/vote
+├ ƒ /api/public-board
+├ ƒ /api/settings
+├ ƒ /api/stats
+├ ƒ /api/tasks
+├ ƒ /api/tasks/[id]
+├ ƒ /api/upload
+├ ƒ /api/users
+├ ƒ /api/users/[id]
+├ ƒ /api/users/change-password
+├ ƒ /api/users/me
+├ ○ /archive
+├ ○ /assessments
+├ ƒ /assessments/[id]/assign
+├ ƒ /assessments/[id]/edit
+├ ƒ /assessments/[id]/result
+├ ƒ /assessments/[id]/results
+├ ƒ /assessments/[id]/take
+├ ○ /assessments/new
+├ ○ /change-password
+├ ○ /departments
+├ ○ /employees
+├ ○ /feedback
+├ ○ /feedback/new
+├ ○ /feedback/with-chat
+├ ○ /forwarded-feedbacks
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /mobile/announcements
+├ ○ /mobile/employee
+├ ○ /mobile/employee/assessments
+├ ƒ /mobile/employee/assessments/[id]
+├ ○ /mobile/feedback
+├ ○ /mobile/feedback/new
+├ ○ /mobile/manager
+├ ○ /mobile/manager/announcements/create
+├ ○ /mobile/manager/assessments
+├ ƒ /mobile/manager/assessments/[id]
+├ ○ /mobile/manager/forwarded
+├ ○ /mobile/manager/tasks
+├ ○ /mobile/polls
+├ ƒ /mobile/polls/[id]
+├ ○ /mobile/polls/create
+├ ○ /mobile/profile/edit
+├ ○ /mobile/settings
+├ ○ /my-assessments
+├ ○ /polls
+├ ƒ /polls/[id]
+├ ƒ /polls/[id]/edit
+├ ƒ /polls/[id]/results
+├ ○ /polls/create
+├ ○ /polls/manage
+├ ○ /public-board
+├ ○ /settings
+├ ○ /tasks
+├ ○ /trash
+└ ○ /users
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

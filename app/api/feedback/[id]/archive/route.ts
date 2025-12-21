@@ -31,10 +31,10 @@ export async function POST(
     const data = archiveSchema.parse(body);
 
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -57,7 +57,7 @@ export async function POST(
     }
 
     // آرشیو کردن فیدبک
-    const archivedFeedback = await prisma.feedback.update({
+    const archivedFeedback = await prisma.feedbacks.update({
       where: { id },
       data: {
         status: "ARCHIVED",

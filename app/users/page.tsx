@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserPlus, Pencil, Trash2, Search, Shield, User, CheckCircle, XCircle } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search, Shield, User, CheckCircle, XCircle, Tag, Plus, ArrowUp, ArrowDown, Edit2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import { useToast } from "@/contexts/ToastContext";
@@ -22,7 +22,25 @@ interface UserType {
   isActive: boolean;
   departmentId: string | null;
   department: Department | null;
+  statusId: string | null;
+  status: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
   createdAt: string;
+}
+
+interface UserStatus {
+  id: string;
+  name: string;
+  color: string;
+  allowedRoles: ("ADMIN" | "MANAGER" | "EMPLOYEE")[];
+  isActive: boolean;
+  order: number;
+  _count: {
+    users: number;
+  };
 }
 
 export default function UsersPage() {
@@ -73,6 +91,21 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
+  const [activeTab, setActiveTab] = useState<"users" | "statuses">("users");
+  
+  // User Status states
+  const [userStatuses, setUserStatuses] = useState<UserStatus[]>([]);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showStatusDeleteModal, setShowStatusDeleteModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<UserStatus | null>(null);
+  const [statusFormData, setStatusFormData] = useState({
+    name: "",
+    color: "#3B82F6",
+    allowedRoles: [] as ("ADMIN" | "MANAGER" | "EMPLOYEE")[],
+    isActive: true,
+    order: 0,
+  });
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -90,6 +123,7 @@ export default function UsersPage() {
     departmentId: "",
     password: "",
     isActive: true,
+    statusId: null as string | null,
   });
 
   useEffect(() => {
@@ -108,8 +142,11 @@ export default function UsersPage() {
     if (status === "authenticated") {
       fetchUsers();
       fetchDepartments();
+      if (session?.user.role === "ADMIN") {
+        fetchUserStatuses();
+      }
     }
-  }, [status, roleFilter, departmentFilter, search]);
+  }, [status, roleFilter, departmentFilter, search, activeTab]);
 
   const fetchUsers = async () => {
     // اگر cache معتبر وجود دارد و فیلترها خالی هستند، از آن استفاده کن
@@ -273,6 +310,7 @@ export default function UsersPage() {
         role: formData.role,
         departmentId: formData.departmentId,
         isActive: formData.isActive,
+        statusId: formData.statusId || null,
       };
 
       if (formData.password) {
@@ -338,8 +376,12 @@ export default function UsersPage() {
     }
   };
 
-  const openEditModal = (user: UserType) => {
+  const openEditModal = async (user: UserType) => {
     setSelectedUser(user);
+    // اگر استتوس‌ها هنوز لود نشده‌اند، آنها را لود کن
+    if (userStatuses.length === 0 && session?.user.role === "ADMIN") {
+      await fetchUserStatuses();
+    }
     setFormData({
       mobile: user.mobile,
       name: user.name,
@@ -348,6 +390,7 @@ export default function UsersPage() {
       departmentId: user.departmentId || "",
       password: "",
       isActive: user.isActive ?? true,
+      statusId: user.statusId || null,
     });
     setShowEditModal(true);
   };
@@ -355,6 +398,169 @@ export default function UsersPage() {
   const openDeleteModal = (user: UserType) => {
     setSelectedUser(user);
     setShowDeleteModal(true);
+  };
+
+  const fetchUserStatuses = async () => {
+    try {
+      setStatusLoading(true);
+      const res = await fetch("/api/user-statuses");
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatuses(data);
+      }
+    } catch (err) {
+      console.error("Error fetching user statuses:", err);
+      toast.error("خطا در بارگذاری استتوس‌ها");
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const handleCreateStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      const res = await fetch("/api/user-statuses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(statusFormData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setShowStatusModal(false);
+        setStatusFormData({
+          name: "",
+          color: "#3B82F6",
+          allowedRoles: [],
+          isActive: true,
+          order: 0,
+        });
+        fetchUserStatuses();
+        toast.success("استتوس با موفقیت ایجاد شد");
+      } else {
+        setError(data.error || "خطا در ایجاد استتوس");
+        toast.error(data.error || "خطا در ایجاد استتوس");
+      }
+    } catch (err) {
+      setError("خطا در ایجاد استتوس");
+      toast.error("خطا در ایجاد استتوس");
+    }
+  };
+
+  const handleUpdateStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStatus) return;
+    setError("");
+
+    try {
+      const res = await fetch(`/api/user-statuses?id=${selectedStatus.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(statusFormData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setShowStatusModal(false);
+        setSelectedStatus(null);
+        fetchUserStatuses();
+        toast.success("استتوس با موفقیت بروزرسانی شد");
+      } else {
+        setError(data.error || "خطا در بروزرسانی استتوس");
+        toast.error(data.error || "خطا در بروزرسانی استتوس");
+      }
+    } catch (err) {
+      setError("خطا در بروزرسانی استتوس");
+      toast.error("خطا در بروزرسانی استتوس");
+    }
+  };
+
+  const handleDeleteStatus = async () => {
+    if (!selectedStatus) return;
+
+    try {
+      const res = await fetch(`/api/user-statuses?id=${selectedStatus.id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setShowStatusDeleteModal(false);
+        setSelectedStatus(null);
+        fetchUserStatuses();
+        toast.success("استتوس با موفقیت حذف شد");
+      } else {
+        const data = await res.json();
+        setError(data.error || "خطا در حذف استتوس");
+        toast.error(data.error || "خطا در حذف استتوس");
+      }
+    } catch (err) {
+      setError("خطا در حذف استتوس");
+      toast.error("خطا در حذف استتوس");
+    }
+  };
+
+  const openStatusEditModal = (status: UserStatus) => {
+    setSelectedStatus(status);
+    setStatusFormData({
+      name: status.name,
+      color: status.color,
+      allowedRoles: [...status.allowedRoles],
+      isActive: status.isActive,
+      order: status.order,
+    });
+    setShowStatusModal(true);
+  };
+
+  const openStatusCreateModal = () => {
+    setSelectedStatus(null);
+    setStatusFormData({
+      name: "",
+      color: "#3B82F6",
+      allowedRoles: [],
+      isActive: true,
+      order: 0,
+    });
+    setShowStatusModal(true);
+  };
+
+  const handleMoveStatus = async (statusId: string, direction: "up" | "down") => {
+    const status = userStatuses.find((s) => s.id === statusId);
+    if (!status) return;
+
+    const currentIndex = userStatuses.findIndex((s) => s.id === statusId);
+    if (direction === "up" && currentIndex === 0) return;
+    if (direction === "down" && currentIndex === userStatuses.length - 1) return;
+
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const targetStatus = userStatuses[targetIndex];
+
+    // Swap orders
+    const newOrder = targetStatus.order;
+    const oldOrder = status.order;
+
+    try {
+      // Update both statuses
+      await Promise.all([
+        fetch(`/api/user-statuses?id=${statusId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: newOrder }),
+        }),
+        fetch(`/api/user-statuses?id=${targetStatus.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: oldOrder }),
+        }),
+      ]);
+
+      fetchUserStatuses();
+    } catch (err) {
+      toast.error("خطا در تغییر ترتیب استتوس");
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -414,6 +620,37 @@ export default function UsersPage() {
           </div>
         )}
 
+        {/* Tabs */}
+        {session?.user.role === "ADMIN" && (
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setActiveTab("users")}
+                className={`px-4 py-2 font-medium transition ${
+                  activeTab === "users"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                کاربران
+              </button>
+              <button
+                onClick={() => setActiveTab("statuses")}
+                className={`px-4 py-2 font-medium transition ${
+                  activeTab === "statuses"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                استتوس‌ها
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab Content */}
+        {activeTab === "users" && (
+          <>
         {/* Filters and Create Button */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -465,6 +702,7 @@ export default function UsersPage() {
                   departmentId: "",
                   password: "",
                   isActive: true,
+                  statusId: null,
                 });
                 setShowCreateModal(true);
               }}
@@ -493,6 +731,9 @@ export default function UsersPage() {
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     بخش
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    استتوس
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     وضعیت
@@ -544,7 +785,7 @@ export default function UsersPage() {
                   ))
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                       کاربری یافت نشد
                     </td>
                   </tr>
@@ -576,6 +817,18 @@ export default function UsersPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.department?.name || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {user.status ? (
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium text-white"
+                            style={{ backgroundColor: user.status.color }}
+                          >
+                            {user.status.name}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -906,6 +1159,31 @@ export default function UsersPage() {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      استتوس
+                    </label>
+                    <select
+                      value={formData.statusId || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          statusId: e.target.value || null,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">بدون استتوس</option>
+                      {userStatuses
+                        .filter((s) => s.isActive && s.allowedRoles.includes(selectedUser?.role || "EMPLOYEE"))
+                        .map((status) => (
+                          <option key={status.id} value={status.id}>
+                            {status.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -972,6 +1250,326 @@ export default function UsersPage() {
                     setSelectedUser(null);
                   }}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition"
+                >
+                  انصراف
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+          </>
+        )}
+
+        {/* Statuses Tab Content */}
+        {activeTab === "statuses" && session?.user.role === "ADMIN" && (
+          <div className="space-y-6">
+            {/* Header with Create Button */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                مدیریت استتوس‌های کاربران
+              </h2>
+              <button
+                onClick={openStatusCreateModal}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                <Plus className="w-5 h-5" />
+                استتوس جدید
+              </button>
+            </div>
+
+            {/* Statuses List */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+              {statusLoading ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400">در حال بارگذاری...</p>
+                </div>
+              ) : userStatuses.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  استتوسی ایجاد نشده است
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          ترتیب
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          نام
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          رنگ
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          نقش‌های مجاز
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          تعداد کاربران
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          وضعیت
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          عملیات
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {userStatuses.map((status, index) => (
+                        <tr key={status.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleMoveStatus(status.id, "up")}
+                                disabled={index === 0}
+                                className={`p-1 rounded ${index === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleMoveStatus(status.id, "down")}
+                                disabled={index === userStatuses.length - 1}
+                                className={`p-1 rounded ${index === userStatuses.length - 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {status.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-8 h-8 rounded-full border-2 border-gray-300 dark:border-gray-600"
+                                style={{ backgroundColor: status.color }}
+                              />
+                              <span className="text-sm text-gray-600 dark:text-gray-400">{status.color}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-wrap gap-1">
+                              {status.allowedRoles.map((role) => (
+                                <span
+                                  key={role}
+                                  className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                >
+                                  {role === "ADMIN" ? "مدیرعامل" : role === "MANAGER" ? "مدیر" : "کارمند"}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {status._count.users}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {status.isActive ? (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                فعال
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                غیرفعال
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => openStatusEditModal(status)}
+                                className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                              >
+                                <Edit2 className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedStatus(status);
+                                  setShowStatusDeleteModal(true);
+                                }}
+                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Status Create/Edit Modal */}
+        {showStatusModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                {selectedStatus ? "ویرایش استتوس" : "ایجاد استتوس جدید"}
+              </h2>
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+              <form onSubmit={selectedStatus ? handleUpdateStatus : handleCreateStatus}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      نام استتوس *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={statusFormData.name}
+                      onChange={(e) =>
+                        setStatusFormData({ ...statusFormData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      رنگ *
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={statusFormData.color}
+                        onChange={(e) =>
+                          setStatusFormData({ ...statusFormData, color: e.target.value })
+                        }
+                        className="w-16 h-16 rounded-lg border-2 border-gray-300 dark:border-gray-600 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        required
+                        pattern="^#[0-9A-Fa-f]{6}$"
+                        value={statusFormData.color}
+                        onChange={(e) =>
+                          setStatusFormData({ ...statusFormData, color: e.target.value })
+                        }
+                        placeholder="#3B82F6"
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      رنگ را انتخاب کنید یا کد hex وارد کنید (مثال: #3B82F6)
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      نقش‌های مجاز *
+                    </label>
+                    <div className="space-y-2">
+                      {(["EMPLOYEE", "MANAGER"] as const).map((role) => (
+                        <label key={role} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={statusFormData.allowedRoles.includes(role)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setStatusFormData({
+                                  ...statusFormData,
+                                  allowedRoles: [...statusFormData.allowedRoles, role],
+                                });
+                              } else {
+                                setStatusFormData({
+                                  ...statusFormData,
+                                  allowedRoles: statusFormData.allowedRoles.filter((r) => r !== role),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {role === "MANAGER" ? "مدیر" : "کارمند"}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {statusFormData.allowedRoles.length === 0 && (
+                      <p className="text-xs text-red-500 mt-1">حداقل یک نقش باید انتخاب شود</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={statusFormData.isActive}
+                        onChange={(e) =>
+                          setStatusFormData({ ...statusFormData, isActive: e.target.checked })
+                        }
+                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        استتوس فعال است
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="submit"
+                    disabled={statusFormData.allowedRoles.length === 0}
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {selectedStatus ? "بروزرسانی" : "ایجاد"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowStatusModal(false);
+                      setSelectedStatus(null);
+                      setError("");
+                    }}
+                    className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
+                  >
+                    انصراف
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Status Delete Modal */}
+        {showStatusDeleteModal && selectedStatus && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+              <h2 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">
+                حذف استتوس
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300 mb-6">
+                آیا از حذف استتوس <strong>{selectedStatus.name}</strong> اطمینان دارید؟
+                {selectedStatus._count.users > 0 && (
+                  <span className="block mt-2 text-red-600 dark:text-red-400">
+                    این استتوس توسط {selectedStatus._count.users} کاربر استفاده می‌شود و نمی‌تواند حذف شود.
+                  </span>
+                )}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleDeleteStatus}
+                  disabled={selectedStatus._count.users > 0}
+                  className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  حذف استتوس
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStatusDeleteModal(false);
+                    setSelectedStatus(null);
+                  }}
+                  className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition"
                 >
                   انصراف
                 </button>

@@ -28,7 +28,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const department = await prisma.department.findUnique({
+    const department = await prisma.departments.findUnique({
       where: { id },
       include: {
         _count: {
@@ -79,7 +79,7 @@ export async function PATCH(
     const data = updateDepartmentSchema.parse(body);
 
     // بررسی وجود بخش
-    const existingDepartment = await prisma.department.findUnique({
+    const existingDepartment = await prisma.departments.findUnique({
       where: { id },
     });
 
@@ -154,7 +154,7 @@ export async function PATCH(
     }
 
     // بروزرسانی بخش
-    const updatedDepartment = await prisma.department.update({
+    const updatedDepartment = await prisma.departments.update({
       where: { id },
       data: updateData,
     });
@@ -201,7 +201,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود بخش
-    const department = await prisma.department.findUnique({
+    const department = await prisma.departments.findUnique({
       where: { id },
       include: {
         _count: {
@@ -241,7 +241,7 @@ export async function DELETE(
     }
 
     // حذف بخش
-    await prisma.department.delete({
+    await prisma.departments.delete({
       where: { id },
     });
 

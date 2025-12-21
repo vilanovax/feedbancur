@@ -29,11 +29,11 @@ export async function GET(
     }
 
     const { id } = await params;
-    const task = await prisma.task.findUnique({
+    const task = await prisma.tasks.findUnique({
       where: { id },
       include: {
-        department: true,
-        createdBy: {
+        departments: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -41,10 +41,10 @@ export async function GET(
             role: true,
           },
         },
-        assignedTo: {
+        task_assignments: {
           include: {
-            employee: true,
-            user: {
+            employees: true,
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -54,9 +54,9 @@ export async function GET(
             },
           },
         },
-        feedback: {
+        feedbacks: {
           include: {
-            user: {
+            users_feedbacks_userIdTousers: {
               select: {
                 id: true,
                 name: true,
@@ -65,7 +65,7 @@ export async function GET(
             },
           },
         },
-        comments: {
+        task_comments: {
           orderBy: {
             createdAt: 'desc',
           },
@@ -79,7 +79,7 @@ export async function GET(
 
     // بررسی دسترسی
     if (session.user.role === 'EMPLOYEE') {
-      const isAssigned = task.assignedTo.some(
+      const isAssigned = task.task_assignments.some(
         (assignment) => assignment.userId === session.user.id
       );
       if (!isAssigned) {
@@ -117,9 +117,9 @@ export async function PATCH(
     const body = await req.json();
     const data = updateTaskSchema.parse(body);
 
-    const existingTask = await prisma.task.findUnique({
+    const existingTask = await prisma.tasks.findUnique({
       where: { id },
-      include: { assignedTo: true },
+      include: { task_assignments: true },
     });
 
     if (!existingTask) {
@@ -127,7 +127,7 @@ export async function PATCH(
     }
 
     // بررسی دسترسی
-    const isAssigned = existingTask.assignedTo.some(
+    const isAssigned = existingTask.task_assignments.some(
       (assignment) => assignment.userId === session.user.id
     );
     const isManager =
@@ -141,7 +141,7 @@ export async function PATCH(
 
     // Forward کردن تسک به بخش دیگر
     if (data.forwardToDepartmentId && (isManager || isAdmin)) {
-      await prisma.task.update({
+      await prisma.tasks.update({
         where: { id },
         data: {
           departmentId: data.forwardToDepartmentId,
@@ -175,15 +175,15 @@ export async function PATCH(
     if (data.priority) updateData.priority = data.priority;
     if (typeof data.isPublic !== 'undefined') updateData.isPublic = data.isPublic;
 
-    const updatedTask = await prisma.task.update({
+    const updatedTask = await prisma.tasks.update({
       where: { id },
       data: updateData,
       include: {
-        department: true,
-        assignedTo: {
+        departments: true,
+        task_assignments: {
           include: {
-            employee: true,
-            user: {
+            employees: true,
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -267,7 +267,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await prisma.task.delete({
+    await prisma.tasks.delete({
       where: { id },
     });
 

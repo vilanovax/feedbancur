@@ -13,6 +13,7 @@ const updateUserSchema = z.object({
   departmentId: z.string().min(1, "انتخاب بخش الزامی است").optional(),
   password: z.string().min(6, "رمز عبور حداقل 6 کاراکتر باید باشد").optional(),
   isActive: z.boolean().optional(),
+  statusId: z.string().nullable().optional(),
 });
 
 // GET - مشاهده جزئیات یک کاربر
@@ -32,7 +33,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id },
       select: {
         id: true,
@@ -45,6 +46,14 @@ export async function GET(
           select: {
             id: true,
             name: true,
+          },
+        },
+        statusId: true,
+        status: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
           },
         },
         isActive: true,
@@ -99,7 +108,7 @@ export async function PATCH(
     const data = updateUserSchema.parse(body);
 
     // بررسی وجود کاربر
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { id },
     });
 
@@ -143,7 +152,7 @@ export async function PATCH(
 
     // بررسی تکراری نبودن شماره موبایل
     if (data.mobile && data.mobile !== existingUser.mobile) {
-      const duplicateUser = await prisma.user.findUnique({
+      const duplicateUser = await prisma.users.findUnique({
         where: { mobile: data.mobile },
       });
 
@@ -157,7 +166,7 @@ export async function PATCH(
 
     // بررسی وجود بخش
     if (data.departmentId) {
-      const department = await prisma.department.findUnique({
+      const department = await prisma.departments.findUnique({
         where: { id: data.departmentId },
       });
 
@@ -166,6 +175,40 @@ export async function PATCH(
           { error: "بخش مورد نظر یافت نشد" },
           { status: 404 }
         );
+      }
+    }
+
+    // بررسی صحت statusId (اگر ارسال شده باشد)
+    if (data.statusId !== undefined) {
+      if (data.statusId === null) {
+        // حذف استتوس کاربر
+        // هیچ بررسی لازم نیست
+      } else {
+        const status = await prisma.userStatus.findUnique({
+          where: { id: data.statusId },
+        });
+
+        if (!status) {
+          return NextResponse.json(
+            { error: "استتوس انتخابی یافت نشد" },
+            { status: 400 }
+          );
+        }
+
+        if (!status.isActive) {
+          return NextResponse.json(
+            { error: "این استتوس غیرفعال است" },
+            { status: 400 }
+          );
+        }
+
+        // بررسی اینکه آیا کاربر می‌تواند از این استتوس استفاده کند
+        if (!status.allowedRoles.includes(existingUser.role)) {
+          return NextResponse.json(
+            { error: "این استتوس برای نقش این کاربر مجاز نیست" },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -178,6 +221,7 @@ export async function PATCH(
     if (data.role) updateData.role = data.role;
     if (data.departmentId) updateData.departmentId = data.departmentId;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
+    if (data.statusId !== undefined) updateData.statusId = data.statusId;
 
     // اگر رمز عبور جدید ارسال شده، hash کن
     if (data.password) {
@@ -185,7 +229,7 @@ export async function PATCH(
     }
 
     // بروزرسانی کاربر
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { id },
       data: updateData,
       select: {
@@ -199,6 +243,14 @@ export async function PATCH(
           select: {
             id: true,
             name: true,
+          },
+        },
+        statusId: true,
+        status: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
           },
         },
         createdAt: true,
@@ -256,7 +308,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود کاربر
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id },
     });
 
@@ -284,7 +336,7 @@ export async function DELETE(
     }
 
     // حذف کاربر
-    await prisma.user.delete({
+    await prisma.users.delete({
       where: { id },
     });
 

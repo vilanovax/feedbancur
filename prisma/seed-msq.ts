@@ -7,7 +7,7 @@ async function seedMSQ(prismaInstance?: PrismaClient) {
   console.log("🌱 Seeding MSQ Assessment...");
 
   // پیدا کردن یا ایجاد کاربر ادمین برای creator
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: { role: "ADMIN" },
   });
 
@@ -17,7 +17,7 @@ async function seedMSQ(prismaInstance?: PrismaClient) {
   }
 
   // ایجاد آزمون MSQ
-  const msqAssessment = await prisma.assessment.upsert({
+  const msqAssessment = await prisma.assessments.upsert({
     where: { id: "msq-standard-assessment" },
     update: {},
     create: {
@@ -33,6 +33,7 @@ async function seedMSQ(prismaInstance?: PrismaClient) {
       timeLimit: 15, // 15 دقیقه
       showResults: true,
       createdById: adminUser.id,
+      updatedAt: new Date(),
     },
   });
 
@@ -667,12 +668,13 @@ async function seedMSQ(prismaInstance?: PrismaClient) {
   ];
 
   // حذف سوالات قبلی
-  await prisma.assessmentQuestion.deleteMany({
+  await prisma.assessment_questions.deleteMany({
     where: { assessmentId: msqAssessment.id },
   });
 
   // ایجاد سوالات
   const questionsData = questions.map((q) => ({
+    id: `msq-q-${q.order}`,
     assessmentId: msqAssessment.id,
     questionText: q.questionText,
     questionType: "MULTIPLE_CHOICE" as const,
@@ -681,7 +683,7 @@ async function seedMSQ(prismaInstance?: PrismaClient) {
     options: q.options,
   }));
 
-  await prisma.assessmentQuestion.createMany({
+  await prisma.assessment_questions.createMany({
     data: questionsData,
     skipDuplicates: true,
   });

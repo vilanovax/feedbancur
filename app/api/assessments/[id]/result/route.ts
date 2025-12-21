@@ -17,7 +17,7 @@ export async function GET(
     }
 
     // دریافت آخرین نتیجه کاربر برای این آزمون
-    const result = await prisma.assessmentResult.findFirst({
+    const result = await prisma.assessment_results.findFirst({
       where: {
         assessmentId: id,
         userId: session.user.id,

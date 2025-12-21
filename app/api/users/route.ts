@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     let users;
     try {
       // استفاده از type assertion برای جلوگیری از خطای TypeScript
-      users = await (prisma.user.findMany as any)({
+      users = await (prisma.users.findMany as any)({
         where,
         select: {
           id: true,
@@ -79,10 +79,18 @@ export async function GET(req: NextRequest) {
           name: true,
           role: true,
           departmentId: true,
-          department: {
+          departments: {
             select: {
               id: true,
               name: true,
+            },
+          },
+          statusId: true,
+          user_statuses: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
             },
           },
           isActive: true,
@@ -103,7 +111,7 @@ export async function GET(req: NextRequest) {
         dbError?.message?.includes("Unknown arg")
       ) {
         console.warn("isActive field not found, fetching without it:", dbError.message);
-        users = await prisma.user.findMany({
+        users = await prisma.users.findMany({
           where,
           select: {
             id: true,
@@ -112,10 +120,18 @@ export async function GET(req: NextRequest) {
             name: true,
             role: true,
             departmentId: true,
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            statusId: true,
+            user_statuses: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
               },
             },
             createdAt: true,
@@ -137,10 +153,19 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json(usersWithDefaultActive);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching users:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta,
+    });
     return NextResponse.json(
-      { error: "Internal Server Error", details: error instanceof Error ? error.message : String(error) },
+      { 
+        error: "Internal Server Error", 
+        details: error?.message || String(error),
+        code: error?.code
+      },
       { status: 500 }
     );
   }
@@ -199,7 +224,7 @@ export async function POST(req: NextRequest) {
     }
 
     // بررسی تکراری نبودن شماره موبایل
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { mobile: data.mobile },
     });
 
@@ -212,7 +237,7 @@ export async function POST(req: NextRequest) {
 
     // بررسی وجود بخش (فقط اگر departmentId داده شده باشد)
     if (data.departmentId) {
-      const department = await prisma.department.findUnique({
+      const department = await prisma.departments.findUnique({
         where: { id: data.departmentId },
       });
 
@@ -244,7 +269,7 @@ export async function POST(req: NextRequest) {
     
     let user;
     try {
-      user = await prisma.user.create({
+      user = await prisma.users.create({
         data: {
           mobile: data.mobile,
           name: data.name,
@@ -262,7 +287,7 @@ export async function POST(req: NextRequest) {
           name: true,
           role: true,
           departmentId: true,
-          department: {
+          departments: {
             select: {
               id: true,
               name: true,
@@ -288,7 +313,7 @@ export async function POST(req: NextRequest) {
         dbError?.message?.includes("Unknown column")
       ) {
         console.warn("isActive field error, creating without it");
-        user = await prisma.user.create({
+        user = await prisma.users.create({
           data: {
             mobile: data.mobile,
             name: data.name,
@@ -305,7 +330,7 @@ export async function POST(req: NextRequest) {
             name: true,
             role: true,
             departmentId: true,
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,

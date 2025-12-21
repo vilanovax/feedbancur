@@ -31,11 +31,11 @@ export async function GET(
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
 
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       include: {
-        forwardedTo: true,
-        department: true,
+        users_feedbacks_forwardedToIdTousers: true,
+        departments: true,
       },
     });
 
@@ -62,7 +62,7 @@ export async function GET(
     }
 
     // دریافت پیام‌ها
-    const messages = await prisma.message.findMany({
+    const messages = await prisma.messages.findMany({
       where: { feedbackId: resolvedParams.id },
       include: {
         sender: {
@@ -82,7 +82,7 @@ export async function GET(
     );
 
     if (unreadMessages.length > 0) {
-      await prisma.message.updateMany({
+      await prisma.messages.updateMany({
         where: {
           id: { in: unreadMessages.map((msg) => msg.id) },
         },
@@ -301,10 +301,10 @@ export async function POST(
     }
 
     // بررسی وجود فیدبک و دسترسی
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       include: {
-        forwardedTo: true,
+        users_feedbacks_forwardedToIdTousers: true,
       },
     });
 
@@ -332,7 +332,7 @@ export async function POST(
 
     // ایجاد پیام
     try {
-      const message = await prisma.message.create({
+      const message = await prisma.messages.create({
         data: {
           feedbackId: resolvedParams.id,
           senderId: session.user.id,

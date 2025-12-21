@@ -7,7 +7,7 @@ async function seedDISC(prismaInstance?: PrismaClient) {
   console.log("Starting DISC assessment seed...");
 
   // Find or create admin user
-  let adminUser = await prisma.user.findFirst({
+  let adminUser = await prisma.users.findFirst({
     where: { role: "ADMIN" },
   });
 
@@ -17,7 +17,7 @@ async function seedDISC(prismaInstance?: PrismaClient) {
   }
 
   // Create DISC Assessment
-  const discAssessment = await prisma.assessment.upsert({
+  const discAssessment = await prisma.assessments.upsert({
     where: { id: "disc-standard-assessment" },
     update: {},
     create: {
@@ -33,6 +33,7 @@ async function seedDISC(prismaInstance?: PrismaClient) {
       timeLimit: 20,
       showResults: true,
       createdById: adminUser.id,
+      updatedAt: new Date(),
     },
   });
 
@@ -698,7 +699,7 @@ async function seedDISC(prismaInstance?: PrismaClient) {
   ];
 
   // حذف سوالات قبلی
-  await prisma.assessmentQuestion.deleteMany({
+  await prisma.assessment_questions.deleteMany({
     where: { assessmentId: discAssessment.id },
   });
 
@@ -713,7 +714,7 @@ async function seedDISC(prismaInstance?: PrismaClient) {
     options: q.options,
   }));
 
-  await prisma.assessmentQuestion.createMany({
+  await prisma.assessment_questions.createMany({
     data: questionsData,
     skipDuplicates: true,
   });

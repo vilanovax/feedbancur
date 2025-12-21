@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const questions = await prisma.assessmentQuestion.findMany({
+    const questions = await prisma.assessment_questions.findMany({
       where: { assessmentId: params.id },
       orderBy: { order: "asc" },
     });
@@ -61,7 +61,7 @@ export async function POST(
     }
 
     // Check if assessment exists
-    const assessment = await prisma.assessment.findUnique({
+    const assessment = await prisma.assessments.findUnique({
       where: { id: params.id },
     });
 
@@ -75,14 +75,14 @@ export async function POST(
     // Get the last order number if order is not provided
     let questionOrder = order;
     if (questionOrder === undefined) {
-      const lastQuestion = await prisma.assessmentQuestion.findFirst({
+      const lastQuestion = await prisma.assessment_questions.findFirst({
         where: { assessmentId: params.id },
         orderBy: { order: "desc" },
       });
       questionOrder = lastQuestion ? lastQuestion.order + 1 : 1;
     }
 
-    const question = await prisma.assessmentQuestion.create({
+    const question = await prisma.assessment_questions.create({
       data: {
         assessmentId: params.id,
         questionText,

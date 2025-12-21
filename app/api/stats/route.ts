@@ -137,26 +137,26 @@ export async function GET() {
       activePolls,
       newPolls,
     ] = await Promise.all([
-      prisma.feedback.count({ where: { deletedAt: null } }),
-      prisma.feedback.count({ where: { status: "PENDING", deletedAt: null } }),
-      prisma.department.count(),
-      prisma.feedback.count({ where: { status: "COMPLETED", deletedAt: null } }),
-      prisma.feedback.count({ where: { status: "DEFERRED", deletedAt: null } }),
-      prisma.feedback.count({ where: { status: "ARCHIVED", deletedAt: null } }),
+      prisma.feedbacks.count({ where: { deletedAt: null } }),
+      prisma.feedbacks.count({ where: { status: "PENDING", deletedAt: null } }),
+      prisma.departments.count(),
+      prisma.feedbacks.count({ where: { status: "COMPLETED", deletedAt: null } }),
+      prisma.feedbacks.count({ where: { status: "DEFERRED", deletedAt: null } }),
+      prisma.feedbacks.count({ where: { status: "ARCHIVED", deletedAt: null } }),
       // اعلانات
-      prisma.announcement.count(),
-      prisma.announcement.count({
+      prisma.announcements.count(),
+      prisma.announcements.count({
         where: announcementWhere,
       }),
-      prisma.announcement.count({
+      prisma.announcements.count({
         where: newAnnouncementWhere,
       }),
       // نظرسنجی‌ها
-      prisma.poll.count(),
-      prisma.poll.count({
+      prisma.polls.count(),
+      prisma.polls.count({
         where: activePollWhere,
       }),
-      prisma.poll.count({
+      prisma.polls.count({
         where: newPollWhere,
       }),
     ]);

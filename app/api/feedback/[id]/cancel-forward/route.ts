@@ -22,7 +22,7 @@ export async function POST(
 
     const { id } = await params;
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
         task: {
@@ -30,7 +30,7 @@ export async function POST(
             assignedTo: true,
           },
         },
-        forwardedTo: true,
+        users_feedbacks_forwardedToIdTousers: true,
       },
     });
 
@@ -69,13 +69,13 @@ export async function POST(
       }
 
       // حذف تسک
-      await prisma.task.delete({
+      await prisma.tasks.delete({
         where: { id: feedback.task.id },
       });
     }
 
     // لغو ارجاع و بازگشت وضعیت به PENDING
-    const updatedFeedback = await prisma.feedback.update({
+    const updatedFeedback = await prisma.feedbacks.update({
       where: { id },
       data: {
         status: "PENDING",

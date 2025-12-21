@@ -37,10 +37,10 @@ export async function GET(
     const resolvedParams = params instanceof Promise ? await params : params;
 
     // بررسی وجود اعلان
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id: resolvedParams.id },
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -56,10 +56,10 @@ export async function GET(
     }
 
     // دریافت پیام‌ها
-    const messages = await prisma.announcementMessage.findMany({
+    const messages = await prisma.announcement_messages.findMany({
       where: { announcementId: resolvedParams.id },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -70,7 +70,14 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json(messages);
+    // تبدیل به فرمت frontend
+    const responseMessages = messages.map((msg: any) => ({
+      ...msg,
+      createdBy: msg.users,
+      users: undefined,
+    }));
+
+    return NextResponse.json(responseMessages);
   } catch (error) {
     console.error("Error fetching announcement messages:", error);
     return NextResponse.json(
@@ -189,10 +196,10 @@ export async function POST(
     }
 
     // بررسی وجود اعلان
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id: resolvedParams.id },
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -208,7 +215,7 @@ export async function POST(
     }
 
     // ایجاد پیام
-    const message = await prisma.announcementMessage.create({
+    const message = await prisma.announcement_messages.create({
       data: {
         announcementId: resolvedParams.id,
         content: data.content,
@@ -217,7 +224,7 @@ export async function POST(
         attachmentName: attachmentName,
       },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -227,6 +234,13 @@ export async function POST(
       },
     });
 
+    // تبدیل به فرمت frontend
+    const responseMessage = {
+      ...message,
+      createdBy: (message as any).users,
+      users: undefined,
+    };
+
     // ایجاد نوتیفیکیشن برای کاربران همان بخش‌هایی که اعلان برایشان ارسال شده بود
     try {
       // پیدا کردن کاربران هدف
@@ -234,7 +248,7 @@ export async function POST(
 
       if (announcement.departmentId) {
         // اگر اعلان برای بخش خاصی است، کاربران آن بخش
-        targetUsers = await prisma.user.findMany({
+        targetUsers = await prisma.users.findMany({
           where: {
             departmentId: announcement.departmentId,
             isActive: true,
@@ -246,7 +260,7 @@ export async function POST(
         });
       } else {
         // اگر اعلان عمومی است، همه کارمندان
-        targetUsers = await prisma.user.findMany({
+        targetUsers = await prisma.users.findMany({
           where: {
             isActive: true,
             role: "EMPLOYEE",
@@ -259,7 +273,7 @@ export async function POST(
 
       // ایجاد نوتیفیکیشن برای هر کاربر
       const notificationPromises = targetUsers.map((user) =>
-        prisma.notification.create({
+        prisma.notifications.create({
           data: {
             userId: user.id,
             title: "پیام جدید به اعلان",
@@ -276,7 +290,7 @@ export async function POST(
       // ادامه می‌دهیم حتی اگر خطا رخ دهد
     }
 
-    return NextResponse.json(message, { status: 201 });
+    return NextResponse.json(responseMessage, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

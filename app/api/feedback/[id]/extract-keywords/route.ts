@@ -18,7 +18,7 @@ export async function POST(
     }
 
     const { id } = await params;
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       select: {
         id: true,
@@ -99,7 +99,7 @@ export async function POST(
         .filter((k) => k.length > 0);
 
       // ذخیره کلمات کلیدی در دیتابیس
-      await prisma.feedback.update({
+      await prisma.feedbacks.update({
         where: { id },
         data: { keywords },
       });

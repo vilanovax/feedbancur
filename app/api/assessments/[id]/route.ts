@@ -20,7 +20,7 @@ export async function GET(
       // Admins have access to all assessments
     } else if (session.user.role === "MANAGER" || session.user.role === "EMPLOYEE") {
       // For managers and employees, check if they have access through department assignment
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: session.user.id },
         select: { departmentId: true },
       });
@@ -34,7 +34,7 @@ export async function GET(
       }
 
       // Check if assessment is assigned to user's department
-      const assignment = await prisma.assessmentAssignment.findUnique({
+      const assignment = await prisma.assessment_assignments.findUnique({
         where: {
           assessmentId_departmentId: {
             assessmentId: id,
@@ -46,7 +46,7 @@ export async function GET(
       if (!assignment) {
         console.error(`Assessment ${id} not assigned to department ${user.departmentId} for user ${session.user.id}`);
         // Also check if assessment exists
-        const assessmentExists = await prisma.assessment.findUnique({
+        const assessmentExists = await prisma.assessments.findUnique({
           where: { id },
           select: { id: true },
         });
@@ -70,7 +70,7 @@ export async function GET(
       );
     }
 
-    const assessment = await prisma.assessment.findUnique({
+    const assessment = await prisma.assessments.findUnique({
       where: { id },
       include: {
         createdBy: {
@@ -80,12 +80,12 @@ export async function GET(
             email: true,
           },
         },
-        questions: {
+        assessment_questions: {
           orderBy: {
             order: "asc",
           },
         },
-        assignments: {
+        assessment_assignments: {
           include: {
             department: {
               select: {
@@ -159,7 +159,7 @@ export async function PATCH(
     } = body;
 
     // Check if assessment exists
-    const existingAssessment = await prisma.assessment.findUnique({
+    const existingAssessment = await prisma.assessments.findUnique({
       where: { id },
     });
 
@@ -170,7 +170,7 @@ export async function PATCH(
       );
     }
 
-    const assessment = await prisma.assessment.update({
+    const assessment = await prisma.assessments.update({
       where: { id },
       data: {
         ...(title !== undefined && { title }),
@@ -184,7 +184,7 @@ export async function PATCH(
         ...(showResults !== undefined && { showResults }),
       },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -193,15 +193,27 @@ export async function PATCH(
         },
         _count: {
           select: {
-            questions: true,
-            assignments: true,
-            results: true,
+            assessment_questions: true,
+            assessment_assignments: true,
+            assessment_results: true,
           },
         },
       },
     });
 
-    return NextResponse.json(assessment);
+    // Transform to frontend format
+    const responseAssessment = {
+      ...assessment,
+      createdBy: (assessment as any).users,
+      _count: {
+        questions: (assessment as any)._count?.assessment_questions || 0,
+        assignments: (assessment as any)._count?.assessment_assignments || 0,
+        results: (assessment as any)._count?.assessment_results || 0,
+      },
+      users: undefined,
+    };
+
+    return NextResponse.json(responseAssessment);
   } catch (error) {
     console.error("Error updating assessment:", error);
     return NextResponse.json(
@@ -228,7 +240,7 @@ export async function DELETE(
     }
 
     // Check if assessment exists
-    const existingAssessment = await prisma.assessment.findUnique({
+    const existingAssessment = await prisma.assessments.findUnique({
       where: { id },
       include: {
         _count: {
@@ -257,7 +269,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.assessment.delete({
+    await prisma.assessments.delete({
       where: { id },
     });
 

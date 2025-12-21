@@ -27,7 +27,7 @@ export async function GET(
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
 
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       select: {
         id: true,
@@ -104,7 +104,7 @@ export async function PATCH(
     const data = notesSchema.parse(body);
 
     // بررسی وجود فیدبک و دسترسی
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       select: {
         id: true,
@@ -128,7 +128,7 @@ export async function PATCH(
     }
 
     // به‌روزرسانی یادداشت
-    const updatedFeedback = await prisma.feedback.update({
+    const updatedFeedback = await prisma.feedbacks.update({
       where: { id: resolvedParams.id },
       data: {
         managerNotes: data.notes || null,

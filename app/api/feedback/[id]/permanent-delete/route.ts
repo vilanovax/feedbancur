@@ -22,7 +22,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
         task: true,
@@ -46,13 +46,13 @@ export async function DELETE(
 
     // حذف تسک مرتبط اگر وجود داشته باشد
     if (feedback.task) {
-      await prisma.task.delete({
+      await prisma.tasks.delete({
         where: { id: feedback.task.id },
       });
     }
 
     // حذف کامل فیدبک
-    await prisma.feedback.delete({
+    await prisma.feedbacks.delete({
       where: { id },
     });
 

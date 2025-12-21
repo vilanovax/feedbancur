@@ -11,9 +11,9 @@ async function main() {
   console.log(`   موبایل: ${mobile}`);
   console.log(`   رمز: ${password}\n`);
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { mobile },
-    include: { department: true },
+    include: { departments: true },
   });
 
   if (!user) {
@@ -27,7 +27,7 @@ async function main() {
   console.log(`   نقش: ${user.role}`);
   console.log(`   فعال: ${user.isActive}`);
   console.log(`   باید رمز را تغییر دهد: ${user.mustChangePassword ?? false}`);
-  console.log(`   بخش: ${user.department?.name || "ندارد"}`);
+  console.log(`   بخش: ${user.departments?.name || "ندارد"}`);
   console.log(`   رمز hash شده: ${user.password.substring(0, 30)}...`);
 
   console.log("\n🔐 تست رمز عبور...");

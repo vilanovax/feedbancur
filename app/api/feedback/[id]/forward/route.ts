@@ -37,11 +37,11 @@ export async function POST(
     const data = forwardSchema.parse(body);
 
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
-        department: true,
-        user: true,
+        departments: true,
+        users_feedbacks_userIdTousers: true,
       },
     });
 
@@ -53,10 +53,10 @@ export async function POST(
     }
 
     // بررسی وجود مدیر مقصد
-    const targetManager = await prisma.user.findUnique({
+    const targetManager = await prisma.users.findUnique({
       where: { id: data.managerId },
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -86,7 +86,7 @@ export async function POST(
     }
 
     // بررسی اینکه آیا قبلا برای این فیدبک تسک ایجاد شده است
-    const existingTask = await prisma.task.findUnique({
+    const existingTask = await prisma.tasks.findUnique({
       where: { feedbackId: id },
     });
 
@@ -130,7 +130,7 @@ export async function POST(
     // ایجاد تسک
     let task;
     try {
-      task = await prisma.task.create({
+      task = await prisma.tasks.create({
         data: {
           title: `ارجاع: ${feedback.title}`,
           description: taskDescription,
@@ -141,7 +141,7 @@ export async function POST(
           createdById: session.user.id,
         },
         include: {
-          department: true,
+          departments: true,
           feedback: true,
           createdBy: {
             select: {
@@ -183,7 +183,7 @@ export async function POST(
       console.error("Assignment error code:", assignmentError.code);
       // حذف task در صورت خطا
       try {
-        await prisma.task.delete({ where: { id: task.id } });
+        await prisma.tasks.delete({ where: { id: task.id } });
       } catch (deleteError) {
         console.error("Error deleting task:", deleteError);
       }
@@ -197,7 +197,7 @@ export async function POST(
     }
 
     // خواندن task با assignedTo
-    const taskWithAssignments = await prisma.task.findUnique({
+    const taskWithAssignments = await prisma.tasks.findUnique({
       where: { id: task.id },
       include: {
         assignedTo: {
@@ -212,7 +212,7 @@ export async function POST(
             },
           },
         },
-        department: true,
+        departments: true,
         feedback: true,
         createdBy: {
           select: {
@@ -226,7 +226,7 @@ export async function POST(
     });
 
     // بروزرسانی وضعیت فیدبک به REVIEWED و ذخیره اطلاعات ارجاع
-    await prisma.feedback.update({
+    await prisma.feedbacks.update({
       where: { id },
       data: {
         status: "REVIEWED",
@@ -237,7 +237,7 @@ export async function POST(
 
     // اگر توضیحات ارجاع وجود داشت، آن را به عنوان پیام چت ذخیره کن
     if (data.notes && data.notes.trim()) {
-      await prisma.message.create({
+      await prisma.messages.create({
         data: {
           feedbackId: id,
           senderId: session.user.id,

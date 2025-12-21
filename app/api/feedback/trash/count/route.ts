@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     let count;
     try {
-      count = await (prisma.feedback.count as any)({
+      count = await (prisma.feedbacks.count as any)({
         where: {
           deletedAt: { not: null },
         },
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
         dbError?.code === "P2011" ||
         dbError?.message?.includes("Unknown field")
       ) {
-        count = await prisma.feedback.count({
+        count = await prisma.feedbacks.count({
           where: {
             status: "ARCHIVED",
           },

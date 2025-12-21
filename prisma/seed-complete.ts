@@ -1,7 +1,538 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
+import { seedMBTI } from "./seed-mbti";
+import { seedDISC } from "./seed-disc";
+import { seedHolland } from "./seed-holland";
+import { seedMSQ } from "./seed-msq";
 
 const prisma = new PrismaClient();
+
+// توابع seed برای کلمات کلیدی
+async function seedKeywords(prismaInstance: PrismaClient) {
+  console.log("🌱 Seeding analytics keywords...");
+
+  // کلمات کلیدی حساس
+  const sensitiveKeywords = [
+    { keyword: "شکایت", description: "فیدبک‌های حاوی شکایت" },
+    { keyword: "مشکل", description: "فیدبک‌های دارای مشکل" },
+    { keyword: "اعتراض", description: "فیدبک‌های اعتراضی" },
+    { keyword: "ناراحتی", description: "ابراز ناراحتی" },
+    { keyword: "خطر", description: "موارد خطرناک" },
+    { keyword: "فوری", description: "موارد فوری" },
+  ];
+
+  // کلمات کلیدی مثبت
+  const positiveKeywords = [
+    { keyword: "عالی", description: "بازخورد عالی" },
+    { keyword: "خوب", description: "بازخورد خوب" },
+    { keyword: "ممنون", description: "تشکر و قدردانی" },
+    { keyword: "راضی", description: "رضایت" },
+    { keyword: "مفید", description: "مفید بودن" },
+    { keyword: "کامل", description: "کامل بودن" },
+  ];
+
+  // کلمات کلیدی منفی
+  const negativeKeywords = [
+    { keyword: "ضعیف", description: "عملکرد ضعیف" },
+    { keyword: "بد", description: "بازخورد منفی" },
+    { keyword: "نامناسب", description: "نامناسب بودن" },
+    { keyword: "کم", description: "کمبود" },
+    { keyword: "کند", description: "کندی و تاخیر" },
+    { keyword: "نارضایتی", description: "عدم رضایت" },
+  ];
+
+  // کلمات کلیدی موضوعی
+  const topicKeywords = [
+    { keyword: "نظافت", description: "موضوعات نظافت" },
+    { keyword: "بهداشت", description: "موضوعات بهداشتی" },
+    { keyword: "امنیت", description: "موضوعات امنیتی" },
+    { keyword: "آموزش", description: "موضوعات آموزشی" },
+    { keyword: "تجهیزات", description: "موضوعات مربوط به تجهیزات" },
+    { keyword: "خدمات", description: "موضوعات خدماتی" },
+    { keyword: "غذا", description: "موضوعات غذایی" },
+    { keyword: "حقوق", description: "موضوعات مالی و حقوق" },
+    { keyword: "مرخصی", description: "موضوعات مرخصی" },
+    { keyword: "ساعت کاری", description: "موضوعات ساعت کاری" },
+  ];
+
+  let createdCount = 0;
+
+  // ایجاد کلمات کلیدی حساس
+  for (const kw of sensitiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-sensitive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "SENSITIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی مثبت
+  for (const kw of positiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-positive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "POSITIVE",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی منفی
+  for (const kw of negativeKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-negative-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "NEGATIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی موضوعی
+  for (const kw of topicKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-topic-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "TOPIC",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  console.log(`✅ Successfully seeded ${createdCount} analytics keywords!`);
+}
+
+async function seedITKeywords(prismaInstance: PrismaClient, departments: any[]) {
+  console.log("🌱 Seeding IT department keywords...");
+
+  // ابتدا بخش IT را پیدا می‌کنیم
+  const itDepartment = departments.find((d) =>
+    d.name.toLowerCase().includes("it") ||
+    d.name.includes("فناوری") ||
+    d.name.includes("اطلاعات")
+  );
+
+  const departmentId = itDepartment?.id || null;
+  const departmentName = itDepartment?.name || "عمومی";
+
+  console.log(`📌 Adding keywords for: ${departmentName}`);
+
+  // کلمات کلیدی حساس برای IT
+  const sensitiveKeywords = [
+    { keyword: "هک", description: "موارد امنیتی و هک" },
+    { keyword: "ویروس", description: "ویروس و بدافزار" },
+    { keyword: "حمله", description: "حملات سایبری" },
+    { keyword: "نفوذ", description: "نفوذ به سیستم" },
+    { keyword: "از کار افتاده", description: "خرابی سیستم" },
+    { keyword: "خراب", description: "خرابی تجهیزات" },
+    { keyword: "قطع", description: "قطعی شبکه یا سرویس" },
+    { keyword: "فیلتر", description: "مشکلات فیلترینگ" },
+    { keyword: "کند", description: "کندی سیستم" },
+    { keyword: "داغ", description: "گرمای بیش از حد سیستم" },
+  ];
+
+  // کلمات کلیدی منفی برای IT
+  const negativeKeywords = [
+    { keyword: "اینترنت", description: "مشکلات اینترنت" },
+    { keyword: "شبکه", description: "مشکلات شبکه" },
+    { keyword: "سرعت", description: "کندی سرعت" },
+    { keyword: "وصل نمیشه", description: "مشکل اتصال" },
+    { keyword: "کار نمیکنه", description: "عدم کارکرد" },
+    { keyword: "باگ", description: "باگ نرم‌افزاری" },
+    { keyword: "ارور", description: "خطای سیستمی" },
+    { keyword: "پسورد", description: "مشکلات رمز عبور" },
+  ];
+
+  // کلمات کلیدی موضوعی برای IT
+  const topicKeywords = [
+    { keyword: "سرور", description: "موضوعات سرور" },
+    { keyword: "دیتابیس", description: "موضوعات پایگاه داده" },
+    { keyword: "بکاپ", description: "موضوعات پشتیبان‌گیری" },
+    { keyword: "پرینتر", description: "موضوعات چاپگر" },
+    { keyword: "کامپیوتر", description: "موضوعات رایانه" },
+    { keyword: "لپتاپ", description: "موضوعات لپتاپ" },
+    { keyword: "مانیتور", description: "موضوعات نمایشگر" },
+    { keyword: "کیبورد", description: "موضوعات صفحه کلید" },
+    { keyword: "موس", description: "موضوعات ماوس" },
+    { keyword: "وایفای", description: "موضوعات WiFi" },
+    { keyword: "Wi-Fi", description: "موضوعات WiFi" },
+    { keyword: "VPN", description: "موضوعات شبکه خصوصی" },
+    { keyword: "ایمیل", description: "موضوعات ایمیل" },
+    { keyword: "نرم افزار", description: "موضوعات نرم‌افزار" },
+    { keyword: "آپدیت", description: "موضوعات به‌روزرسانی" },
+    { keyword: "لایسنس", description: "موضوعات مجوز نرم‌افزاری" },
+    { keyword: "آنتی ویروس", description: "موضوعات آنتی‌ویروس" },
+    { keyword: "فایروال", description: "موضوعات فایروال" },
+    { keyword: "IP", description: "موضوعات آدرس IP" },
+    { keyword: "DNS", description: "موضوعات DNS" },
+    { keyword: "سوئیچ", description: "موضوعات سوئیچ شبکه" },
+    { keyword: "روتر", description: "موضوعات روتر" },
+    { keyword: "کابل", description: "موضوعات کابل‌کشی" },
+    { keyword: "هارد", description: "موضوعات هارد دیسک" },
+    { keyword: "رم", description: "موضوعات RAM" },
+    { keyword: "CPU", description: "موضوعات پردازنده" },
+    { keyword: "GPU", description: "موضوعات کارت گرافیک" },
+    { keyword: "پاور", description: "موضوعات منبع تغذیه" },
+    { keyword: "UPS", description: "موضوعات UPS" },
+    { keyword: "کیس", description: "موضوعات کیس کامپیوتر" },
+  ];
+
+  // کلمات کلیدی مثبت برای IT
+  const positiveKeywords = [
+    { keyword: "سریع", description: "سرعت خوب" },
+    { keyword: "پایدار", description: "پایداری سیستم" },
+    { keyword: "امن", description: "امنیت بالا" },
+    { keyword: "راحت", description: "سهولت استفاده" },
+  ];
+
+  let createdCount = 0;
+
+  // ایجاد کلمات کلیدی حساس
+  for (const kw of sensitiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-it-sensitive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "SENSITIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی منفی
+  for (const kw of negativeKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-it-negative-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "NEGATIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی موضوعی
+  for (const kw of topicKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-it-topic-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "TOPIC",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی مثبت
+  for (const kw of positiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-it-positive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "POSITIVE",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  console.log(`✅ Successfully added ${createdCount} IT keywords!`);
+}
+
+async function seedKitchenKeywords(prismaInstance: PrismaClient, departments: any[]) {
+  console.log("🌱 Seeding Kitchen/Cleaning department keywords...");
+
+  // ابتدا بخش آشپزخانه را پیدا می‌کنیم
+  const kitchenDepartment = departments.find((d) =>
+    d.name.includes("آشپزخانه") ||
+    d.name.includes("نظافت") ||
+    d.name.includes("خدمات")
+  );
+
+  const departmentId = kitchenDepartment?.id || null;
+  const departmentName = kitchenDepartment?.name || "عمومی";
+
+  console.log(`📌 Adding keywords for: ${departmentName}`);
+
+  // کلمات کلیدی حساس برای آشپزخانه و نظافت
+  const sensitiveKeywords = [
+    { keyword: "مسمومیت", description: "مسمومیت غذایی" },
+    { keyword: "کثیف", description: "کثافت و آلودگی" },
+    { keyword: "بوی بد", description: "بوی نامطبوع" },
+    { keyword: "حشره", description: "وجود حشرات" },
+    { keyword: "موش", description: "وجود موش و جوندگان" },
+    { keyword: "سوسک", description: "وجود سوسک" },
+    { keyword: "عفونت", description: "عفونت و آلودگی" },
+    { keyword: "سم", description: "مسائل سمی" },
+    { keyword: "فاسد", description: "فساد مواد غذایی" },
+    { keyword: "تاریخ مصرف", description: "گذشتن تاریخ مصرف" },
+    { keyword: "لیز", description: "سطح لیز و خطرناک" },
+    { keyword: "سقوط", description: "خطر سقوط" },
+  ];
+
+  // کلمات کلیدی منفی برای آشپزخانه و نظافت
+  const negativeKeywords = [
+    { keyword: "سرد", description: "سرد بودن غذا" },
+    { keyword: "بی‌کیفیت", description: "کیفیت پایین" },
+    { keyword: "کم", description: "کمبود مقدار" },
+    { keyword: "طعم بد", description: "مزه نامطبوع" },
+    { keyword: "سوخته", description: "غذای سوخته" },
+    { keyword: "نامرتب", description: "بی‌نظمی و نامرتبی" },
+    { keyword: "خیس", description: "خیس بودن کف" },
+    { keyword: "چرب", description: "چربی و کثیفی" },
+    { keyword: "لکه", description: "وجود لکه" },
+    { keyword: "زنگ زده", description: "زنگ زدگی وسایل" },
+    { keyword: "شکسته", description: "شکستگی وسایل" },
+    { keyword: "نشتی", description: "نشت آب" },
+  ];
+
+  // کلمات کلیدی موضوعی برای آشپزخانه و نظافت
+  const topicKeywords = [
+    { keyword: "غذا", description: "موضوعات غذایی" },
+    { keyword: "ناهار", description: "وعده ناهار" },
+    { keyword: "صبحانه", description: "وعده صبحانه" },
+    { keyword: "شام", description: "وعده شام" },
+    { keyword: "میان‌وعده", description: "میان‌وعده" },
+    { keyword: "چای", description: "موضوعات چای" },
+    { keyword: "قهوه", description: "موضوعات قهوه" },
+    { keyword: "آب", description: "موضوعات آب" },
+    { keyword: "نوشیدنی", description: "نوشیدنی‌ها" },
+    { keyword: "یخچال", description: "موضوعات یخچال" },
+    { keyword: "فریزر", description: "موضوعات فریزر" },
+    { keyword: "گاز", description: "موضوعات اجاق گاز" },
+    { keyword: "ماکروویو", description: "موضوعات ماکروویو" },
+    { keyword: "سینک", description: "موضوعات سینک ظرفشویی" },
+    { keyword: "ظرف", description: "موضوعات ظرف و لیوان" },
+    { keyword: "قاشق", description: "موضوعات قاشق و چنگال" },
+    { keyword: "بشقاب", description: "موضوعات بشقاب" },
+    { keyword: "لیوان", description: "موضوعات لیوان" },
+    { keyword: "نظافت", description: "موضوعات نظافت" },
+    { keyword: "جارو", description: "جاروکشی" },
+    { keyword: "رختشویی", description: "موضوعات رختشویی" },
+    { keyword: "دستمال", description: "موضوعات دستمال" },
+    { keyword: "مایع", description: "مایع ظرفشویی و شوینده" },
+    { keyword: "سطل", description: "سطل زباله" },
+    { keyword: "زباله", description: "موضوعات زباله" },
+    { keyword: "راه پله", description: "موضوعات راه پله" },
+    { keyword: "پله", description: "موضوعات پله‌ها" },
+    { keyword: "نرده", description: "نرده راه پله" },
+    { keyword: "آسانسور", description: "موضوعات آسانسور" },
+    { keyword: "سرویس", description: "سرویس بهداشتی" },
+    { keyword: "دستشویی", description: "موضوعات دستشویی" },
+    { keyword: "توالت", description: "موضوعات توالت" },
+    { keyword: "صابون", description: "موضوعات صابون" },
+    { keyword: "حوله", description: "موضوعات حوله" },
+    { keyword: "پذیرایی", description: "موضوعات پذیرایی" },
+    { keyword: "میهمان", description: "پذیرایی از میهمان" },
+    { keyword: "سالن", description: "موضوعات سالن غذاخوری" },
+    { keyword: "میز", description: "موضوعات میز" },
+    { keyword: "صندلی", description: "موضوعات صندلی" },
+    { keyword: "رومیزی", description: "موضوعات رومیزی" },
+    { keyword: "کولر", description: "موضوعات کولر و تهویه" },
+    { keyword: "بخاری", description: "موضوعات گرمایش" },
+    { keyword: "نور", description: "موضوعات روشنایی" },
+    { keyword: "لامپ", description: "موضوعات لامپ" },
+  ];
+
+  // کلمات کلیدی مثبت برای آشپزخانه و نظافت
+  const positiveKeywords = [
+    { keyword: "تمیز", description: "تمیزی عالی" },
+    { keyword: "خوشمزه", description: "غذای خوشمزه" },
+    { keyword: "تازه", description: "تازگی مواد" },
+    { keyword: "گرم", description: "گرمی مناسب غذا" },
+    { keyword: "بهداشتی", description: "بهداشت عالی" },
+    { keyword: "مرتب", description: "مرتب و منظم" },
+    { keyword: "خوشبو", description: "بوی خوش" },
+    { keyword: "باکیفیت", description: "کیفیت بالا" },
+    { keyword: "سریع", description: "سرعت مناسب سرویس‌دهی" },
+  ];
+
+  let createdCount = 0;
+
+  // ایجاد کلمات کلیدی حساس
+  for (const kw of sensitiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-kitchen-sensitive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "SENSITIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی منفی
+  for (const kw of negativeKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-kitchen-negative-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "NEGATIVE",
+          priority: "HIGH",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی موضوعی
+  for (const kw of topicKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-kitchen-topic-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "TOPIC",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  // ایجاد کلمات کلیدی مثبت
+  for (const kw of positiveKeywords) {
+    try {
+      await prismaInstance.analytics_keywords.create({
+        data: {
+          id: `seed-kitchen-positive-${kw.keyword.toLowerCase().replace(/\s+/g, '-')}`,
+          keyword: kw.keyword,
+          type: "POSITIVE",
+          priority: "MEDIUM",
+          description: kw.description,
+          isActive: true,
+          departmentId,
+          updatedAt: new Date(),
+        },
+      });
+      createdCount++;
+    } catch (error: any) {
+      if (error.code !== "P2002") {
+        console.error(`❌ Error adding ${kw.keyword}:`, error.message);
+      }
+    }
+  }
+
+  console.log(`✅ Successfully added ${createdCount} Kitchen/Cleaning keywords!`);
+}
 
 async function main() {
   console.log("🌱 شروع ایجاد داده‌های اولیه از backup کامل...\n");
@@ -35,6 +566,7 @@ async function main() {
       objectStorageSettings: {"bucket":"feedban-uploads","region":"us-east-1","enabled":true,"endpoint":"https://storage.iran.liara.space","accessKeyId":"3ipqq41nabtsqsdh","secretAccessKey":"49ae07a8-d515-4700-8daa-65ef98da8cab"},
       workingHoursSettings: {"enabled":true,"endHour":17,"holidays":[],"startHour":8,"workingDays":[6,0,1,2,3]},
       openAISettings: {"model":"gpt-3.5-turbo","apiKey":"YOUR_OPENAI_API_KEY_HERE","enabled":true},
+      updatedAt: new Date(),
     },
   });
   console.log(`✅ تنظیمات ایجاد شد`);
@@ -42,42 +574,50 @@ async function main() {
   // ایجاد بخش‌ها
   const departments = [
     {
+      id: "dept-it-001",
       name: "IT",
       description: "بخش فناوری اطلاعات",
       keywords: ["کامپیوتر","سیستم","شبکه","اینترنت","نرم‌افزار","IT"],
       allowDirectFeedback: false,
       canCreateAnnouncement: true,
       allowedAnnouncementDepartments: [],
+      updatedAt: new Date(),
     },
     {
+      id: "dept-finance-001",
       name: "مالی",
       description: "بخش مالی و حسابداری",
       keywords: ["مالی","حقوق","پرداخت","حساب","فیش","پول"],
       allowDirectFeedback: false,
       canCreateAnnouncement: true,
       allowedAnnouncementDepartments: [],
+      updatedAt: new Date(),
     },
     {
+      id: "dept-admin-001",
       name: "اداری",
       description: "امور اداری",
       keywords: ["اداری","مدارک","نامه","چراغ","برق","تعمیرات"],
       allowDirectFeedback: false,
       canCreateAnnouncement: true,
       allowedAnnouncementDepartments: [],
+      updatedAt: new Date(),
     },
     {
+      id: "dept-kitchen-001",
       name: "آشپزخانه",
       description: "مدیریت امور آشپزخانه و غذا",
       keywords: ["آشپزخانه","غذا","نهار","صبحانه","ناهار","شام"],
       allowDirectFeedback: false,
       canCreateAnnouncement: true,
       allowedAnnouncementDepartments: [],
+      updatedAt: new Date(),
     },
   ];
 
   const createdDepartments = [];
   for (const dept of departments) {
-    const department = await prisma.department.upsert({
+    const department = await prisma.departments.upsert({
       where: { name: dept.name },
       update: {},
       create: dept,
@@ -89,10 +629,11 @@ async function main() {
   // ایجاد کاربران
   const createdUsers = [];
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123456789" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123456789",
         email: "admin@company.com",
         name: "مدیر سیستم",
@@ -100,6 +641,7 @@ async function main() {
         role: "ADMIN",
         isActive: true,
         mustChangePassword: false,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -107,10 +649,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123322111" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123322111",
         email: "farzad@company.com",
         name: "فرزاد زارع",
@@ -119,6 +662,7 @@ async function main() {
         isActive: true,
         mustChangePassword: false,
         departmentId: createdDepartments.find((d) => d.name === "IT")?.id,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -126,10 +670,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123322112" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123322112",
         email: "employee1@company.com",
         name: "حدیث نعمتی",
@@ -138,6 +683,7 @@ async function main() {
         isActive: true,
         mustChangePassword: false,
         departmentId: createdDepartments.find((d) => d.name === "اداری")?.id,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -145,10 +691,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123322114" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123322114",
         email: "employee2@company.com",
         name: "میلاد برهانی",
@@ -157,6 +704,7 @@ async function main() {
         isActive: true,
         mustChangePassword: false,
         departmentId: createdDepartments.find((d) => d.name === "مالی")?.id,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -164,10 +712,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09121941532" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09121941532",
         email: "admin@company.com",
         name: "مدیر سیستم",
@@ -175,6 +724,7 @@ async function main() {
         role: "ADMIN",
         isActive: true,
         mustChangePassword: false,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -182,10 +732,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123150594" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123150594",
         email: "",
         name: "عسل بختیاری",
@@ -194,6 +745,7 @@ async function main() {
         isActive: true,
         mustChangePassword: false,
         departmentId: createdDepartments.find((d) => d.name === "مالی")?.id,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -201,10 +753,11 @@ async function main() {
   }
 
   {
-    const user = await prisma.user.upsert({
+    const user = await prisma.users.upsert({
       where: { mobile: "09123322113" },
       update: {},
       create: {
+        id: randomUUID(),
         mobile: "09123322113",
         email: "",
         name: "سعید مترجمی",
@@ -213,6 +766,7 @@ async function main() {
         isActive: true,
         mustChangePassword: false,
         departmentId: createdDepartments.find((d) => d.name === "آشپزخانه")?.id,
+        updatedAt: new Date(),
       },
     });
     createdUsers.push(user);
@@ -224,19 +778,21 @@ async function main() {
     const manager = createdUsers.find((u) => u.mobile === "09123322111");
     const department = createdDepartments.find((d) => d.name === "IT");
     if (manager && department) {
-      await prisma.department.update({
+      await prisma.departments.update({
         where: { id: department.id },
         data: { managerId: manager.id },
       });
-      console.log(`✅ مدیر به بخش "${dept.name}" اختصاص داده شد`);
+      console.log(`✅ مدیر به بخش "${department.name}" اختصاص داده شد`);
     }
   }
 
-  // ایجاد آزمون‌ها
+  // ایجاد آزمون‌ها - این بخش حذف شد چون seed functions این کار را انجام می‌دهند
+  // آزمون‌ها توسط seedMBTI, seedDISC, seedHolland, seedMSQ ایجاد می‌شوند
+  /*
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      const assessment = await prisma.assessment.upsert({
+      const assessment = await prisma.assessments.upsert({
         where: { id: "mbti-standard-assessment" },
         update: {},
         create: {
@@ -246,7 +802,8 @@ async function main() {
           type: "MBTI",
           isActive: true,
           createdById: createdBy.id,
-          questions: {
+          updatedAt: new Date(),
+          assessment_questions: {
             create: [{"id":"mbti-q-1","order":1,"options":[{"text":"با افراد زیادی صحبت می‌کنم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"فقط با چند نفر خاص صحبت عمیق دارم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-2","order":2,"options":[{"text":"با دوستان بیرون بروم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"به تنهایی استراحت کنم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-3","order":3,"options":[{"text":"سریع با افراد جدید آشنا می‌شوم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"زمان می‌برد تا با افراد جدید راحت شوم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-4","order":4,"options":[{"text":"از تعامل با دیگران می‌گیرم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"از زمان خلوت خودم می‌گیرم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-5","order":5,"options":[{"text":"با دیگران درباره آن صحبت می‌کنم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"ترجیح می‌دهم خودم درباره‌اش فکر کنم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-6","order":6,"options":[{"text":"فعال و پرانرژی هستم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"آرام و متفکر هستم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-7","order":7,"options":[{"text":"معمولاً مرکز توجه هستم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"ترجیح می‌دهم کنار بایستم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-8","order":8,"options":[{"text":"من اجتماعی و باز هستم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"من خصوصی و محفوظ هستم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-9","order":9,"options":[{"text":"با گروه‌های بزرگ کار کنم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"تنها یا با یک نفر کار کنم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-10","order":10,"options":[{"text":"سریع جواب می‌دهم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"امیدوارم پیغام بگذارند","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-11","order":11,"options":[{"text":"دوست دارم با همکارانم تعامل داشته باشم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"ترجیح می‌دهم روی کار خودم تمرکز کنم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-12","order":12,"options":[{"text":"با صدای بلند حرف می‌زنم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"در ذهنم فکر می‌کنم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-13","order":13,"options":[{"text":"دوست‌های زیادی دارم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"چند دوست نزدیک دارم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-14","order":14,"options":[{"text":"برنامه‌های اجتماعی داشته باشم","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"وقت خودم را به تنهایی بگذرانم","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-15","order":15,"options":[{"text":"همه مرا می‌شناسند","score":{"E":2,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"فقط عده کمی مرا واقعاً می‌شناسند","score":{"E":0,"F":0,"I":2,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-16","order":16,"options":[{"text":"واقعیت‌ها و جزئیات توجه می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"الگوها و معانی توجه می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-17","order":17,"options":[{"text":"از تجربه‌های گذشته یاد بگیرم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"تصور کنم آینده چگونه خواهد بود","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-18","order":18,"options":[{"text":"عملی و واقع‌بین هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"خیال‌پرداز و نوآور هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-19","order":19,"options":[{"text":"تجربه عملی دارم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"شهود و احساسم دارم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-20","order":20,"options":[{"text":"به جزئیات دقیق توجه می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"به تصویر کلی فکر می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-21","order":21,"options":[{"text":"دقیق و جزئی‌نگر هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"کلی‌نگر و مفهومی فکر می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-22","order":22,"options":[{"text":"ترجیح می‌دهم گام به گام پیش بروم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"ترجیح می‌دهم کل موضوع را ببینم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-23","order":23,"options":[{"text":"چیزهایی که هستند اهمیت می‌دهم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"چیزهایی که می‌توانند باشند اهمیت می‌دهم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-24","order":24,"options":[{"text":"به حال فکر می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"به آینده فکر می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-25","order":25,"options":[{"text":"واقعیت‌های ملموس کار کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"ایده‌ها و نظریه‌ها کار کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-26","order":26,"options":[{"text":"سنتی و محافظه‌کار هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"نوآور و خلاق هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-27","order":27,"options":[{"text":"چیزهای آزموده شده را انجام دهم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"روش‌های جدید را امتحان کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-28","order":28,"options":[{"text":"تجربه بهترین معلم است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"تخیل مهم‌تر از دانش است","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-29","order":29,"options":[{"text":"دقیق و منظم هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"خلاق و انعطاف‌پذیر هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-30","order":30,"options":[{"text":"روش‌های استاندارد را دنبال کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":2,"T":0},"value":"A"},{"text":"راه‌های جدید ابداع کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":2,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-31","order":31,"options":[{"text":"منطق و تحلیل است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"احساسات و ارزش‌هاست","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-32","order":32,"options":[{"text":"عینی و بی‌طرف هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"همدل و مهربان هستم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-33","order":33,"options":[{"text":"سعی می‌کنم راه‌حل پیدا کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"سعی می‌کنم حمایت عاطفی کنم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-34","order":34,"options":[{"text":"عدالت و انصاف","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"رحم و مهربانی","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-35","order":35,"options":[{"text":"راس و بی‌پرده حرف می‌زنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"دیپلماتیک و محتاطانه حرف می‌زنم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-36","order":36,"options":[{"text":"روی استدلال منطقی تمرکز می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"به احساسات افراد توجه می‌کنم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-37","order":37,"options":[{"text":"سرد و تحلیل‌گر هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"گرم و صمیمی هستم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-38","order":38,"options":[{"text":"به داده‌ها و حقایق نگاه می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"به تأثیر آن روی افراد فکر می‌کنم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-39","order":39,"options":[{"text":"قوانین را رعایت کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"شرایط خاص را در نظر بگیرم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-40","order":40,"options":[{"text":"انتقادی و تحلیل‌گر هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"حمایت‌گر و قدردان هستم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-41","order":41,"options":[{"text":"کارایی مهم‌تر از روابط است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"روابط مهم‌تر از کارایی است","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-42","order":42,"options":[{"text":"سر و صدا را نادیده می‌گیرم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"به احساسات حساس هستم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-43","order":43,"options":[{"text":"درست بودن کارها مهم است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"خوب بودن روابط مهم است","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-44","order":44,"options":[{"text":"اصول و قوانین اهمیت می‌دهم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"افراد و احساساتشان اهمیت می‌دهم","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-45","order":45,"options":[{"text":"سر عقل بودن مهم‌تر از دلسوز بودن است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":0,"S":0,"T":2},"value":"A"},{"text":"دلسوز بودن مهم‌تر از سر عقل بودن است","score":{"E":0,"F":2,"I":0,"J":0,"N":0,"P":0,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-46","order":46,"options":[{"text":"برنامه‌ریزی کنم و طبق آن عمل کنم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"انعطاف‌پذیر باشم و بداهه عمل کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-47","order":47,"options":[{"text":"منظم و سازمان‌یافته هستم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"آزاد و بی‌قید هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-48","order":48,"options":[{"text":"مرتب و منظم است","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"شلوغ و پراکنده است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-49","order":49,"options":[{"text":"کارها را سر وقت تمام کنم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"تا آخرین لحظه صبر کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-50","order":50,"options":[{"text":"برنامه‌ریز و منضبط هستم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"خودجوش و آزاد هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-51","order":51,"options":[{"text":"تصمیم بگیرم و به آن پایبند باشم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"گزینه‌های خود را باز نگه دارم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-52","order":52,"options":[{"text":"زود شروع می‌کنم و منظم پیش می‌روم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"نزدیک ددلاین شروع می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-53","order":53,"options":[{"text":"برنامه روزانه دارم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"بر اساس حس و حال عمل می‌کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-54","order":54,"options":[{"text":"کارها را تمام کنم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"کارهای جدید شروع کنم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-55","order":55,"options":[{"text":"همه چیز مشخص و قطعی است","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"همه چیز باز و انعطاف‌پذیر است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-56","order":56,"options":[{"text":"برنامه دقیق دارم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"بدون برنامه می‌روم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-57","order":57,"options":[{"text":"دقیق و به موقع هستم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"راحت و بی‌خیال هستم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-58","order":58,"options":[{"text":"طبق لیست کارهایم عمل کنم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"بر اساس شرایط تصمیم بگیرم","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-59","order":59,"options":[{"text":"نظم و ترتیب مهم است","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"انعطاف و آزادی مهم است","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]},{"id":"mbti-q-60","order":60,"options":[{"text":"احساس رضایت و آرامش می‌کنم","score":{"E":0,"F":0,"I":0,"J":2,"N":0,"P":0,"S":0,"T":0},"value":"A"},{"text":"احساس می‌کنم چیزی از دست رفته","score":{"E":0,"F":0,"I":0,"J":0,"N":0,"P":2,"S":0,"T":0},"value":"B"}]}],
           },
         },
@@ -256,7 +813,7 @@ async function main() {
       {
         const department = createdDepartments.find((d) => d.name === "IT");
         if (department) {
-          await prisma.assessmentAssignment.upsert({
+          await prisma.assessment_assignments.upsert({
             where: { id: "cmj8jvtwg000h5unndeanecsz" },
             update: {},
             create: {
@@ -273,7 +830,7 @@ async function main() {
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      const assessment = await prisma.assessment.upsert({
+      const assessment = await prisma.assessments.upsert({
         where: { id: "disc-standard-assessment" },
         update: {},
         create: {
@@ -283,7 +840,8 @@ async function main() {
           type: "DISC",
           isActive: true,
           createdById: createdBy.id,
-          questions: {
+          updatedAt: new Date(),
+          assessment_questions: {
             create: [{"id":"disc-q-1","order":1,"options":[{"text":"من تصمیم‌گیرنده قاطع و مستقیمی هستم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"من فردی اجتماعی و پرانرژی هستم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"من صبور و قابل اعتماد هستم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"من دقیق و تحلیلگر هستم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-2","order":2,"options":[{"text":"روی نتایج و دستاوردها تمرکز دارم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"روی ایجاد روابط و تعاملات تمرکز دارم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"روی ثبات و همکاری تمرکز دارم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"روی کیفیت و دقت تمرکز دارم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-3","order":3,"options":[{"text":"فوراً اقدام می‌کنم و آن را حل می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"دیگران را درگیر می‌کنم و از آن‌ها کمک می‌گیرم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"آرام می‌مانم و راه‌حل‌های مختلف را بررسی می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"داده‌ها را جمع‌آوری و تحلیل می‌کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-4","order":4,"options":[{"text":"رهبری تیم را بر عهده می‌گیرم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"انرژی مثبت به تیم تزریق می‌کنم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"از اعضای تیم حمایت می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"جزئیات و کیفیت کار را بررسی می‌کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-5","order":5,"options":[{"text":"سرعت و کارایی است","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"احساسات و روابط است","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"ثبات و امنیت است","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"منطق و تحلیل است","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-6","order":6,"options":[{"text":"مستقیم و بی‌پرده صحبت می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"سعی می‌کنم فضا را شاد نگه دارم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"با صبر و بردباری برخورد می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"به دنبال راه‌حل منطقی هستم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-7","order":7,"options":[{"text":"مختصر و مفید باشم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"صمیمی و دوستانه باشم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"آرام و دلسوزانه باشم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"دقیق و واضح باشم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-8","order":8,"options":[{"text":"چالش‌برانگیز و رقابتی است","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"پویا و اجتماعی است","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"باثبات و حمایتی است","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"منظم و ساختاریافته است","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-9","order":9,"options":[{"text":"آن‌ها را می‌پذیرم اگر به نتیجه برسند","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"به آن‌ها به عنوان فرصت نگاه می‌کنم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"به زمان نیاز دارم تا با آن‌ها کنار بیایم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"ابتدا باید آن‌ها را تحلیل کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-10","order":10,"options":[{"text":"کنترل و اختیار داشته باشم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"با دیگران تعامل داشته باشم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"محیط آرام و قابل پیش‌بینی باشد","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"استانداردهای واضح داشته باشم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-11","order":11,"options":[{"text":"از دست دادن کنترل است","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"طرد شدن است","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"تغییرات ناگهانی است","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"اشتباه کردن است","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-12","order":12,"options":[{"text":"رسیدن به اهداف و برنده شدن است","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"شناخته شدن و تحسین شدن است","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"کمک به دیگران و ثبات است","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"دقت و کیفیت کار است","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-13","order":13,"options":[{"text":"قاطع‌تر و مستقیم‌تر می‌شوم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"بی‌نظم‌تر می‌شوم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"منزوی‌تر می‌شوم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"بیش از حد تحلیلی می‌شوم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-14","order":14,"options":[{"text":"جلسه را هدایت می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"ایده‌های خلاقانه ارائه می‌دهم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"گوش می‌دهم و حمایت می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"سوالات دقیق می‌پرسم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-15","order":15,"options":[{"text":"با انجام دادن یاد می‌گیرم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"با تعامل با دیگران یاد می‌گیرم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"با مشاهده و تمرین یاد می‌گیرم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"با مطالعه و تحقیق یاد می‌گیرم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-16","order":16,"options":[{"text":"اگر منطقی نباشند، آن‌ها را زیر سوال می‌برم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"سعی می‌کنم انعطاف‌پذیر باشم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"آن‌ها را به خوبی دنبال می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"دقیقاً طبق آن‌ها عمل می‌کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-17","order":17,"options":[{"text":"قاطعیت و تصمیم‌گیری سریع","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"خوش‌بینی و الهام‌بخشی","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"صبر و وفاداری","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"دقت و تحلیل","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-18","order":18,"options":[{"text":"روی نتیجه نهایی تمرکز می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"ایده کلی را می‌بینم اما جزئیات را نه","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"گام به گام پیش می‌روم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"برنامه‌های جامع و دقیق می‌سازم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-19","order":19,"options":[{"text":"مستقیم و صریح برخورد می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"سعی می‌کنم همه را راضی نگه دارم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"از تعارض اجتناب می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"منطقی و عینی برخورد می‌کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-20","order":20,"options":[{"text":"ریسک‌های محاسبه‌شده می‌پذیرم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"از ریسک‌های هیجان‌انگیز لذت می‌برم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"از ریسک اجتناب می‌کنم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"فقط بعد از تحلیل کامل ریسک می‌پذیرم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-21","order":21,"options":[{"text":"روی نتایج تمرکز می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"جذاب و الهام‌بخش ارائه می‌دهم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"با آرامش و اطمینان ارائه می‌دهم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"با داده و مدرک ارائه می‌دهم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-22","order":22,"options":[{"text":"به فعالیت‌های چالش‌برانگیز اختصاص می‌دهم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"با دوستان و خانواده می‌گذرانم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"به استراحت و آرامش اختصاص می‌دهم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"به سرگرمی‌های تحلیلی می‌پردازم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-23","order":23,"options":[{"text":"روی اولویت‌های مهم تمرکز می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"انعطاف‌پذیر هستم و به موقعیت‌ها واکنش نشان می‌دهم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"به روتین‌های خود پایبند هستم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"برنامه‌ریزی دقیق دارم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]},{"id":"disc-q-24","order":24,"options":[{"text":"برای رسیدن به هدف هر کاری می‌کنم","score":{"C":0,"D":3,"I":0,"S":0},"value":"D"},{"text":"دیگران را الهام‌بخش می‌کنم","score":{"C":0,"D":0,"I":3,"S":0},"value":"I"},{"text":"پشتکار و وفاداری دارم","score":{"C":0,"D":0,"I":0,"S":3},"value":"S"},{"text":"دقیق و باکیفیت کار می‌کنم","score":{"C":3,"D":0,"I":0,"S":0},"value":"C"}]}],
           },
         },
@@ -293,7 +851,7 @@ async function main() {
       {
         const department = createdDepartments.find((d) => d.name === "IT");
         if (department) {
-          await prisma.assessmentAssignment.upsert({
+          await prisma.assessment_assignments.upsert({
             where: { id: "cmj8jvk29000f5unnosnmm9qz" },
             update: {},
             create: {
@@ -307,86 +865,37 @@ async function main() {
     }
   }
 
-  {
-    const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
-    if (createdBy) {
-      const assessment = await prisma.assessment.upsert({
-        where: { id: "holland-standard-assessment" },
-        update: {},
-        create: {
-          id: "holland-standard-assessment",
-          title: "آزمون استعدادیابی هالند",
-          description: "آزمون استعدادیابی هالند (Holland Career Assessment) یک ابزار معتبر برای شناسایی علایق شغلی و استعدادهای شماست. این آزمون شما را در یکی از 6 تیپ شخصیتی شغلی طبقه‌بندی می‌کند: واقع‌گرا (R)، جستجوگر (I)، هنری (A)، اجتماعی (S)، متهور (E)، و قراردادی (C).",
-          type: "HOLLAND",
-          isActive: true,
-          createdById: createdBy.id,
-          questions: {
-            create: [{"id":"cmj8d09on00205uzfugibt895","order":1,"options":[{"text":"تعمیر و ساخت وسایل مکانیکی","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"تحقیق و مطالعه علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"نقاشی و طراحی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d09zk00225uzf06x6qsnk","order":2,"options":[{"text":"کار با دست و ابزار","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"تحقیق و تحلیل داده‌ها","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"آموزش و راهنمایی دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0a5a00245uzfpqq00wfv","order":3,"options":[{"text":"مهندس مکانیک","score":{"A":0,"C":0,"E":0,"I":1,"R":3,"S":0},"value":"A"},{"text":"محقق علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"طراح گرافیک","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مشاور","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0abb00265uzf55af8t94","order":4,"options":[{"text":"ماشین‌آلات و ابزار لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"ایده‌ها و نظریه‌ها لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"رنگ‌ها و فرم‌ها لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مردم و روابط لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0ah700285uzf6axuxcd9","order":5,"options":[{"text":"کارگاه یا محیط صنعتی","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0ao1002a5uzf445g5drv","order":6,"options":[{"text":"کارهای عملی و ساختنی انجام می‌دهم","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"مطالعه و تحقیق می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کارهای هنری و خلاقانه انجام می‌دهم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"با دوستان و خانواده وقت می‌گذرانم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0atv002c5uzf2yr2a0um","order":7,"options":[{"text":"مهارت‌های فنی و عملی","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"مهارت‌های تحلیلی و علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مهارت‌های هنری و خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مهارت‌های ارتباطی و اجتماعی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0azf002e5uzfr0ry50vn","order":8,"options":[{"text":"ساخت و تعمیر وسایل","score":{"A":0,"C":0,"E":0,"I":0,"R":3,"S":0},"value":"A"},{"text":"حل مسائل پیچیده","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0b4x002g5uzf6rai8a3e","order":9,"options":[{"text":"علوم و ریاضیات","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"هنر و طراحی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"روانشناسی و جامعه‌شناسی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیریت و بازاریابی","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0baj002i5uzfxkz95rdv","order":10,"options":[{"text":"کشف حقایق و قوانین علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"درک رفتار انسان‌ها","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"رهبری و مدیریت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0bg4002k5uzfa5541ioy","order":11,"options":[{"text":"پزشک یا محقق","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":1},"value":"A"},{"text":"هنرمند یا طراح","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"مشاور یا روانشناس","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیر یا کارآفرین","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0bli002m5uzfs3tbduqh","order":12,"options":[{"text":"از روش‌های علمی و منطقی استفاده می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"از خلاقیت و ایده‌های نو استفاده می‌کنم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"از درک احساسات و روابط استفاده می‌کنم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"از مهارت‌های رهبری استفاده می‌کنم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0bqz002o5uzf6ifub5wt","order":13,"options":[{"text":"کتاب‌های علمی و تخصصی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"کتاب‌های هنری و ادبی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"کتاب‌های روانشناسی و روابط","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"کتاب‌های مدیریت و موفقیت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0bwj002q5uzfqxu6uugf","order":14,"options":[{"text":"تحقیق و مطالعه لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"ایجاد آثار هنری لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"کمک به دیگران لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"رهبری و مدیریت لذت می‌برم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0c22002s5uzfnu5aztok","order":15,"options":[{"text":"تحقیق و آزمایش","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"نقاشی و طراحی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"مشاوره و راهنمایی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیریت پروژه","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0c92002u5uzf0wnj6pem","order":16,"options":[{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"A"},{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"B"},{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"دفتر مدیریتی","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0cli002w5uzfpqqce31z","order":17,"options":[{"text":"نقاشی و طراحی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیریت و رهبری","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0cr5002y5uzfu5ucwhc9","order":18,"options":[{"text":"هنرمند یا طراح","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"محقق یا دانشمند","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مشاور یا معلم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیر یا کارآفرین","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0cwu00305uzfwszs6e54","order":19,"options":[{"text":"ایجاد آثار هنری لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و مطالعه لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کمک به دیگران لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"رهبری و مدیریت لذت می‌برم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0d2i00325uzf5vr7mig9","order":20,"options":[{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"دفتر مدیریتی","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0d8k00345uzfca1hynbm","order":21,"options":[{"text":"مهارت‌های هنری و خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"مهارت‌های تحلیلی و علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مهارت‌های ارتباطی و اجتماعی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مهارت‌های رهبری و مدیریت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0de900365uzf4of7oh6e","order":22,"options":[{"text":"کارهای هنری و خلاقانه انجام می‌دهم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"مطالعه و تحقیق می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"با دوستان و خانواده وقت می‌گذرانم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"برنامه‌ریزی و مدیریت می‌کنم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0djw00385uzf6nv5ugry","order":23,"options":[{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و آزمایش","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مشاوره و راهنمایی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"مدیریت پروژه","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0dsc003a5uzf3115r1sp","order":24,"options":[{"text":"کتاب‌های هنری و ادبی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"کتاب‌های علمی و تخصصی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کتاب‌های روانشناسی و روابط","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"C"},{"text":"کتاب‌های مدیریت و موفقیت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0dyb003c5uzf3bz6p3i9","order":25,"options":[{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"تحقیق علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مدیریت و رهبری","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0e47003e5uzf97xdhr57","order":26,"options":[{"text":"مشاور یا معلم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"محقق یا دانشمند","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"هنرمند یا طراح","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مدیر یا کارآفرین","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0e9o003g5uzfbtrgoeh4","order":27,"options":[{"text":"کمک به دیگران لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"تحقیق و مطالعه لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"رهبری و مدیریت لذت می‌برم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0ef3003i5uzf4ej1swgp","order":28,"options":[{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"دفتر مدیریتی","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0ekm003k5uzfito0rkxz","order":29,"options":[{"text":"مهارت‌های ارتباطی و اجتماعی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"مهارت‌های تحلیلی و علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مهارت‌های هنری و خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مهارت‌های رهبری و مدیریت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0eqf003m5uzf2pcj4zqv","order":30,"options":[{"text":"با دوستان و خانواده وقت می‌گذرانم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"مطالعه و تحقیق می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کارهای هنری و خلاقانه انجام می‌دهم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"برنامه‌ریزی و مدیریت می‌کنم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0ewv003o5uzfpnldlusg","order":31,"options":[{"text":"مشاوره و راهنمایی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"تحقیق و آزمایش","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مدیریت پروژه","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0f2p003q5uzfzvnpl1ci","order":32,"options":[{"text":"کتاب‌های روانشناسی و روابط","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"A"},{"text":"کتاب‌های علمی و تخصصی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کتاب‌های هنری و ادبی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کتاب‌های مدیریت و موفقیت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"D"}]},{"id":"cmj8d0f87003s5uzflbqp605n","order":33,"options":[{"text":"مدیریت و رهبری","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0fe1003u5uzfc89w1dc3","order":34,"options":[{"text":"مدیر یا کارآفرین","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"محقق یا دانشمند","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"هنرمند یا طراح","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مشاور یا معلم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0fka003w5uzfhrz3s9d0","order":35,"options":[{"text":"رهبری و مدیریت لذت می‌برم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و مطالعه لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0fps003y5uzfb85ej03q","order":36,"options":[{"text":"دفتر مدیریتی","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0fvi00405uzfr6sxnydp","order":37,"options":[{"text":"مهارت‌های رهبری و مدیریت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"مهارت‌های تحلیلی و علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مهارت‌های هنری و خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مهارت‌های ارتباطی و اجتماعی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0g1600425uzfcox7wyk1","order":38,"options":[{"text":"برنامه‌ریزی و مدیریت می‌کنم","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"مطالعه و تحقیق می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کارهای هنری و خلاقانه انجام می‌دهم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"با دوستان و خانواده وقت می‌گذرانم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0g6q00445uzf396xxrtz","order":39,"options":[{"text":"مدیریت پروژه","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و آزمایش","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مشاوره و راهنمایی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0gc900465uzf4aodt4ru","order":40,"options":[{"text":"کتاب‌های مدیریت و موفقیت","score":{"A":0,"C":0,"E":3,"I":0,"R":0,"S":0},"value":"A"},{"text":"کتاب‌های علمی و تخصصی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کتاب‌های هنری و ادبی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کتاب‌های روانشناسی و روابط","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0ghn00485uzfft9i62mk","order":41,"options":[{"text":"کار با داده‌ها و اطلاعات","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0gob004a5uzfua6nral2","order":42,"options":[{"text":"حسابدار یا منشی","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"محقق یا دانشمند","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"هنرمند یا طراح","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مشاور یا معلم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0gu0004c5uzftlfadtef","order":43,"options":[{"text":"کار منظم و سازمان‌یافته لذت می‌برم","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و مطالعه لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری لذت می‌برم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کمک به دیگران لذت می‌برم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0gzk004e5uzfib9zce3m","order":44,"options":[{"text":"دفتر منظم و سازمان‌یافته","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"آزمایشگاه یا محیط تحقیقاتی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"استودیو یا محیط خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"محیط اجتماعی و تعاملی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0h5b004g5uzfi63p9mty","order":45,"options":[{"text":"مهارت‌های سازمانی و اداری","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"مهارت‌های تحلیلی و علمی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"مهارت‌های هنری و خلاقانه","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مهارت‌های ارتباطی و اجتماعی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0hav004i5uzfei41b3g6","order":46,"options":[{"text":"کارهای منظم و سازمان‌یافته انجام می‌دهم","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"مطالعه و تحقیق می‌کنم","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کارهای هنری و خلاقانه انجام می‌دهم","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"با دوستان و خانواده وقت می‌گذرانم","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0hge004k5uzf9csnxb97","order":47,"options":[{"text":"کار با فایل‌ها و اسناد","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"تحقیق و آزمایش","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"ایجاد آثار هنری","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"مشاوره و راهنمایی","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]},{"id":"cmj8d0hlz004m5uzfbvnp043x","order":48,"options":[{"text":"کتاب‌های مدیریت و سازمان","score":{"A":0,"C":3,"E":0,"I":0,"R":0,"S":0},"value":"A"},{"text":"کتاب‌های علمی و تخصصی","score":{"A":0,"C":0,"E":0,"I":3,"R":0,"S":0},"value":"B"},{"text":"کتاب‌های هنری و ادبی","score":{"A":3,"C":0,"E":0,"I":0,"R":0,"S":0},"value":"C"},{"text":"کتاب‌های روانشناسی و روابط","score":{"A":0,"C":0,"E":0,"I":0,"R":0,"S":3},"value":"D"}]}],
-          },
-        },
-      });
-      console.log(`✅ آزمون "آزمون استعدادیابی هالند" ایجاد شد`);
-      // اختصاص آزمون به بخش‌ها
-      {
-        const department = createdDepartments.find((d) => d.name === "IT");
-        if (department) {
-          await prisma.assessmentAssignment.upsert({
-            where: { id: "cmj8jv9tl000b5unny46vqqz8" },
-            update: {},
-            create: {
-              id: "cmj8jv9tl000b5unny46vqqz8",
-              assessmentId: assessment.id,
-              departmentId: department.id,
-            },
-          });
-        }
-      }
-    }
-  }
+  // آزمون‌های Holland و MSQ توسط seedHolland() و seedMSQ() ایجاد می‌شوند
+  */
 
-  {
-    const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
-    if (createdBy) {
-      const assessment = await prisma.assessment.upsert({
-        where: { id: "msq-standard-assessment" },
-        update: {},
-        create: {
-          id: "msq-standard-assessment",
-          title: "آزمون رضایت شغلی مینه‌سوتا (MSQ)",
-          description: "آزمون رضایت شغلی مینه‌سوتا (Minnesota Satisfaction Questionnaire) یک ابزار معتبر و استاندارد برای سنجش رضایت شغلی است. این آزمون رضایت شما را در دو بعد درونی (Intrinsic) و بیرونی (Extrinsic) اندازه‌گیری می‌کند.",
-          type: "MSQ",
-          isActive: true,
-          createdById: createdBy.id,
-          questions: {
-            create: [{"id":"cmj8hv4iy00005uet2assbwse","order":1,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00015uet9ed1nw61","order":2,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00025uetf261o224","order":3,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00035uete7glluq9","order":4,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00045uetml16djr3","order":5,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00055uet59254i23","order":6,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00065uetztw3upb8","order":7,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00075ueti0peo8p5","order":8,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00085uetsc2w9rqe","order":9,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iy00095uetvv1ed6jg","order":10,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000a5uetbsbxc4vx","order":11,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000b5uet351smfa5","order":12,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000c5uet7pea3xt6","order":13,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000d5uet723pwbd5","order":14,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000e5uetjuo5hjfn","order":15,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000f5uet42bze6ij","order":16,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000g5uetb1uw768p","order":17,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000h5uetbvcwzy3d","order":18,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000i5uetlaunf9vt","order":19,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]},{"id":"cmj8hv4iz000j5uet94w5yr91","order":20,"options":[{"text":"خیلی راضی","score":{"value":5},"value":"A"},{"text":"راضی","score":{"value":4},"value":"B"},{"text":"خنثی","score":{"value":3},"value":"C"},{"text":"ناراضی","score":{"value":2},"value":"D"},{"text":"خیلی ناراضی","score":{"value":1},"value":"E"}]}],
-          },
-        },
-      });
-      console.log(`✅ آزمون "آزمون رضایت شغلی مینه‌سوتا (MSQ)" ایجاد شد`);
-      // اختصاص آزمون به بخش‌ها
-      {
-        const department = createdDepartments.find((d) => d.name === "IT");
-        if (department) {
-          await prisma.assessmentAssignment.upsert({
-            where: { id: "cmj8jv33600095unn74dc3s7m" },
-            update: {},
-            create: {
-              id: "cmj8jv33600095unn74dc3s7m",
-              assessmentId: assessment.id,
-              departmentId: department.id,
-            },
-          });
-        }
-      }
-    }
+  // اضافه کردن آزمون‌ها اگر وجود ندارند (باید قبل از ایجاد نتایج آزمون انجام شود)
+  console.log("\n📝 شروع اضافه کردن آزمون‌ها...\n");
+  
+  try {
+    await seedMBTI(prisma);
+    console.log('');
+    
+    await seedDISC(prisma);
+    console.log('');
+    
+    await seedHolland(prisma);
+    console.log('');
+    
+    await seedMSQ(prisma);
+    console.log('');
+    
+    console.log("✅ همه آزمون‌ها با موفقیت ایجاد شدند!\n");
+  } catch (error: any) {
+    console.error("❌ خطا در ایجاد آزمون‌ها:", error?.message || error);
+    // ادامه می‌دهیم حتی اگر خطا رخ دهد
   }
 
   // ایجاد نتایج آزمون‌ها
   {
     const user = createdUsers.find((u) => u.mobile === "09123322111");
-    const assessment = await prisma.assessment.findUnique({ where: { id: "disc-standard-assessment" } });
+    const assessment = await prisma.assessments.findUnique({ where: { id: "disc-standard-assessment" } });
     if (user && assessment) {
-      await prisma.assessmentResult.upsert({
+      await prisma.assessment_results.upsert({
         where: { id: "cmj8jz451000p5unnyk27a6ab" },
         update: {},
         create: {
@@ -396,6 +905,7 @@ async function main() {
           score: 100,
           answers: {"disc-q-1":"D","disc-q-2":"I","disc-q-3":"C","disc-q-4":"S","disc-q-5":"I","disc-q-6":"C","disc-q-7":"I","disc-q-8":"S","disc-q-9":"C","disc-q-10":"D","disc-q-11":"I","disc-q-12":"D","disc-q-13":"S","disc-q-14":"I","disc-q-15":"S","disc-q-16":"I","disc-q-17":"S","disc-q-18":"C","disc-q-19":"D","disc-q-20":"S","disc-q-21":"I","disc-q-22":"S","disc-q-23":"I","disc-q-24":"C"},
           result: {"type":"IS","scores":{"C":15,"D":12,"I":24,"S":21},"careers":["مشاور","معلم","منابع انسانی","روانشناس"],"strengths":["کار تیمی","ایجاد رابطه","حمایت از دیگران","ایجاد هماهنگی"],"workStyle":["کار تیمی","پشتیبانی از اعضای تیم","ایجاد روابط","حل تعارضات"],"weaknesses":["مشکل در تصمیم‌گیری‌های سخت","اجتناب از تعارض","مقاومت در برابر تغییر","تمایل به خوشایند دیگران"],"description":"تأثیرگذار-پایدار - تیم‌ساز دوستانه. ترکیبی از مهارت‌های اجتماعی و پایداری. این افراد تیم‌سازان خوبی هستند که محیط کار را دوستانه می‌کنند.","percentages":{"C":21,"D":17,"I":33,"S":29}},
+          startedAt: new Date("2025-12-16T12:20:00.000Z"),
           completedAt: new Date("2025-12-16T12:22:34.932Z"),
         },
       });
@@ -405,9 +915,9 @@ async function main() {
 
   {
     const user = createdUsers.find((u) => u.mobile === "09123322111");
-    const assessment = await prisma.assessment.findUnique({ where: { id: "msq-standard-assessment" } });
+    const assessment = await prisma.assessments.findUnique({ where: { id: "msq-standard-assessment" } });
     if (user && assessment) {
-      await prisma.assessmentResult.upsert({
+      await prisma.assessment_results.upsert({
         where: { id: "cmj8k1f23000v5unnt9mxhxry" },
         update: {},
         create: {
@@ -417,6 +927,7 @@ async function main() {
           score: 57,
           answers: {"cmj8hv4iy00005uet2assbwse":"A","cmj8hv4iy00015uet9ed1nw61":"C","cmj8hv4iy00025uetf261o224":"E","cmj8hv4iy00035uete7glluq9":"C","cmj8hv4iy00045uetml16djr3":"A","cmj8hv4iy00055uet59254i23":"C","cmj8hv4iy00065uetztw3upb8":"B","cmj8hv4iy00075ueti0peo8p5":"D","cmj8hv4iy00085uetsc2w9rqe":"A","cmj8hv4iy00095uetvv1ed6jg":"D","cmj8hv4iz000a5uetbsbxc4vx":"D","cmj8hv4iz000b5uet351smfa5":"E","cmj8hv4iz000c5uet7pea3xt6":"B","cmj8hv4iz000d5uet723pwbd5":"D","cmj8hv4iz000e5uetjuo5hjfn":"E","cmj8hv4iz000f5uet42bze6ij":"C","cmj8hv4iz000g5uetb1uw768p":"B","cmj8hv4iz000h5uetbvcwzy3d":"D","cmj8hv4iz000i5uetlaunf9vt":"B","cmj8hv4iz000j5uet94w5yr91":"E"},
           result: {"level":"متوسط","scores":{"total":57,"extrinsic":21,"intrinsic":36},"description":"رضایت شغلی شما در سطح متوسط قرار دارد. برخی جنبه‌های کار شما رضایت‌بخش است، اما برخی دیگر نیاز به توجه دارند.","percentages":{"total":57,"extrinsic":53,"intrinsic":60},"recommendations":[],"extrinsicDescription":"رضایت بیرونی شما در سطح متوسط است. برخی جنبه‌های بیرونی کار شما رضایت‌بخش است.","intrinsicDescription":"رضایت درونی شما در سطح خوبی قرار دارد. شما عموماً از جنبه‌های درونی کار خود راضی هستید."},
+          startedAt: new Date("2025-12-16T12:22:00.000Z"),
           completedAt: new Date("2025-12-16T12:24:22.394Z"),
         },
       });
@@ -431,8 +942,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "مشکل در سیستم شبکه",
           content: "سیستم شبکه شرکت کند کار می‌کند و نیاز به بررسی دارد.",
           rating: 2,
@@ -442,7 +954,9 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           deletedAt: new Date("2025-11-26T10:42:04.703Z"),
+          updatedAt: new Date(),
           createdAt: new Date("2025-11-25T08:16:52.872Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "مشکل در سیستم شبکه" ایجاد شد`);
@@ -455,8 +969,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "پیشنهاد بهبود سیستم",
           content: "پیشنهاد می‌کنم سیستم فیدبک را بهبود دهیم.",
           rating: 4,
@@ -466,6 +981,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-25T08:16:52.926Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "پیشنهاد بهبود سیستم" ایجاد شد`);
@@ -478,8 +994,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = createdUsers.find((u) => u.mobile === "09123322111");
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "فیدبک ارجاع شده",
           content: "این فیدبک برای بررسی به مدیر ارجاع شده است.",
           rating: 5,
@@ -491,6 +1008,7 @@ async function main() {
           forwardedToId: forwardedTo?.id,
           forwardedAt: new Date("2025-11-25T08:16:52.871Z"),
           createdAt: new Date("2025-11-25T08:16:52.963Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "فیدبک ارجاع شده" ایجاد شد`);
@@ -503,8 +1021,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "مشکل در سیستم شبکه",
           content: "سیستم شبکه شرکت کند کار می‌کند و نیاز به بررسی دارد.",
           rating: 2,
@@ -514,6 +1033,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-25T08:20:16.310Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "مشکل در سیستم شبکه" ایجاد شد`);
@@ -526,8 +1046,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "پیشنهاد بهبود سیستم",
           content: "پیشنهاد می‌کنم سیستم فیدبک را بهبود دهیم.",
           rating: 4,
@@ -537,6 +1058,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-25T08:20:16.374Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "پیشنهاد بهبود سیستم" ایجاد شد`);
@@ -549,8 +1071,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = createdUsers.find((u) => u.mobile === "09123322111");
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "فیدبک ارجاع شده",
           content: "این فیدبک برای بررسی به مدیر ارجاع شده است.",
           rating: 5,
@@ -563,6 +1086,7 @@ async function main() {
           forwardedAt: new Date("2025-11-25T08:20:16.308Z"),
           deletedAt: new Date("2025-11-26T10:41:38.185Z"),
           createdAt: new Date("2025-11-25T08:20:16.417Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "فیدبک ارجاع شده" ایجاد شد`);
@@ -575,8 +1099,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "ادمین آشپزخانه ۱",
           content: "محتوا ادمین آشپزخانه ",
           image: "/uploads/feedback/feedback-1764151391212-2e9ejq.jpg",
@@ -586,6 +1111,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-26T10:03:13.073Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "ادمین آشپزخانه ۱" ایجاد شد`);
@@ -598,8 +1124,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = createdUsers.find((u) => u.mobile === "09123322112");
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "عنوان ادمین اداری ۲",
           content: "متن انتقادی ۲ ادمین ",
           image: "[\"/uploads/feedback/feedback-1764157014321-0-nwjmqx.jpg\",\"/uploads/feedback/feedback-1764157014323-1-rl1gci.jpg\"]",
@@ -611,6 +1138,7 @@ async function main() {
           forwardedToId: forwardedTo?.id,
           forwardedAt: new Date("2025-11-29T12:31:19.672Z"),
           createdAt: new Date("2025-11-26T11:36:56.177Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "عنوان ادمین اداری ۲" ایجاد شد`);
@@ -623,8 +1151,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "مدیر به اداری",
           content: "محتوا مدیر به اداری",
           image: "[\"/uploads/feedback/feedback-1764163773243-0-0p8px.jpg\"]",
@@ -634,6 +1163,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-26T13:29:33.391Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "مدیر به اداری" ایجاد شد`);
@@ -646,8 +1176,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = createdUsers.find((u) => u.mobile === "09123322111");
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "شکایت آشپزخانه ",
           content: "این متن شکایت آشپزخانه به صورت انتقادی است ",
           type: "CRITICAL",
@@ -658,6 +1189,7 @@ async function main() {
           forwardedToId: forwardedTo?.id,
           forwardedAt: new Date("2025-11-29T13:40:44.454Z"),
           createdAt: new Date("2025-11-29T12:49:32.025Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "شکایت آشپزخانه " ایجاد شد`);
@@ -670,8 +1202,9 @@ async function main() {
     if (user && department) {
       const forwardedTo = null;
       const completedBy = null;
-      await prisma.feedback.create({
+      await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: "حقوق من فرزاد چی شد ؟",
           content: "متن حثقوق مدیر فرزاد چی شذ با تصویز . انتقادی",
           image: "[\"/uploads/feedback/feedback-1764422936935-0-ylthei.jpg\"]",
@@ -681,6 +1214,7 @@ async function main() {
           departmentId: department.id,
           userId: user.id,
           createdAt: new Date("2025-11-29T13:28:57.096Z"),
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ فیدبک "حقوق من فرزاد چی شد ؟" ایجاد شد`);
@@ -692,32 +1226,62 @@ async function main() {
     const department = createdDepartments.find((d) => d.name === "اداری");
     const createdBy = createdUsers.find((u) => u.mobile === "09121941532");
     if (department && createdBy) {
-      const feedback = await prisma.feedback.findFirst({
+      const feedback = await prisma.feedbacks.findFirst({
         where: { title: "عنوان ادمین اداری ۲" },
       });
-      const createdTask = await prisma.task.create({
-        data: {
-          title: "ارجاع: عنوان ادمین اداری ۲",
-          description: "متن انتقادی ۲ ادمین \n\n---\nیادداشت ارجاع‌دهنده: این موضوغ را رسیدگی کنید . ",
-          status: "PENDING",
-          priority: "HIGH",
-          isPublic: false,
-          departmentId: department.id,
-          createdById: createdBy.id,
-          feedbackId: feedback?.id,
-        },
-      });
-      console.log(`✅ وظیفه "ارجاع: عنوان ادمین اداری ۲" ایجاد شد`);
-      // اختصاص وظایف
-      {
-        const user = createdUsers.find((u) => u.mobile === "09123322112");
-        if (user) {
-          await prisma.taskAssignment.create({
+      if (feedback && !feedback.deletedAt) {
+        const existingTask = await prisma.tasks.findUnique({
+          where: { feedbackId: feedback.id },
+        });
+        if (!existingTask) {
+          const createdTask = await prisma.tasks.create({
             data: {
-              taskId: createdTask.id,
-              userId: user.id,
+              id: randomUUID(),
+              title: "ارجاع: عنوان ادمین اداری ۲",
+              description: "متن انتقادی ۲ ادمین \n\n---\nیادداشت ارجاع‌دهنده: این موضوغ را رسیدگی کنید . ",
+              status: "PENDING",
+              priority: "HIGH",
+              isPublic: false,
+              departmentId: department.id,
+              createdById: createdBy.id,
+              feedbackId: feedback.id,
+              updatedAt: new Date(),
             },
           });
+          console.log(`✅ وظیفه "ارجاع: عنوان ادمین اداری ۲" ایجاد شد`);
+          // اختصاص وظایف
+          {
+            const user = createdUsers.find((u) => u.mobile === "09123322112");
+            if (user) {
+              await prisma.task_assignments.create({
+                data: {
+                  id: randomUUID(),
+                  taskId: createdTask.id,
+                  userId: user.id,
+                },
+              });
+            }
+          }
+        } else {
+          console.log(`⚠️ وظیفه برای فیدبک "عنوان ادمین اداری ۲" قبلاً ایجاد شده است`);
+          // اختصاص وظایف
+          {
+            const user = createdUsers.find((u) => u.mobile === "09123322112");
+            if (user && existingTask) {
+              const existingAssignment = await prisma.task_assignments.findFirst({
+                where: { taskId: existingTask.id, userId: user.id },
+              });
+              if (!existingAssignment) {
+                await prisma.task_assignments.create({
+                  data: {
+                    id: randomUUID(),
+                    taskId: existingTask.id,
+                    userId: user.id,
+                  },
+                });
+              }
+            }
+          }
         }
       }
     }
@@ -727,32 +1291,62 @@ async function main() {
     const department = createdDepartments.find((d) => d.name === "IT");
     const createdBy = createdUsers.find((u) => u.mobile === "09121941532");
     if (department && createdBy) {
-      const feedback = await prisma.feedback.findFirst({
+      const feedback = await prisma.feedbacks.findFirst({
         where: { title: "شکایت آشپزخانه " },
       });
-      const createdTask = await prisma.task.create({
-        data: {
-          title: "ارجاع: شکایت آشپزخانه ",
-          description: "این متن شکایت آشپزخانه به صورت انتقادی است \n\n---\nیادداشت ارجاع‌دهنده: موضوع آشپزخانه را تو حل کن ",
-          status: "PENDING",
-          priority: "HIGH",
-          isPublic: false,
-          departmentId: department.id,
-          createdById: createdBy.id,
-          feedbackId: feedback?.id,
-        },
-      });
-      console.log(`✅ وظیفه "ارجاع: شکایت آشپزخانه " ایجاد شد`);
-      // اختصاص وظایف
-      {
-        const user = createdUsers.find((u) => u.mobile === "09123322111");
-        if (user) {
-          await prisma.taskAssignment.create({
+      if (feedback && !feedback.deletedAt) {
+        const existingTask = await prisma.tasks.findUnique({
+          where: { feedbackId: feedback.id },
+        });
+        if (!existingTask) {
+          const createdTask = await prisma.tasks.create({
             data: {
-              taskId: createdTask.id,
-              userId: user.id,
+              id: randomUUID(),
+              title: "ارجاع: شکایت آشپزخانه ",
+              description: "این متن شکایت آشپزخانه به صورت انتقادی است \n\n---\nیادداشت ارجاع‌دهنده: موضوع آشپزخانه را تو حل کن ",
+              status: "PENDING",
+              priority: "HIGH",
+              isPublic: false,
+              departmentId: department.id,
+              createdById: createdBy.id,
+              feedbackId: feedback.id,
+              updatedAt: new Date(),
             },
           });
+          console.log(`✅ وظیفه "ارجاع: شکایت آشپزخانه " ایجاد شد`);
+          // اختصاص وظایف
+          {
+            const user = createdUsers.find((u) => u.mobile === "09123322111");
+            if (user) {
+              await prisma.task_assignments.create({
+                data: {
+                  id: randomUUID(),
+                  taskId: createdTask.id,
+                  userId: user.id,
+                },
+              });
+            }
+          }
+        } else {
+          console.log(`⚠️ وظیفه برای فیدبک "شکایت آشپزخانه " قبلاً ایجاد شده است`);
+          // اختصاص وظایف
+          {
+            const user = createdUsers.find((u) => u.mobile === "09123322111");
+            if (user && existingTask) {
+              const existingAssignment = await prisma.task_assignments.findFirst({
+                where: { taskId: existingTask.id, userId: user.id },
+              });
+              if (!existingAssignment) {
+                await prisma.task_assignments.create({
+                  data: {
+                    id: randomUUID(),
+                    taskId: existingTask.id,
+                    userId: user.id,
+                  },
+                });
+              }
+            }
+          }
         }
       }
     }
@@ -762,14 +1356,16 @@ async function main() {
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      await prisma.announcement.create({
+      await prisma.announcements.create({
         data: {
+          id: randomUUID(),
           title: "به‌روزرسانی سیستم",
           content: "سیستم فیدبک به نسخه 2.0 به‌روزرسانی شد. امکانات جدید شامل چت آنلاین، سیستم تسک و اعلانات هوشمند است.",
           priority: "HIGH",
           isActive: true,
           publishedAt: new Date("2025-12-16T09:07:20.296Z"),
           createdById: createdBy.id,
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ اعلان "به‌روزرسانی سیستم" ایجاد شد`);
@@ -779,14 +1375,16 @@ async function main() {
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      await prisma.announcement.create({
+      await prisma.announcements.create({
         data: {
+          id: randomUUID(),
           title: "خوش آمدید",
           content: "به سیستم فیدبک خوش آمدید. لطفاً فیدبک‌های خود را ثبت کنید.",
           priority: "HIGH",
           isActive: true,
           publishedAt: new Date("2025-11-25T08:16:53.006Z"),
           createdById: createdBy.id,
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ اعلان "خوش آمدید" ایجاد شد`);
@@ -796,14 +1394,16 @@ async function main() {
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      await prisma.announcement.create({
+      await prisma.announcements.create({
         data: {
+          id: randomUUID(),
           title: "اعلان ۱",
           content: "به سیستم فیدبک خوش آمدید. لطفاً فیدبک‌های خود را ثبت کنید.",
           priority: "HIGH",
           isActive: true,
           publishedAt: new Date("2025-11-25T08:20:16.483Z"),
           createdById: createdBy.id,
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ اعلان "اعلان ۱" ایجاد شد`);
@@ -813,8 +1413,9 @@ async function main() {
   {
     const createdBy = createdUsers.find((u) => u.mobile === "09123456789");
     if (createdBy) {
-      await prisma.announcement.create({
+      await prisma.announcements.create({
         data: {
+          id: randomUUID(),
           title: "اعلان بخش IT",
           content: "این اعلان مخصوص بخش IT است.",
           priority: "MEDIUM",
@@ -822,10 +1423,40 @@ async function main() {
           publishedAt: new Date("2025-11-25T08:20:16.561Z"),
           departmentId: createdDepartments.find((d) => d.name === "IT")?.id,
           createdById: createdBy.id,
+          updatedAt: new Date(),
         },
       });
       console.log(`✅ اعلان "اعلان بخش IT" ایجاد شد`);
     }
+  }
+
+  // اضافه کردن کلمات کلیدی اگر وجود ندارند
+  console.log("\n🔑 شروع اضافه کردن کلمات کلیدی...\n");
+  
+  await seedKeywords(prisma);
+  await seedITKeywords(prisma, createdDepartments);
+  await seedKitchenKeywords(prisma, createdDepartments);
+
+  // اضافه کردن آزمون‌ها اگر وجود ندارند (باید قبل از ایجاد نتایج آزمون انجام شود)
+  console.log("\n📝 شروع اضافه کردن آزمون‌ها...\n");
+  
+  try {
+    await seedMBTI(prisma);
+    console.log('');
+    
+    await seedDISC(prisma);
+    console.log('');
+    
+    await seedHolland(prisma);
+    console.log('');
+    
+    await seedMSQ(prisma);
+    console.log('');
+    
+    console.log("✅ همه آزمون‌ها با موفقیت ایجاد شدند!\n");
+  } catch (error: any) {
+    console.error("❌ خطا در ایجاد آزمون‌ها:", error?.message || error);
+    // ادامه می‌دهیم حتی اگر خطا رخ دهد
   }
 
   console.log("\n🎉 تمام داده‌ها با موفقیت ایجاد شدند!");

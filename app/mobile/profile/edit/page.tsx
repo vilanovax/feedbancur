@@ -16,28 +16,51 @@ export default function EditProfilePage() {
     email: "",
     mobile: "",
     avatar: "",
+    statusId: null as string | null,
   });
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [userStatuses, setUserStatuses] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      fetchUserStatuses();
+    }
+  }, [status, session]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     } else if (status === "authenticated" && session?.user) {
       const userAvatar = (session.user as any).avatar;
+      const userStatusId = (session.user as any).statusId || null;
       setFormData({
         name: session.user.name || "",
         email: session.user.email || "",
         mobile: session.user.mobile || "",
         avatar: userAvatar || "",
+        statusId: userStatusId,
       });
       if (userAvatar) {
         setAvatarPreview(userAvatar);
       }
     }
   }, [status, session, router]);
+
+  const fetchUserStatuses = async () => {
+    try {
+      const role = session?.user?.role || "EMPLOYEE";
+      const res = await fetch(`/api/user-statuses?role=${role}`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatuses(data.filter((s: any) => s.isActive));
+      }
+    } catch (err) {
+      console.error("Error fetching user statuses:", err);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,6 +109,7 @@ export default function EditProfilePage() {
           name: formData.name,
           email: formData.email.trim() === "" ? null : formData.email.trim(),
           avatar: formData.avatar || null,
+          statusId: formData.statusId || null,
         }),
       });
 
@@ -227,6 +251,49 @@ export default function EditProfilePage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="ایمیل"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              استتوس
+            </label>
+            <select
+              value={formData.statusId || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, statusId: e.target.value || null })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">بدون استتوس</option>
+              {userStatuses.map((status) => (
+                <option key={status.id} value={status.id}>
+                  {status.name}
+                </option>
+              ))}
+            </select>
+            {userStatuses.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {userStatuses.map((status) => (
+                  <div
+                    key={status.id}
+                    className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition ${
+                      formData.statusId === status.id
+                        ? "ring-2 ring-blue-500"
+                        : "opacity-60 hover:opacity-100"
+                    }`}
+                    style={{ backgroundColor: status.color, color: "#fff" }}
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        statusId: formData.statusId === status.id ? null : status.id,
+                      })
+                    }
+                  >
+                    {status.name}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

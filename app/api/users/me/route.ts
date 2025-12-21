@@ -17,6 +17,7 @@ const updateProfileSchema = z.object({
     .nullable()
     .transform((val) => (val === "" || val === undefined ? null : val)),
   avatar: z.string().optional().nullable(),
+  statusId: z.string().nullable().optional(),
 });
 
 // PATCH - ویرایش پروفایل خود کاربر
@@ -42,15 +43,46 @@ export async function PATCH(req: NextRequest) {
       avatarValue = null;
     }
 
+    // بررسی صحت statusId (اگر ارسال شده باشد)
+    let statusIdValue = data.statusId || null;
+    if (statusIdValue) {
+      const status = await prisma.userStatus.findUnique({
+        where: { id: statusIdValue },
+      });
+
+      if (!status) {
+        return NextResponse.json(
+          { error: "استتوس انتخابی یافت نشد" },
+          { status: 400 }
+        );
+      }
+
+      if (!status.isActive) {
+        return NextResponse.json(
+          { error: "این استتوس غیرفعال است" },
+          { status: 400 }
+        );
+      }
+
+      // بررسی اینکه آیا کاربر می‌تواند از این استتوس استفاده کند
+      if (!status.allowedRoles.includes(session.user.role)) {
+        return NextResponse.json(
+          { error: "شما مجاز به استفاده از این استتوس نیستید" },
+          { status: 403 }
+        );
+      }
+    }
+
     console.log("Updating user:", session.user.id, "with avatar length:", avatarValue?.length || 0);
 
     // به‌روزرسانی اطلاعات کاربر
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.users.update({
       where: { id: session.user.id },
       data: {
         name: data.name,
         email: data.email || null,
         avatar: avatarValue,
+        statusId: statusIdValue,
       },
       select: {
         id: true,
@@ -59,6 +91,14 @@ export async function PATCH(req: NextRequest) {
         mobile: true,
         role: true,
         avatar: true,
+        statusId: true,
+        status: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
       },
     });
 

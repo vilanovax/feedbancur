@@ -21,7 +21,7 @@ export async function GET(
 
     const { id } = await params;
     // بررسی وجود بخش
-    const department = await prisma.department.findUnique({
+    const department = await prisma.departments.findUnique({
       where: { id },
     });
 
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // دریافت کاربران بخش
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       where: {
         departmentId: id,
       },

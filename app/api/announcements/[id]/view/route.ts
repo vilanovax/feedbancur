@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 
 // POST - ثبت بازدید اعلان
 export async function POST(
@@ -18,7 +19,7 @@ export async function POST(
     const { id } = await params;
 
     // بررسی وجود اعلان
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id },
     });
 
@@ -30,7 +31,7 @@ export async function POST(
     }
 
     // ثبت بازدید (اگر قبلاً ثبت نشده باشد)
-    const view = await prisma.announcementView.upsert({
+    const view = await prisma.announcement_views.upsert({
       where: {
         announcementId_userId: {
           announcementId: id,
@@ -41,6 +42,7 @@ export async function POST(
         viewedAt: new Date(),
       },
       create: {
+        id: randomUUID(),
         announcementId: id,
         userId: session.user.id,
       },

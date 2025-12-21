@@ -305,7 +305,7 @@ export default function Dashboard() {
                   className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-r-4 border-indigo-600 dark:border-indigo-500"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-[5px]">
                       <div className="bg-indigo-100 dark:bg-indigo-900 p-3 rounded-lg">
                         <ClipboardList className="text-indigo-600 dark:text-indigo-400" size={24} />
                       </div>
@@ -341,11 +341,11 @@ export default function Dashboard() {
             href="/feedback/new"
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
           >
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
+            <div className="flex items-center space-x-reverse">
+              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg flex-shrink-0">
                 <Plus className="text-blue-600 dark:text-blue-400" size={24} />
               </div>
-              <div>
+              <div className="mr-[5px]">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                   ثبت فیدبک جدید
                 </h3>
@@ -360,11 +360,11 @@ export default function Dashboard() {
             href="/feedback"
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
           >
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
+            <div className="flex items-center space-x-reverse">
+              <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg flex-shrink-0">
                 <MessageSquare className="text-green-600 dark:text-green-400" size={24} />
               </div>
-              <div>
+              <div className="mr-[5px]">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                   مشاهده فیدبک‌ها
                 </h3>
@@ -379,11 +379,11 @@ export default function Dashboard() {
             href="/announcements"
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
           >
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg">
+            <div className="flex items-center space-x-reverse">
+              <div className="bg-yellow-100 dark:bg-yellow-900 p-3 rounded-lg flex-shrink-0">
                 <Bell className="text-yellow-600 dark:text-yellow-400" size={24} />
               </div>
-              <div>
+              <div className="mr-[5px]">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                   اعلانات
                 </h3>
@@ -398,11 +398,11 @@ export default function Dashboard() {
             href="/public-board"
             className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
           >
-            <div className="flex items-center space-x-4 space-x-reverse">
-              <div className="bg-amber-100 dark:bg-amber-900 p-3 rounded-lg">
+            <div className="flex items-center space-x-reverse">
+              <div className="bg-amber-100 dark:bg-amber-900 p-3 rounded-lg flex-shrink-0">
                 <Trophy className="text-amber-600 dark:text-amber-400" size={24} />
               </div>
-              <div>
+              <div className="mr-[5px]">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                   بورد افتخارات
                 </h3>
@@ -419,11 +419,11 @@ export default function Dashboard() {
                 href="/users"
                 className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-center space-x-4 space-x-reverse">
-                  <div className="bg-cyan-100 dark:bg-cyan-900 p-3 rounded-lg">
+                <div className="flex items-center space-x-reverse">
+                  <div className="bg-cyan-100 dark:bg-cyan-900 p-3 rounded-lg flex-shrink-0">
                     <Users className="text-cyan-600 dark:text-cyan-400" size={24} />
                   </div>
-                  <div>
+                  <div className="mr-[5px]">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                       مدیریت کاربران
                     </h3>
@@ -438,11 +438,11 @@ export default function Dashboard() {
                 href="/departments"
                 className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-center space-x-4 space-x-reverse">
-                  <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
+                <div className="flex items-center space-x-reverse">
+                  <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg flex-shrink-0">
                     <Building2 className="text-purple-600 dark:text-purple-400" size={24} />
                   </div>
-                  <div>
+                  <div className="mr-[5px]">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                       مدیریت بخش‌ها
                     </h3>
@@ -457,11 +457,11 @@ export default function Dashboard() {
                 href="/analytics"
                 className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
               >
-                <div className="flex items-center space-x-4 space-x-reverse">
-                  <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded-lg">
+                <div className="flex items-center space-x-reverse">
+                  <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded-lg flex-shrink-0">
                     <BarChart3 className="text-orange-600 dark:text-orange-400" size={24} />
                   </div>
-                  <div>
+                  <div className="mr-[5px]">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                       آمار و تحلیل
                     </h3>

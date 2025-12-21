@@ -54,36 +54,55 @@ export async function GET(request: NextRequest) {
     else if (session.user.role === "EMPLOYEE") {
       where.userId = session.user.id;
     } 
-    // مدیر در حالت عادی فقط فیدبک‌های خودش را می‌بیند
+    // مدیر در حالت عادی: فیدبک‌های بخش خودش + فیدبک‌های خودش + فیدبک‌های ارجاع شده به او
     else if (session.user.role === "MANAGER") {
-      where.userId = session.user.id;
+      // دریافت departmentId مدیر
+      const manager = await prisma.users.findUnique({
+        where: { id: session.user.id },
+        select: { departmentId: true },
+      });
+
+      if (manager?.departmentId) {
+        // فیدبک‌های بخش مدیر + فیدبک‌های خود مدیر + فیدبک‌های ارجاع شده به مدیر
+        where.OR = [
+          { departmentId: manager.departmentId },
+          { userId: session.user.id },
+          { forwardedToId: session.user.id },
+        ];
+      } else {
+        // اگر مدیر بخشی ندارد، فقط فیدبک‌های خودش و ارجاع شده به او
+        where.OR = [
+          { userId: session.user.id },
+          { forwardedToId: session.user.id },
+        ];
+      }
     }
 
     console.log("Fetching feedbacks with where:", JSON.stringify(where, null, 2));
 
     // بهینه‌سازی: تعریف include config یکبار
     const includeConfig = {
-      user: {
+      users_feedbacks_userIdTousers: {
         select: {
           id: true,
           name: true,
           mobile: true,
         },
       },
-      department: {
+      departments: {
         select: {
           id: true,
           name: true,
           allowDirectFeedback: true,
         },
       },
-      forwardedTo: {
+      users_feedbacks_forwardedToIdTousers: {
         select: {
           id: true,
           name: true,
         },
       },
-      completedBy: {
+      users_feedbacks_completedByIdTousers: {
         select: {
           id: true,
           name: true,
@@ -98,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     let feedbacks;
     try {
-      feedbacks = await prisma.feedback.findMany({
+      feedbacks = await prisma.feedbacks.findMany({
         where,
         include: includeConfig,
         orderBy: {
@@ -124,7 +143,7 @@ export async function GET(request: NextRequest) {
         console.warn("deletedAt field error, trying without it");
         const whereWithoutDeleted = { ...where };
         delete whereWithoutDeleted.deletedAt;
-        feedbacks = await prisma.feedback.findMany({
+        feedbacks = await prisma.feedbacks.findMany({
           where: whereWithoutDeleted,
           include: includeConfig,
           orderBy: {
@@ -139,19 +158,32 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // پردازش فیدبک‌های ناشناس (حذف اطلاعات کاربر اگر isAnonymous = true)
-    const processedFeedbacks = feedbacks.map((feedback) => {
+    // پردازش فیدبک‌ها و تبدیل به فرمت frontend
+    const processedFeedbacks = feedbacks.map((feedback: any) => {
+      // تبدیل نام‌های Prisma به نام‌های frontend
+      const processedFeedback = {
+        ...feedback,
+        user: feedback.users_feedbacks_userIdTousers,
+        department: feedback.departments,
+        forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
+        completedBy: feedback.users_feedbacks_completedByIdTousers,
+      };
+
+      // حذف کلیدهای اضافی Prisma
+      delete processedFeedback.users_feedbacks_userIdTousers;
+      delete processedFeedback.departments;
+      delete processedFeedback.users_feedbacks_forwardedToIdTousers;
+      delete processedFeedback.users_feedbacks_completedByIdTousers;
+
+      // پردازش فیدبک‌های ناشناس (حذف اطلاعات کاربر اگر isAnonymous = true)
       if (feedback.isAnonymous && session.user.role !== 'ADMIN') {
-        return {
-          ...feedback,
-          user: {
-            id: 'anonymous',
-            name: 'ناشناس',
-            mobile: null,
-          },
+        processedFeedback.user = {
+          id: 'anonymous',
+          name: 'ناشناس',
+          mobile: null,
         };
       }
-      return feedback;
+      return processedFeedback;
     });
 
     return NextResponse.json(processedFeedbacks);
@@ -332,7 +364,7 @@ export async function POST(request: NextRequest) {
     // بررسی بخش و مدیر آن
     let department;
     try {
-      department = await prisma.department.findUnique({
+      department = await prisma.departments.findUnique({
         where: { id: validatedData.departmentId },
         select: {
           id: true,
@@ -390,7 +422,7 @@ export async function POST(request: NextRequest) {
 
     let feedback;
     try {
-      feedback = await prisma.feedback.create({
+      feedback = await prisma.feedbacks.create({
         data: {
           title: validatedData.title,
           content: validatedData.content,
@@ -404,21 +436,21 @@ export async function POST(request: NextRequest) {
           status: forwardedToId ? "REVIEWED" : "PENDING",
         },
       include: {
-        user: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
             allowDirectFeedback: true,
           },
         },
-        forwardedTo: {
+        users_feedbacks_forwardedToIdTousers: {
           select: {
             id: true,
             name: true,
@@ -461,11 +493,11 @@ export async function POST(request: NextRequest) {
           console.log("Creating admin notifications for direct feedback:", {
             feedbackId: feedback.id,
             feedbackTitle: feedback.title,
-            departmentName: feedback.department.name,
+            departmentName: feedback.departments.name,
           });
 
           // پیدا کردن همه ادمین‌ها
-          const admins = await prisma.user.findMany({
+          const admins = await prisma.users.findMany({
             where: {
               role: "ADMIN",
               isActive: true,
@@ -482,12 +514,12 @@ export async function POST(request: NextRequest) {
           } else {
             // ایجاد نوتیفیکیشن برای هر ادمین
             const notificationPromises = admins.map((admin) =>
-              prisma.notification.create({
+              prisma.notifications.create({
                 data: {
                   userId: admin.id,
                   feedbackId: feedback.id,
                   title: "فیدبک مستقیم به بخش",
-                  content: `فیدبک "${feedback.title}" به صورت مستقیم به بخش ${feedback.department.name} ارسال شد.`,
+                  content: `فیدبک "${feedback.title}" به صورت مستقیم به بخش ${feedback.departments.name} ارسال شد.`,
                   type: "INFO",
                   redirectUrl: `/feedback/${feedback.id}`,
                 },
@@ -513,7 +545,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(feedback, { status: 201 });
+    // تبدیل نام‌های Prisma به نام‌های frontend
+    const responseFeedback = {
+      ...feedback,
+      user: (feedback as any).users_feedbacks_userIdTousers,
+      department: (feedback as any).departments,
+      forwardedTo: (feedback as any).users_feedbacks_forwardedToIdTousers,
+    };
+    delete (responseFeedback as any).users_feedbacks_userIdTousers;
+    delete (responseFeedback as any).departments;
+    delete (responseFeedback as any).users_feedbacks_forwardedToIdTousers;
+
+    return NextResponse.json(responseFeedback, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

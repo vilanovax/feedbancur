@@ -26,7 +26,7 @@ export async function POST(
     const { id } = await params;
 
     // دریافت نظرسنجی اصلی
-    const originalPoll = await prisma.poll.findUnique({
+    const originalPoll = await prisma.polls.findUnique({
       where: { id },
       include: {
         options: {
@@ -46,7 +46,7 @@ export async function POST(
 
     // بررسی دسترسی برای MANAGER
     if (session.user.role === 'MANAGER') {
-      const department = await prisma.department.findUnique({
+      const department = await prisma.departments.findUnique({
         where: { id: session.user.departmentId! },
         select: {
           canCreatePoll: true,
@@ -74,7 +74,7 @@ export async function POST(
     }
 
     // ایجاد نظرسنجی جدید
-    const newPoll = await prisma.poll.create({
+    const newPoll = await prisma.polls.create({
       data: {
         title: originalPoll.title + ' - کپی',
         description: originalPoll.description,

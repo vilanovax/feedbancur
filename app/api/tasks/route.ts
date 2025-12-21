@@ -53,21 +53,21 @@ export async function GET(req: NextRequest) {
       where.departmentId = departmentId;
     }
 
-    const tasks = await prisma.task.findMany({
+    const tasks = await prisma.tasks.findMany({
       where,
       include: {
-        department: true,
-        createdBy: {
+        departments: true,
+        users: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        assignedTo: {
+        task_assignments: {
           include: {
-            employee: true,
-            user: {
+            employees: true,
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -76,14 +76,14 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        feedback: {
+        feedbacks: {
           select: {
             id: true,
             title: true,
             type: true,
           },
         },
-        comments: {
+        task_comments: {
           orderBy: {
             createdAt: 'desc',
           },
@@ -126,14 +126,14 @@ export async function POST(req: NextRequest) {
     let targetDepartmentId = data.departmentId;
 
     if (data.feedbackId) {
-      const feedback = await prisma.feedback.findUnique({
+      const feedback = await prisma.feedbacks.findUnique({
         where: { id: data.feedbackId },
-        include: { department: true },
+        include: { departments: true },
       });
 
       if (feedback) {
         // جستجو برای دپارتمان مناسب بر اساس کلیدواژه
-        const departments = await prisma.department.findMany({
+        const departments = await prisma.departments.findMany({
           where: {
             keywords: {
               hasSome: extractKeywords(data.title + ' ' + data.description),
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ایجاد تسک
-    const task = await prisma.task.create({
+    const task = await prisma.tasks.create({
       data: {
         title: data.title,
         description: data.description,
@@ -160,8 +160,8 @@ export async function POST(req: NextRequest) {
         createdById: session.user.id,
       },
       include: {
-        department: true,
-        createdBy: {
+        departments: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
 
     // اگر فیدبکی مرتبط است، وضعیت آن را به REVIEWED تغییر بده
     if (data.feedbackId) {
-      await prisma.feedback.update({
+      await prisma.feedbacks.update({
         where: { id: data.feedbackId },
         data: { status: 'REVIEWED' },
       });

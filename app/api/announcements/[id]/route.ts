@@ -41,17 +41,17 @@ export async function GET(
     }
 
     const { id } = await params;
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -78,7 +78,16 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json(announcement);
+    // تبدیل به فرمت frontend
+    const responseAnnouncement = {
+      ...announcement,
+      createdBy: (announcement as any).users,
+      department: (announcement as any).departments,
+      users: undefined,
+      departments: undefined,
+    };
+
+    return NextResponse.json(responseAnnouncement);
   } catch (error) {
     console.error("Error fetching announcement:", error);
     return NextResponse.json(
@@ -209,7 +218,7 @@ export async function PATCH(
     }
 
     // بررسی وجود اعلان
-    const existingAnnouncement = await prisma.announcement.findUnique({
+    const existingAnnouncement = await prisma.announcements.findUnique({
       where: { id },
     });
 
@@ -283,18 +292,18 @@ export async function PATCH(
     }
 
     // بروزرسانی اعلان
-    const updatedAnnouncement = await prisma.announcement.update({
+    const updatedAnnouncement = await prisma.announcements.update({
       where: { id },
       data: updateData,
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -303,7 +312,16 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json(updatedAnnouncement);
+    // تبدیل به فرمت frontend
+    const responseAnnouncement = {
+      ...updatedAnnouncement,
+      createdBy: (updatedAnnouncement as any).users,
+      department: (updatedAnnouncement as any).departments,
+      users: undefined,
+      departments: undefined,
+    };
+
+    return NextResponse.json(responseAnnouncement);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -338,7 +356,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود اعلان
-    const announcement = await prisma.announcement.findUnique({
+    const announcement = await prisma.announcements.findUnique({
       where: { id },
     });
 
@@ -362,7 +380,7 @@ export async function DELETE(
     }
 
     // حذف اعلان
-    await prisma.announcement.delete({
+    await prisma.announcements.delete({
       where: { id },
     });
 

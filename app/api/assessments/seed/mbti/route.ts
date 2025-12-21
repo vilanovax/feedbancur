@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if MBTI assessment already exists
-    const existingMBTI = await prisma.assessment.findFirst({
+    const existingMBTI = await prisma.assessments.findFirst({
       where: {
         type: "MBTI",
         title: "آزمون شخصیت‌سنجی MBTI",
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create MBTI assessment with questions
-    const assessment = await prisma.assessment.create({
+    const assessment = await prisma.assessments.create({
       data: {
         title: "آزمون شخصیت‌سنجی MBTI",
         description:

@@ -24,7 +24,7 @@ export async function PATCH(
       body;
 
     // Check if question exists
-    const existingQuestion = await prisma.assessmentQuestion.findUnique({
+    const existingQuestion = await prisma.assessment_questions.findUnique({
       where: { id: qid },
     });
 
@@ -43,7 +43,7 @@ export async function PATCH(
       );
     }
 
-    const question = await prisma.assessmentQuestion.update({
+    const question = await prisma.assessment_questions.update({
       where: { id: qid },
       data: {
         ...(questionText !== undefined && { questionText }),
@@ -82,7 +82,7 @@ export async function DELETE(
     }
 
     // Check if question exists
-    const existingQuestion = await prisma.assessmentQuestion.findUnique({
+    const existingQuestion = await prisma.assessment_questions.findUnique({
       where: { id: qid },
     });
 
@@ -101,12 +101,12 @@ export async function DELETE(
       );
     }
 
-    await prisma.assessmentQuestion.delete({
+    await prisma.assessment_questions.delete({
       where: { id: qid },
     });
 
     // Reorder remaining questions
-    const remainingQuestions = await prisma.assessmentQuestion.findMany({
+    const remainingQuestions = await prisma.assessment_questions.findMany({
       where: { assessmentId: id },
       orderBy: { order: "asc" },
     });
@@ -114,7 +114,7 @@ export async function DELETE(
     // Update orders
     for (let i = 0; i < remainingQuestions.length; i++) {
       if (remainingQuestions[i].order !== i + 1) {
-        await prisma.assessmentQuestion.update({
+        await prisma.assessment_questions.update({
           where: { id: remainingQuestions[i].id },
           data: { order: i + 1 },
         });

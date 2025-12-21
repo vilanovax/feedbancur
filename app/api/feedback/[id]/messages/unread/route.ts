@@ -22,7 +22,7 @@ export async function GET(
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
 
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
     });
 
@@ -44,7 +44,7 @@ export async function GET(
     }
 
     // شمارش پیام‌های خوانده نشده (پیام‌هایی که توسط کاربر فعلی ارسال نشده‌اند)
-    const unreadCount = await prisma.message.count({
+    const unreadCount = await prisma.messages.count({
       where: {
         feedbackId: resolvedParams.id,
         isRead: false,

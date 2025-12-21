@@ -52,7 +52,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
         options: {
@@ -142,7 +142,7 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
         _count: {
@@ -175,7 +175,7 @@ export async function PATCH(
     const validatedData = updatePollSchema.parse(body);
 
     // به‌روزرسانی نظرسنجی
-    const updatedPoll = await prisma.poll.update({
+    const updatedPoll = await prisma.polls.update({
       where: { id },
       data: {
         ...validatedData,
@@ -235,7 +235,7 @@ export async function PUT(
 
     const { id } = await params;
 
-    const existingPoll = await prisma.poll.findUnique({
+    const existingPoll = await prisma.polls.findUnique({
       where: { id },
       include: {
         options: true,
@@ -275,7 +275,7 @@ export async function PUT(
     });
 
     // به‌روزرسانی نظرسنجی
-    const updatedPoll = await prisma.poll.update({
+    const updatedPoll = await prisma.polls.update({
       where: { id },
       data: {
         title: validatedData.title,
@@ -356,7 +356,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
     });
 
@@ -379,7 +379,7 @@ export async function DELETE(
     }
 
     // حذف نظرسنجی (cascade delete برای options و responses)
-    await prisma.poll.delete({
+    await prisma.polls.delete({
       where: { id },
     });
 

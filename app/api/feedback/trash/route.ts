@@ -17,39 +17,41 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const includeConfig = {
+      users_feedbacks_userIdTousers: {
+        select: {
+          id: true,
+          name: true,
+          mobile: true,
+        },
+      },
+      departments: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      users_feedbacks_forwardedToIdTousers: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      users_feedbacks_completedByIdTousers: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    };
+
     let feedbacks;
     try {
-      feedbacks = await (prisma.feedback.findMany as any)({
+      feedbacks = await (prisma.feedbacks.findMany as any)({
         where: {
           deletedAt: { not: null },
         },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              mobile: true,
-            },
-          },
-          department: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          forwardedTo: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          completedBy: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
+        include: includeConfig,
         orderBy: {
           deletedAt: "desc",
         },
@@ -65,37 +67,11 @@ export async function GET(req: NextRequest) {
         dbError?.message?.includes("Unknown field")
       ) {
         console.warn("deletedAt field not found, using ARCHIVED status");
-        feedbacks = await prisma.feedback.findMany({
+        feedbacks = await prisma.feedbacks.findMany({
           where: {
             status: "ARCHIVED",
           },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                mobile: true,
-              },
-            },
-            department: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            forwardedTo: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            completedBy: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
+          include: includeConfig,
           orderBy: {
             updatedAt: "desc",
           },
@@ -105,16 +81,31 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // پردازش فیدبک‌های ناشناس
+    // پردازش فیدبک‌ها و تبدیل به فرمت frontend
     const processedFeedbacks = feedbacks.map((feedback: any) => {
+      const processed = {
+        ...feedback,
+        user: feedback.users_feedbacks_userIdTousers,
+        department: feedback.departments,
+        forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
+        completedBy: feedback.users_feedbacks_completedByIdTousers,
+      };
+
+      // حذف کلیدهای Prisma
+      delete processed.users_feedbacks_userIdTousers;
+      delete processed.departments;
+      delete processed.users_feedbacks_forwardedToIdTousers;
+      delete processed.users_feedbacks_completedByIdTousers;
+
+      // پردازش فیدبک‌های ناشناس
       if (feedback.isAnonymous) {
-        feedback.user = {
+        processed.user = {
           id: "",
           name: "ناشناس",
           mobile: "",
         };
       }
-      return feedback;
+      return processed;
     });
 
     return NextResponse.json(processedFeedbacks);
@@ -144,7 +135,7 @@ export async function DELETE(req: NextRequest) {
     // حذف کامل همه فیدبک‌های حذف شده
     let result;
     try {
-      result = await (prisma.feedback.deleteMany as any)({
+      result = await (prisma.feedbacks.deleteMany as any)({
         where: {
           deletedAt: { not: null },
         },
@@ -157,7 +148,7 @@ export async function DELETE(req: NextRequest) {
         dbError?.code === "P2011" ||
         dbError?.message?.includes("Unknown field")
       ) {
-        result = await prisma.feedback.deleteMany({
+        result = await prisma.feedbacks.deleteMany({
           where: {
             status: "ARCHIVED",
           },

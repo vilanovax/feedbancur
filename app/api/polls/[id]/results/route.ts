@@ -17,7 +17,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
         options: {
@@ -94,7 +94,7 @@ export async function GET(
       targetUsersQuery.departmentId = poll.departmentId;
     }
 
-    const targetUsers = await prisma.user.findMany({
+    const targetUsers = await prisma.users.findMany({
       where: targetUsersQuery,
       select: {
         id: true,
@@ -255,7 +255,7 @@ export async function GET(
       (session.user.role === 'ADMIN' || poll.createdById === session.user.id) &&
       !poll.departmentId // نظرسنجی عمومی
     ) {
-      const departments = await prisma.department.findMany({
+      const departments = await prisma.departments.findMany({
         select: {
           id: true,
           name: true,

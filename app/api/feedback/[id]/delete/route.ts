@@ -22,7 +22,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
     });
 
@@ -45,7 +45,7 @@ export async function DELETE(
     // Soft delete
     let deletedFeedback;
     try {
-      deletedFeedback = await (prisma.feedback.update as any)({
+      deletedFeedback = await (prisma.feedbacks.update as any)({
         where: { id },
         data: {
           deletedAt: new Date(),
@@ -82,7 +82,7 @@ export async function DELETE(
       ) {
         console.warn("deletedAt field not found, using status instead");
         // استفاده از status برای حذف (آرشیو کردن)
-        deletedFeedback = await prisma.feedback.update({
+        deletedFeedback = await prisma.feedbacks.update({
           where: { id },
           data: {
             status: "ARCHIVED",

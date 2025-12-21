@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,20 +7,509 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  EMPLOYEE
+model analytics_keywords {
+  id           String          @id
+  keyword      String
+  type         KeywordType     @default(CUSTOM)
+  description  String?
+  isActive     Boolean         @default(true)
+  departmentId String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime
+  priority     KeywordPriority @default(MEDIUM)
+  departments  departments?    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
+  @@index([isActive])
+  @@index([priority])
+  @@index([type])
+}
+
+model announcement_messages {
+  id             String        @id
+  announcementId String
+  content        String
+  createdById    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  attachments    Json?
+  announcements  announcements @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  users          users         @relation(fields: [createdById], references: [id])
+
+  @@index([announcementId])
+}
+
+model announcement_views {
+  id             String        @id
+  announcementId String
+  userId         String
+  viewedAt       DateTime      @default(now())
+  announcements  announcements @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  users          users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([announcementId])
+  @@index([userId])
+}
+
+model announcements {
+  id                    String                  @id
+  title                 String
+  content               String
+  priority              String?
+  isActive              Boolean                 @default(true)
+  scheduledAt           DateTime?
+  publishedAt           DateTime?
+  departmentId          String?
+  createdById           String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  attachments           Json?
+  announcement_messages announcement_messages[]
+  announcement_views    announcement_views[]
+  users                 users                   @relation(fields: [createdById], references: [id])
+  departments           departments?            @relation(fields: [departmentId], references: [id])
+}
+
+model assessment_assignments {
+  id               String       @id
+  assessmentId     String
+  departmentId     String?
+  isRequired       Boolean      @default(false)
+  startDate        DateTime?
+  endDate          DateTime?
+  allowManagerView Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  assessments      assessments  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  departments      departments? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, departmentId])
+  @@index([assessmentId])
+  @@index([departmentId])
+}
+
+model assessment_progress {
+  id           String      @id
+  assessmentId String
+  userId       String
+  answers      Json
+  lastQuestion Int         @default(0)
+  startedAt    DateTime    @default(now())
+  updatedAt    DateTime
+  assessments  assessments @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  users        users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, userId])
+  @@index([userId])
+}
+
+model assessment_questions {
+  id           String       @id
+  assessmentId String
+  questionText String
+  questionType QuestionType
+  order        Int
+  isRequired   Boolean      @default(true)
+  options      Json
+  image        String?
+  createdAt    DateTime     @default(now())
+  assessments  assessments  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, order])
+}
+
+model assessment_results {
+  id           String      @id
+  assessmentId String
+  userId       String
+  answers      Json
+  result       Json
+  score        Int?
+  isPassed     Boolean?
+  startedAt    DateTime
+  completedAt  DateTime    @default(now())
+  timeTaken    Int?
+  assessments  assessments @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  users        users       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId])
+  @@index([completedAt])
+  @@index([userId])
+}
+
+model assessments {
+  id                     String                   @id
+  title                  String
+  description            String?
+  type                   AssessmentType
+  instructions           String?
+  isActive               Boolean                  @default(true)
+  allowRetake            Boolean                  @default(false)
+  timeLimit              Int?
+  passingScore           Int?
+  showResults            Boolean                  @default(true)
+  createdById            String
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  assessment_assignments assessment_assignments[]
+  assessment_progress    assessment_progress[]
+  assessment_questions   assessment_questions[]
+  assessment_results     assessment_results[]
+  users                  users                    @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@index([type])
+}
+
+model checklist_items {
+  id          String    @id
+  feedbackId  String
+  title       String
+  isCompleted Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime
+  feedbacks   feedbacks @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+}
+
+model departments {
+  id                             String                   @id
+  name                           String                   @unique
+  description                    String?
+  keywords                       String[]
+  managerId                      String?
+  allowDirectFeedback            Boolean                  @default(false)
+  createdAt                      DateTime                 @default(now())
+  updatedAt                      DateTime
+  canCreateAnnouncement          Boolean                  @default(false)
+  allowedAnnouncementDepartments String[]                 @default([])
+  allowedPollDepartments         String[]                 @default([])
+  canCreatePoll                  Boolean                  @default(false)
+  analytics_keywords             analytics_keywords[]
+  announcements                  announcements[]
+  assessment_assignments         assessment_assignments[]
+  employees                      employees[]
+  feedbacks                      feedbacks[]
+  polls                          polls[]
+  tasks                          tasks[]
+  users                          users[]
+}
+
+model employees {
+  id               String             @id
+  name             String
+  position         String?
+  departmentId     String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  departments      departments        @relation(fields: [departmentId], references: [id])
+  task_assignments task_assignments[]
+}
+
+model feedbacks {
+  id                                   String            @id
+  title                                String
+  content                              String
+  rating                               Int?
+  status                               FeedbackStatus    @default(PENDING)
+  isAnonymous                          Boolean           @default(false)
+  departmentId                         String
+  userId                               String
+  forwardedToId                        String?
+  forwardedAt                          DateTime?
+  completedById                        String?
+  completedAt                          DateTime?
+  userResponse                         String?
+  adminNotes                           String?
+  managerNotes                         String?
+  deletedAt                            DateTime?
+  createdAt                            DateTime          @default(now())
+  updatedAt                            DateTime
+  image                                String?
+  type                                 String            @default("SUGGESTION")
+  keywords                             String[]
+  checklist_items                      checklist_items[]
+  users_feedbacks_completedByIdTousers users?            @relation("feedbacks_completedByIdTousers", fields: [completedById], references: [id])
+  departments                          departments       @relation(fields: [departmentId], references: [id])
+  users_feedbacks_forwardedToIdTousers users?            @relation("feedbacks_forwardedToIdTousers", fields: [forwardedToId], references: [id])
+  users_feedbacks_userIdTousers        users             @relation("feedbacks_userIdTousers", fields: [userId], references: [id])
+  messages                             messages[]
+  notifications                        notifications[]
+  tasks                                tasks?
+}
+
+model messages {
+  id         String    @id
+  feedbackId String
+  senderId   String
+  content    String
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  image      String?
+  feedbacks  feedbacks @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  users      users     @relation(fields: [senderId], references: [id])
+
+  @@index([feedbackId])
+  @@index([senderId])
+}
+
+model notifications {
+  id          String     @id
+  userId      String
+  feedbackId  String?
+  title       String
+  content     String
+  type        String     @default("INFO")
+  isRead      Boolean    @default(false)
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  redirectUrl String?
+  feedbacks   feedbacks? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  users       users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([feedbackId])
+  @@index([isRead])
+  @@index([userId])
+}
+
+model otps {
+  id        String   @id
+  mobile    String
+  code      String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([mobile])
+}
+
+model poll_options {
+  id             String           @id
+  pollId         String
+  text           String
+  order          Int              @default(0)
+  createdAt      DateTime         @default(now())
+  polls          polls            @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  poll_responses poll_responses[]
+
+  @@index([pollId])
+}
+
+model poll_responses {
+  id           String        @id
+  pollId       String
+  userId       String
+  optionId     String?
+  ratingValue  Int?
+  textValue    String?
+  comment      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime
+  poll_options poll_options? @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  polls        polls         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  users        users         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([optionId])
+  @@index([pollId])
+  @@index([userId])
+}
+
+model polls {
+  id                 String             @id
+  title              String
+  description        String?
+  type               PollType           @default(SINGLE_CHOICE)
+  visibilityMode     PollVisibilityMode @default(PUBLIC)
+  isActive           Boolean            @default(true)
+  allowMultipleVotes Boolean            @default(false)
+  isRequired         Boolean            @default(false)
+  showResultsMode    String             @default("LIVE")
+  maxTextLength      Int?
+  scheduledAt        DateTime?
+  publishedAt        DateTime?
+  closedAt           DateTime?
+  departmentId       String?
+  createdById        String
+  minRating          Int?
+  maxRating          Int?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime
+  poll_options       poll_options[]
+  poll_responses     poll_responses[]
+  users              users              @relation(fields: [createdById], references: [id])
+  departments        departments?       @relation(fields: [departmentId], references: [id])
+}
+
+model settings {
+  id                    String   @id
+  siteName              String
+  siteDescription       String?
+  language              String   @default("fa")
+  timezone              String   @default("Asia/Tehran")
+  logoUrl               String?
+  emailNotifications    Boolean  @default(true)
+  smsNotifications      Boolean  @default(false)
+  pushNotifications     Boolean  @default(true)
+  requirePasswordChange Boolean  @default(false)
+  sessionTimeout        Int      @default(30)
+  twoFactorAuth         Boolean  @default(false)
+  allowAnonymous        Boolean  @default(true)
+  autoArchiveDays       Int      @default(90)
+  maxFeedbackLength     Int      @default(5000)
+  itemsPerPage          Int      @default(20)
+  theme                 String   @default("light")
+  statusTexts           Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime
+  feedbackTypes         Json?
+  notificationSettings  Json?
+  chatSettings          Json?
+  objectStorageSettings Json?
+  workingHoursSettings  Json?
+  openAISettings        Json?
+}
+
+model task_assignments {
+  id         String     @id
+  taskId     String
+  employeeId String?
+  userId     String?
+  assignedAt DateTime   @default(now())
+  employees  employees? @relation(fields: [employeeId], references: [id])
+  tasks      tasks      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  users      users?     @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, employeeId])
+  @@unique([taskId, userId])
+}
+
+model task_comments {
+  id        String   @id
+  content   String
+  taskId    String
+  createdAt DateTime @default(now())
+  tasks     tasks    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model tasks {
+  id               String             @id
+  title            String
+  description      String
+  status           TaskStatus         @default(PENDING)
+  priority         String?
+  isPublic         Boolean            @default(false)
+  completedAt      DateTime?
+  feedbackId       String?            @unique
+  departmentId     String
+  createdById      String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  task_assignments task_assignments[]
+  task_comments    task_comments[]
+  users            users              @relation(fields: [createdById], references: [id])
+  departments      departments        @relation(fields: [departmentId], references: [id])
+  feedbacks        feedbacks?         @relation(fields: [feedbackId], references: [id])
+}
+
+model user_statuses {
+  id           String     @id
+  name         String
+  color        String
+  allowedRoles UserRole[]
+  isActive     Boolean    @default(true)
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime
+  users        users[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+model users {
+  id                                       String                  @id
+  mobile                                   String                  @unique
+  email                                    String?
+  name                                     String
+  password                                 String
+  avatar                                   String?
+  role                                     UserRole                @default(EMPLOYEE)
+  isActive                                 Boolean                 @default(true)
+  departmentId                             String?
+  createdAt                                DateTime                @default(now())
+  updatedAt                                DateTime
+  mustChangePassword                       Boolean                 @default(false)
+  statusId                                 String?
+  announcement_messages                    announcement_messages[]
+  announcement_views                       announcement_views[]
+  announcements                            announcements[]
+  assessment_progress                      assessment_progress[]
+  assessment_results                       assessment_results[]
+  assessments                              assessments[]
+  feedbacks_feedbacks_completedByIdTousers feedbacks[]             @relation("feedbacks_completedByIdTousers")
+  feedbacks_feedbacks_forwardedToIdTousers feedbacks[]             @relation("feedbacks_forwardedToIdTousers")
+  feedbacks_feedbacks_userIdTousers        feedbacks[]             @relation("feedbacks_userIdTousers")
+  messages                                 messages[]
+  notifications                            notifications[]
+  poll_responses                           poll_responses[]
+  polls                                    polls[]
+  task_assignments                         task_assignments[]
+  tasks                                    tasks[]
+  departments                              departments?            @relation(fields: [departmentId], references: [id])
+  user_statuses                            user_statuses?          @relation(fields: [statusId], references: [id])
+}
+
+enum AssessmentType {
+  MBTI
+  DISC
+  CUSTOM
+  HOLLAND
+  MSQ
 }
 
 enum FeedbackStatus {
   PENDING
   REVIEWED
   ARCHIVED
-  DEFERRED    // رسیدگی آینده
-  COMPLETED   // انجام شد
+  DEFERRED
+  COMPLETED
 }
 
+enum KeywordPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum KeywordType {
+  SENSITIVE
+  POSITIVE
+  NEGATIVE
+  TOPIC
+  CUSTOM
+}
+
+enum PollType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  RATING_SCALE
+  TEXT_INPUT
+}
+
+enum PollVisibilityMode {
+  ANONYMOUS
+  PUBLIC
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  RATING_SCALE
+  TRUE_FALSE
+  TEXT
+}
 
 enum TaskStatus {
   PENDING
@@ -32,557 +518,8 @@ enum TaskStatus {
   FORWARDED
 }
 
-enum PollType {
-  SINGLE_CHOICE      // چندگزینه‌ای تک‌انتخابی
-  MULTIPLE_CHOICE    // چندگزینه‌ای چندانتخابی
-  RATING_SCALE       // مقیاس امتیازدهی (1-5 یا 1-10)
-  TEXT_INPUT         // متن آزاد کوتاه
+enum UserRole {
+  ADMIN
+  MANAGER
+  EMPLOYEE
 }
-
-enum PollVisibilityMode {
-  ANONYMOUS          // رای‌ها مخفی
-  PUBLIC             // رای‌ها قابل مشاهده
-}
-
-model User {
-  id            String    @id @default(cuid())
-  mobile        String    @unique
-  email         String?
-  name          String
-  password      String
-  avatar        String?   // تصویر پروفایل
-  role          UserRole  @default(EMPLOYEE)
-  isActive      Boolean   @default(true)
-  mustChangePassword Boolean @default(false) // تغییر رمز عبور اجباری در اولین ورود
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  feedbacks          Feedback[]
-  forwardedFeedbacks Feedback[]       @relation("ForwardedFeedbacks")
-  completedFeedbacks Feedback[]       @relation("CompletedFeedbacks")
-  assignedTasks      TaskAssignment[]
-  createdTasks       Task[]           @relation("TaskCreator")
-  announcements          Announcement[]
-  announcementMessages   AnnouncementMessage[] @relation("AnnouncementMessageCreator")
-  announcementViews      AnnouncementView[] @relation("AnnouncementViews")
-  polls                  Poll[]
-  pollResponses          PollResponse[]
-  sentMessages           Message[]        @relation("MessageSender")
-  notifications          Notification[]   @relation("Notifications")
-  createdAssessments     Assessment[]     @relation("CreatedAssessments")
-  assessmentProgress     AssessmentProgress[] @relation("AssessmentProgress")
-  assessmentResults      AssessmentResult[]   @relation("AssessmentResults")
-
-  @@map("users")
-}
-
-model Department {
-  id                 String    @id @default(cuid())
-  name               String    @unique
-  description        String?
-  keywords           String[]  // کلیدواژه‌ها برای روتینگ خودکار
-  managerId          String?   // مدیر بخش
-  allowDirectFeedback Boolean   @default(false) // اجازه ارسال مستقیم فیدبک به مدیر
-  canCreateAnnouncement Boolean @default(false) // اجازه ایجاد اعلان برای مدیر بخش
-  allowedAnnouncementDepartments String[] @default([]) // لیست ID بخش‌هایی که مدیر می‌تواند برای آنها اعلان ایجاد کند
-  canCreatePoll           Boolean  @default(false) // اجازه ایجاد نظرسنجی برای مدیر بخش
-  allowedPollDepartments  String[] @default([]) // لیست ID بخش‌هایی که مدیر می‌تواند برای آنها نظرسنجی ایجاد کند
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  users         User[]
-  feedbacks     Feedback[]
-  tasks         Task[]
-  employees     Employee[]
-  announcements Announcement[]
-  polls         Poll[]
-  analyticsKeywords AnalyticsKeyword[]
-  assessmentAssignments AssessmentAssignment[]
-
-  @@map("departments")
-}
-
-model Feedback {
-  id             String         @id @default(cuid())
-  title          String
-  content        String
-  image          String?        // URL یا path تصویر ضمیمه شده
-  rating         Int?           // 1-5 rating (optional) - deprecated
-  type           String         @default("SUGGESTION")
-  status         FeedbackStatus @default(PENDING)
-  isAnonymous    Boolean        @default(false)
-  departmentId   String
-  department     Department     @relation(fields: [departmentId], references: [id])
-  userId         String
-  user           User           @relation(fields: [userId], references: [id])
-
-  // Forwarding fields
-  forwardedToId  String?
-  forwardedTo    User?          @relation("ForwardedFeedbacks", fields: [forwardedToId], references: [id])
-  forwardedAt    DateTime?
-
-  // Completion fields
-  completedById  String?
-  completedBy    User?          @relation("CompletedFeedbacks", fields: [completedById], references: [id])
-  completedAt    DateTime?
-  userResponse   String?        // پاسخ به کاربر هنگام تکمیل
-
-  // Archive fields
-  adminNotes     String?        // یادداشت‌های ادمین
-  managerNotes   String?        // یادداشت‌های مدیر
-
-  // AI fields
-  keywords       String[]       // کلمات کلیدی استخراج شده با AI
-
-  // Delete fields
-  deletedAt      DateTime?      // تاریخ حذف (soft delete)
-
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  task           Task?
-  checklistItems ChecklistItem[]
-  messages       Message[]
-  notifications  Notification[]      @relation("FeedbackNotifications")
-
-  @@map("feedbacks")
-}
-
-model ChecklistItem {
-  id          String   @id @default(cuid())
-  feedbackId  String
-  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
-  title       String
-  isCompleted Boolean  @default(false)
-  order       Int      @default(0) // ترتیب نمایش
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("checklist_items")
-}
-
-model Employee {
-  id           String    @id @default(cuid())
-  name         String
-  position     String?   // سمت
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  taskAssignments TaskAssignment[]
-
-  @@map("employees")
-}
-
-model Task {
-  id            String      @id @default(cuid())
-  title         String
-  description   String
-  status        TaskStatus  @default(PENDING)
-  priority      String?     // HIGH, MEDIUM, LOW
-  isPublic      Boolean     @default(false) // نمایش در بورد عمومی
-  completedAt   DateTime?
-  feedbackId    String?     @unique
-  feedback      Feedback?   @relation(fields: [feedbackId], references: [id])
-  departmentId  String
-  department    Department  @relation(fields: [departmentId], references: [id])
-  createdById   String
-  createdBy     User        @relation("TaskCreator", fields: [createdById], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  assignedTo    TaskAssignment[]
-  comments      TaskComment[]
-
-  @@map("tasks")
-}
-
-model TaskAssignment {
-  id         String   @id @default(cuid())
-  taskId     String
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  employeeId String?
-  employee   Employee? @relation(fields: [employeeId], references: [id])
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  assignedAt DateTime @default(now())
-
-  @@unique([taskId, employeeId])
-  @@unique([taskId, userId])
-  @@map("task_assignments")
-}
-
-model TaskComment {
-  id        String   @id @default(cuid())
-  content   String
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@map("task_comments")
-}
-
-model Announcement {
-  id           String      @id @default(cuid())
-  title        String
-  content      String
-  priority     String?     // HIGH, MEDIUM, LOW
-  isActive     Boolean     @default(true) // وضعیت فعال/غیرفعال
-  scheduledAt  DateTime?   // زمان انتشار برنامه‌ریزی شده
-  publishedAt  DateTime?   // زمان انتشار واقعی
-  departmentId String?     // null = برای همه
-  department   Department? @relation(fields: [departmentId], references: [id])
-  createdById  String
-  createdBy    User        @relation(fields: [createdById], references: [id])
-  attachments  Json?       // Array of {url: string, name: string} برای فایل‌های ضمیمه
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  messages     AnnouncementMessage[]
-  views        AnnouncementView[]
-
-  @@map("announcements")
-}
-
-model AnnouncementView {
-  id             String       @id @default(cuid())
-  announcementId String
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User         @relation("AnnouncementViews", fields: [userId], references: [id], onDelete: Cascade)
-  viewedAt       DateTime     @default(now())
-
-  @@unique([announcementId, userId])
-  @@index([announcementId])
-  @@index([userId])
-  @@map("announcement_views")
-}
-
-model AnnouncementMessage {
-  id             String       @id @default(cuid())
-  announcementId String
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  content        String
-  createdById    String
-  createdBy      User         @relation("AnnouncementMessageCreator", fields: [createdById], references: [id])
-  attachments    Json?        // Array of {url: string, name: string} برای فایل‌های ضمیمه
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([announcementId])
-  @@map("announcement_messages")
-}
-
-model OTP {
-  id        String   @id @default(cuid())
-  mobile    String
-  code      String
-  expiresAt DateTime
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([mobile])
-  @@map("otps")
-}
-
-model Message {
-  id          String   @id @default(cuid())
-  feedbackId  String
-  feedback    Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
-  senderId    String
-  sender      User     @relation("MessageSender", fields: [senderId], references: [id])
-  content     String
-  image       String?  // URL یا path تصویر ضمیمه شده
-  isRead      Boolean  @default(false)
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([feedbackId])
-  @@index([senderId])
-  @@map("messages")
-}
-
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation("Notifications", fields: [userId], references: [id], onDelete: Cascade)
-  feedbackId  String?
-  feedback    Feedback? @relation("FeedbackNotifications", fields: [feedbackId], references: [id], onDelete: Cascade)
-  title       String
-  content     String
-  type        String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
-  redirectUrl String?  // URL برای ریدایرکت هنگام کلیک روی نوتیفیکیشن
-  isRead      Boolean  @default(false)
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-  @@index([isRead])
-  @@index([feedbackId])
-  @@map("notifications")
-}
-
-model Settings {
-  id                 String    @id @default(cuid())
-  siteName           String
-  siteDescription    String?
-  language           String    @default("fa")
-  timezone           String    @default("Asia/Tehran")
-  logoUrl            String?
-  emailNotifications Boolean   @default(true)
-  smsNotifications   Boolean   @default(false)
-  pushNotifications  Boolean   @default(true)
-  requirePasswordChange Boolean @default(false)
-  sessionTimeout     Int       @default(30)
-  twoFactorAuth      Boolean   @default(false)
-  allowAnonymous     Boolean   @default(true)
-  autoArchiveDays    Int       @default(90)
-  maxFeedbackLength  Int       @default(5000)
-  itemsPerPage       Int       @default(20)
-  theme              String    @default("light")
-  statusTexts        Json?     // Store customizable status texts as JSON
-  feedbackTypes      Json?     // Store customizable feedback types as JSON array: [{key: string, label: string}]
-  notificationSettings Json?   // Store notification preferences as JSON: {directFeedbackToManager: boolean, feedbackCompletedByManager: boolean, ...}
-  chatSettings       Json?     // Store chat settings as JSON: {maxFileSize: number (in MB), allowedFileTypes: string[]}
-  objectStorageSettings Json?   // Store object storage settings (Liara S3-compatible) as JSON: {enabled: boolean, endpoint: string, accessKeyId: string, secretAccessKey: string, bucket: string, region: string}
-  workingHoursSettings Json?   // Store working hours settings as JSON: {enabled: boolean, startHour: number, endHour: number, workingDays: number[], holidays: string[]}
-  openAISettings Json?         // Store OpenAI settings as JSON: {enabled: boolean, apiKey: string, model: string}
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  @@map("settings")
-}
-
-model Poll {
-  id                String              @id @default(cuid())
-  title             String
-  description       String?
-  type              PollType            @default(SINGLE_CHOICE)
-  visibilityMode    PollVisibilityMode  @default(PUBLIC)
-  isActive          Boolean             @default(true)
-  allowMultipleVotes Boolean            @default(false)
-
-  // الزامات جدید
-  isRequired        Boolean             @default(false)  // اجباری بودن شرکت
-  showResultsMode   String              @default("LIVE") // "LIVE" یا "AFTER_CLOSE" - نمایش نتایج
-  maxTextLength     Int?                // حداکثر طول متن (برای TEXT_INPUT)
-
-  // زمان‌بندی (مشابه Announcement)
-  scheduledAt       DateTime?           // زمان انتشار برنامه‌ریزی شده
-  publishedAt       DateTime?           // زمان انتشار واقعی
-  closedAt          DateTime?           // زمان بسته شدن
-
-  // هدف‌گیری بخش (null = کل شرکت)
-  departmentId      String?
-  department        Department?         @relation(fields: [departmentId], references: [id])
-
-  // سازنده
-  createdById       String
-  createdBy         User                @relation(fields: [createdById], references: [id])
-
-  // برای نظرسنجی امتیازی
-  minRating         Int?                // حداقل امتیاز (مثلاً 1)
-  maxRating         Int?                // حداکثر امتیاز (مثلاً 5 یا 10)
-
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-
-  // روابط
-  options           PollOption[]
-  responses         PollResponse[]
-
-  @@map("polls")
-}
-
-model PollOption {
-  id          String         @id @default(cuid())
-  pollId      String
-  poll        Poll           @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  text        String         // متن گزینه
-  order       Int            @default(0)  // ترتیب نمایش
-  createdAt   DateTime       @default(now())
-
-  responses   PollResponse[]
-
-  @@index([pollId])
-  @@map("poll_options")
-}
-
-model PollResponse {
-  id          String       @id @default(cuid())
-  pollId      String
-  poll        Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // برای نظرسنجی‌های تک/چند گزینه‌ای
-  optionId    String?
-  option      PollOption?  @relation(fields: [optionId], references: [id], onDelete: Cascade)
-
-  // برای نظرسنجی امتیازی
-  ratingValue Int?
-
-  // برای نظرسنجی متن آزاد
-  textValue   String?
-
-  // نظر اختیاری
-  comment     String?
-
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  @@index([pollId])
-  @@index([userId])
-  @@index([optionId])
-  @@map("poll_responses")
-}
-
-enum KeywordType {
-  SENSITIVE   // کلمات حساس (مثل شکایت، مشکل، اعتراض)
-  POSITIVE    // کلمات مثبت (مثل عالی، خوب، ممنون)
-  NEGATIVE    // کلمات منفی (مثل ضعیف، بد، نامناسب)
-  TOPIC       // موضوعات خاص (مثل بهداشت، امنیت، نظافت)
-  CUSTOM      // کلمات دلخواه
-}
-
-enum KeywordPriority {
-  LOW         // کم
-  MEDIUM      // متوسط
-  HIGH        // زیاد
-}
-
-enum AssessmentType {
-  MBTI
-  DISC
-  HOLLAND
-  MSQ
-  CUSTOM
-}
-
-enum QuestionType {
-  MULTIPLE_CHOICE  // یک گزینه
-  RATING_SCALE     // مقیاس 1-5
-  TRUE_FALSE       // بله/خیر
-  TEXT             // متن آزاد
-}
-
-model AnalyticsKeyword {
-  id            String          @id @default(cuid())
-  keyword       String          // کلمه کلیدی
-  type          KeywordType     @default(CUSTOM) // نوع کلمه
-  priority      KeywordPriority @default(MEDIUM) // اولویت: کم، متوسط، زیاد
-  description   String?         // توضیحات
-  isActive      Boolean         @default(true) // فعال/غیرفعال
-  departmentId  String?         // null = برای همه بخش‌ها
-  department    Department?     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  @@index([departmentId])
-  @@index([type])
-  @@index([isActive])
-  @@index([priority])
-  @@map("analytics_keywords")
-}
-
-model Assessment {
-  id              String   @id @default(cuid())
-  title           String
-  description     String?  @db.Text
-  type            AssessmentType
-  instructions    String?  @db.Text
-  isActive        Boolean  @default(true)
-  allowRetake     Boolean  @default(false)
-  timeLimit       Int?     // دقیقه (null = بدون محدودیت)
-  passingScore    Int?     // درصد (null = بدون نمره قبولی)
-  showResults     Boolean  @default(true)
-  createdById     String
-  createdBy       User     @relation("CreatedAssessments", fields: [createdById], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  questions       AssessmentQuestion[]
-  assignments     AssessmentAssignment[]
-  results         AssessmentResult[]
-  progress        AssessmentProgress[]
-
-  @@index([type])
-  @@index([isActive])
-  @@map("assessments")
-}
-
-model AssessmentQuestion {
-  id           String     @id @default(cuid())
-  assessmentId String
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  questionText String     @db.Text
-  questionType QuestionType
-  order        Int
-  isRequired   Boolean    @default(true)
-  options      Json       // [{text: "...", value: "A", score: {...}}]
-  image        String?    // URL تصویر
-  createdAt    DateTime   @default(now())
-
-  @@index([assessmentId, order])
-  @@map("assessment_questions")
-}
-
-model AssessmentAssignment {
-  id               String      @id @default(cuid())
-  assessmentId     String
-  assessment       Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  departmentId     String?
-  department       Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  isRequired       Boolean     @default(false)
-  startDate        DateTime?
-  endDate          DateTime?
-  allowManagerView Boolean     @default(false) // آیا مدیر می‌تواند نتایج را ببیند؟
-  createdAt        DateTime    @default(now())
-
-  @@unique([assessmentId, departmentId])
-  @@index([assessmentId])
-  @@index([departmentId])
-  @@map("assessment_assignments")
-}
-
-model AssessmentProgress {
-  id           String     @id @default(cuid())
-  assessmentId String
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User       @relation("AssessmentProgress", fields: [userId], references: [id], onDelete: Cascade)
-  answers      Json       // {questionId: answer}
-  lastQuestion Int        @default(0)
-  startedAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  @@unique([assessmentId, userId])
-  @@index([userId])
-  @@map("assessment_progress")
-}
-
-model AssessmentResult {
-  id           String     @id @default(cuid())
-  assessmentId String
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User       @relation("AssessmentResults", fields: [userId], references: [id], onDelete: Cascade)
-  answers      Json       // {questionId: answer}
-  result       Json       // {type: "INTJ", scores: {...}, description: "...", percentage: 85}
-  score        Int?       // نمره کلی (اگر مقیاس باشد)
-  isPassed     Boolean?   // آیا قبول شده؟
-  startedAt    DateTime
-  completedAt  DateTime   @default(now())
-  timeTaken    Int?       // ثانیه
-
-  @@index([assessmentId])
-  @@index([userId])
-  @@index([completedAt])
-  @@map("assessment_results")
-}
-

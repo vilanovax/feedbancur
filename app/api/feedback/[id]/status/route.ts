@@ -32,12 +32,12 @@ export async function PATCH(
     const data = statusUpdateSchema.parse(body);
 
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
-        department: true,
-        user: true,
-        forwardedTo: true,
+        departments: true,
+        users_feedbacks_userIdTousers: true,
+        users_feedbacks_forwardedToIdTousers: true,
       },
     });
 
@@ -74,30 +74,30 @@ export async function PATCH(
     }
 
     // بروزرسانی فیدبک
-    const updatedFeedback = await prisma.feedback.update({
+    const updatedFeedback = await prisma.feedbacks.update({
       where: { id },
       data: updateData,
       include: {
-        user: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
           },
         },
-        completedBy: {
+        users_feedbacks_completedByIdTousers: {
           select: {
             id: true,
             name: true,
           },
         },
-        forwardedTo: {
+        users_feedbacks_forwardedToIdTousers: {
           select: {
             id: true,
             name: true,
@@ -111,7 +111,7 @@ export async function PATCH(
       // ارسال نوتیفیکیشن برای کاربر (اگر پیام وجود داشته باشد)
       if (data.userResponse && data.userResponse.trim()) {
         try {
-          await prisma.notification.create({
+          await prisma.notifications.create({
             data: {
               userId: feedback.userId,
               feedbackId: id,
@@ -130,7 +130,7 @@ export async function PATCH(
       // ارسال یادداشت برای ادمین در چت (اگر فیدبک ارجاع شده باشد)
       if (data.adminNotes && data.adminNotes.trim() && feedback.forwardedToId) {
         try {
-          await prisma.message.create({
+          await prisma.messages.create({
             data: {
               feedbackId: id,
               senderId: session.user.id,
@@ -147,7 +147,7 @@ export async function PATCH(
       // ارسال نوتیفیکیشن به مدیرانی که فیدبک به آن‌ها ارجاع شده
       if (feedback.forwardedToId && feedback.forwardedToId !== session.user.id) {
         try {
-          await prisma.notification.create({
+          await prisma.notifications.create({
             data: {
               userId: feedback.forwardedToId,
               feedbackId: id,
@@ -177,7 +177,7 @@ export async function PATCH(
           // اگر تنظیمات اجازه می‌دهد، نوتیفیکیشن ایجاد کن
           if (notificationSettings.feedbackCompletedByManager !== false) {
             // پیدا کردن همه ادمین‌ها
-            const admins = await prisma.user.findMany({
+            const admins = await prisma.users.findMany({
               where: {
                 role: "ADMIN",
                 isActive: true,
@@ -189,7 +189,7 @@ export async function PATCH(
 
             // ایجاد نوتیفیکیشن برای هر ادمین
             const notificationPromises = admins.map((admin) =>
-              prisma.notification.create({
+              prisma.notifications.create({
                 data: {
                   userId: admin.id,
                   feedbackId: id,

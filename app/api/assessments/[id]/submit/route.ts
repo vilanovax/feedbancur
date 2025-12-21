@@ -21,10 +21,10 @@ export async function POST(
     const { answers } = body;
 
     // دریافت آزمون با سوالات
-    const assessment = await prisma.assessment.findUnique({
+    const assessment = await prisma.assessments.findUnique({
       where: { id },
       include: {
-        questions: {
+        assessment_questions: {
           orderBy: { order: "asc" },
         },
       },
@@ -38,10 +38,10 @@ export async function POST(
     }
 
     // محاسبه نمره
-    const calculationResult = calculateAssessmentScore(assessment, answers);
+    const calculationResult = calculateAssessmentScore({ ...assessment, questions: (assessment as any).assessment_questions }, answers);
 
     // ذخیره نتیجه
-    const assessmentResult = await prisma.assessmentResult.create({
+    const assessmentResult = await prisma.assessment_results.create({
       data: {
         assessmentId: id,
         userId: session.user.id,
@@ -57,7 +57,7 @@ export async function POST(
     });
 
     // حذف پیشرفت
-    await prisma.assessmentProgress.deleteMany({
+    await prisma.assessment_progress.deleteMany({
       where: {
         assessmentId: id,
         userId: session.user.id,

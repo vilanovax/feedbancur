@@ -22,7 +22,7 @@ export async function POST(
 
     const { id } = await params;
     // بررسی وجود فیدبک
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id },
     });
 
@@ -42,7 +42,7 @@ export async function POST(
     }
 
     // بازگرداندن فیدبک
-    const restoredFeedback = await prisma.feedback.update({
+    const restoredFeedback = await prisma.feedbacks.update({
       where: { id },
       data: {
         deletedAt: null,

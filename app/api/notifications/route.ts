@@ -30,14 +30,14 @@ export async function GET(req: NextRequest) {
     try {
       // ابتدا بررسی کن که آیا جدول وجود دارد یا نه
       try {
-        notifications = await prisma.notification.findMany({
+        notifications = await prisma.notifications.findMany({
           where,
           orderBy: {
             createdAt: "desc",
           },
           take: limit,
           include: {
-            feedback: {
+            feedbacks: {
               select: {
                 id: true,
                 title: true,
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         });
 
         // تعداد نوتیفیکیشن‌های خوانده نشده
-        unreadCount = await prisma.notification.count({
+        unreadCount = await prisma.notifications.count({
           where: {
             userId: session.user.id,
             isRead: false,
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     const data = notificationSchema.parse(body);
 
-    const notification = await prisma.notification.create({
+    const notification = await prisma.notifications.create({
       data: {
         userId: data.userId,
         feedbackId: data.feedbackId,
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         redirectUrl: data.redirectUrl,
       },
       include: {
-        feedback: {
+        feedbacks: {
           select: {
             id: true,
             title: true,

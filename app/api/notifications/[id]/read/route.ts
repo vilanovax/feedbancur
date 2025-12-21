@@ -17,7 +17,7 @@ export async function PATCH(
     const resolvedParams = params instanceof Promise ? await params : params;
 
     // بررسی اینکه نوتیفیکیشن متعلق به کاربر است
-    const notification = await prisma.notification.findUnique({
+    const notification = await prisma.notifications.findUnique({
       where: { id: resolvedParams.id },
     });
 
@@ -32,7 +32,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const updated = await prisma.notification.update({
+    const updated = await prisma.notifications.update({
       where: { id: resolvedParams.id },
       data: {
         isRead: true,
@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await prisma.notification.updateMany({
+    await prisma.notifications.updateMany({
       where: {
         userId: session.user.id,
         isRead: false,

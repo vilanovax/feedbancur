@@ -28,7 +28,7 @@ export async function GET(
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
 
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       include: {
         checklistItems: {
@@ -95,7 +95,7 @@ export async function POST(
     const data = checklistItemSchema.parse(body);
 
     // بررسی وجود فیدبک و دسترسی
-    const feedback = await prisma.feedback.findUnique({
+    const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
     });
 

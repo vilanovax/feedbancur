@@ -20,7 +20,7 @@ export async function POST(
     const { answers, lastQuestion } = body;
 
     // بررسی وجود پیشرفت
-    const existingProgress = await prisma.assessmentProgress.findFirst({
+    const existingProgress = await prisma.assessment_progress.findFirst({
       where: {
         assessmentId: id,
         userId: session.user.id,
@@ -35,7 +35,7 @@ export async function POST(
     }
 
     // به‌روزرسانی پیشرفت
-    const updatedProgress = await prisma.assessmentProgress.update({
+    const updatedProgress = await prisma.assessment_progress.update({
       where: { id: existingProgress.id },
       data: {
         answers: answers,

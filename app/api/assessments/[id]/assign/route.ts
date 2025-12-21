@@ -37,7 +37,7 @@ export async function POST(
     }
 
     // Check if assessment exists
-    const assessment = await prisma.assessment.findUnique({
+    const assessment = await prisma.assessments.findUnique({
       where: { id },
     });
 
@@ -49,7 +49,7 @@ export async function POST(
     }
 
     // Check if department exists
-    const department = await prisma.department.findUnique({
+    const department = await prisma.departments.findUnique({
       where: { id: departmentId },
     });
 
@@ -61,7 +61,7 @@ export async function POST(
     }
 
     // Create or update assignment
-    const assignment = await prisma.assessmentAssignment.upsert({
+    const assignment = await prisma.assessment_assignments.upsert({
       where: {
         assessmentId_departmentId: {
           assessmentId: id,
@@ -130,7 +130,7 @@ export async function DELETE(
     }
 
     // Check if assignment exists
-    const assignment = await prisma.assessmentAssignment.findUnique({
+    const assignment = await prisma.assessment_assignments.findUnique({
       where: {
         assessmentId_departmentId: {
           assessmentId: id,
@@ -146,7 +146,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.assessmentAssignment.delete({
+    await prisma.assessment_assignments.delete({
       where: {
         assessmentId_departmentId: {
           assessmentId: id,

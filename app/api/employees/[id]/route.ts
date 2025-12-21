@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    const employee = await prisma.employee.findUnique({
+    const employee = await prisma.employees.findUnique({
       where: { id },
       include: {
         department: true,
@@ -81,7 +81,7 @@ export async function PATCH(
     const data = updateEmployeeSchema.parse(body);
 
     // بررسی وجود کارمند
-    const existingEmployee = await prisma.employee.findUnique({
+    const existingEmployee = await prisma.employees.findUnique({
       where: { id },
     });
 
@@ -123,7 +123,7 @@ export async function PATCH(
     if (data.departmentId !== undefined) updateData.departmentId = data.departmentId;
 
     // بروزرسانی کارمند
-    const updatedEmployee = await prisma.employee.update({
+    const updatedEmployee = await prisma.employees.update({
       where: { id },
       data: updateData,
       include: {
@@ -170,7 +170,7 @@ export async function DELETE(
 
     const { id } = await params;
     // بررسی وجود کارمند
-    const employee = await prisma.employee.findUnique({
+    const employee = await prisma.employees.findUnique({
       where: { id },
       include: {
         _count: {
@@ -199,7 +199,7 @@ export async function DELETE(
     }
 
     // حذف کارمند
-    await prisma.employee.delete({
+    await prisma.employees.delete({
       where: { id },
     });
 

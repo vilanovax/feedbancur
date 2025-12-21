@@ -15,7 +15,7 @@ async function main() {
   console.log('⚠️  توجه: این فایل فقط آزمون‌ها را اضافه می‌کند و داده‌های موجود را پاک نمی‌کند\n');
 
   // بررسی وجود کاربر ادمین
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: { role: 'ADMIN' },
   });
 
@@ -46,7 +46,7 @@ async function main() {
     console.log('✅ همه آزمون‌ها با موفقیت ایجاد شدند!\n');
     
     // نمایش خلاصه
-    const assessments = await prisma.assessment.findMany({
+    const assessments = await prisma.assessments.findMany({
       select: {
         id: true,
         title: true,

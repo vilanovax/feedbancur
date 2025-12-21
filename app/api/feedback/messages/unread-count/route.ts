@@ -17,11 +17,11 @@ export async function GET(req: NextRequest) {
     }
 
     // شمارش پیام‌های خوانده نشده (پیام‌هایی که توسط ادمین ارسال نشده‌اند)
-    const unreadCount = await prisma.message.count({
+    const unreadCount = await prisma.messages.count({
       where: {
         isRead: false,
         senderId: { not: session.user.id },
-        feedback: {
+        feedbacks: {
           forwardedToId: { not: null },
         },
       },

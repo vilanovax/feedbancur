@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 const createPollSchema = z.object({
   title: z.string().min(1, 'عنوان الزامی است'),
@@ -59,17 +60,17 @@ export async function GET(req: NextRequest) {
       where.AND[2].OR.push({ departmentId: session.user.departmentId });
     }
 
-    const polls = await prisma.poll.findMany({
+    const polls = await prisma.polls.findMany({
       where,
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
             role: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
         },
         _count: {
           select: {
-            responses: true,
+            poll_responses: true,
           },
         },
       },
@@ -88,16 +89,24 @@ export async function GET(req: NextRequest) {
 
     // بررسی اینکه آیا کاربر رای داده است یا نه
     const pollsWithVoteStatus = await Promise.all(
-      polls.map(async (poll) => {
-        const userResponse = await prisma.pollResponse.findFirst({
+      polls.map(async (poll: any) => {
+        const userResponse = await prisma.poll_responses.findFirst({
           where: {
             pollId: poll.id,
             userId: session.user.id,
           },
         });
 
+        // تبدیل نام‌های Prisma به فرمت frontend
         return {
           ...poll,
+          createdBy: poll.users,
+          department: poll.departments,
+          _count: {
+            responses: poll._count.poll_responses,
+          },
+          users: undefined,
+          departments: undefined,
           hasVoted: !!userResponse,
         };
       })
@@ -135,15 +144,29 @@ export async function POST(req: NextRequest) {
 
     // بررسی دسترسی برای MANAGER
     if (session.user.role === 'MANAGER') {
-      const department = await prisma.department.findUnique({
-        where: { id: session.user.departmentId! },
+      if (!session.user.departmentId) {
+        return NextResponse.json(
+          { error: 'شما به هیچ بخشی اختصاص داده نشده‌اید' },
+          { status: 403 }
+        );
+      }
+
+      const department = await prisma.departments.findUnique({
+        where: { id: session.user.departmentId },
         select: {
           canCreatePoll: true,
           allowedPollDepartments: true,
         },
       });
 
-      if (!department?.canCreatePoll) {
+      if (!department) {
+        return NextResponse.json(
+          { error: 'بخش شما یافت نشد' },
+          { status: 404 }
+        );
+      }
+
+      if (!department.canCreatePoll) {
         return NextResponse.json(
           { error: 'بخش شما مجاز به ایجاد نظرسنجی نیست' },
           { status: 403 }
@@ -160,7 +183,8 @@ export async function POST(req: NextRequest) {
       }
 
       // بررسی محدودیت بخش
-      if (!department.allowedPollDepartments.includes(targetDepartmentId)) {
+      const allowedDepartments = department.allowedPollDepartments || [];
+      if (!allowedDepartments.includes(targetDepartmentId)) {
         return NextResponse.json(
           { error: 'شما مجاز به ایجاد نظرسنجی برای این بخش نیستید' },
           { status: 403 }
@@ -170,7 +194,7 @@ export async function POST(req: NextRequest) {
       // اگر چند بخش انتخاب شده، همه را بررسی کن
       if (validatedData.departmentIds && validatedData.departmentIds.length > 1) {
         const unauthorizedDepts = validatedData.departmentIds.filter(
-          deptId => !department.allowedPollDepartments.includes(deptId)
+          deptId => !allowedDepartments.includes(deptId)
         );
         if (unauthorizedDepts.length > 0) {
           return NextResponse.json(
@@ -213,8 +237,11 @@ export async function POST(req: NextRequest) {
     }
 
     // ایجاد نظرسنجی
-    const poll = await prisma.poll.create({
+    const pollId = randomUUID();
+    const poll = await prisma.polls.create({
       data: {
+        id: pollId,
+        updatedAt: new Date(),
         title: validatedData.title,
         description: validatedData.description,
         type: validatedData.type,
@@ -236,22 +263,26 @@ export async function POST(req: NextRequest) {
         maxRating: validatedData.maxRating,
         ...(validatedData.options && validatedData.options.length > 0
           ? {
-              options: {
-                create: validatedData.options,
+              poll_options: {
+                create: validatedData.options.map((opt) => ({
+                  id: randomUUID(),
+                  text: opt.text,
+                  order: opt.order,
+                })),
               },
             }
           : {}),
       },
       include: {
-        options: true,
-        createdBy: {
+        poll_options: true,
+        users: {
           select: {
             id: true,
             name: true,
             role: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -260,48 +291,64 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // تبدیل به فرمت frontend
+    const responsePoll = {
+      ...poll,
+      options: (poll as any).poll_options,
+      createdBy: (poll as any).users,
+      department: (poll as any).departments,
+      poll_options: undefined,
+      users: undefined,
+      departments: undefined,
+    };
+
     // ایجاد نوتیفیکیشن برای کاربران
     // فقط اگر نظرسنجی فعال باشد و زمان‌بندی نشده باشد یا زمان آن رسیده باشد
-    const shouldNotify = poll.isActive &&
-      (!poll.scheduledAt || new Date(poll.scheduledAt) <= new Date());
+    // موقتاً غیرفعال شده برای دیباگ
+    const shouldNotify = false; // poll.isActive && (!poll.scheduledAt || new Date(poll.scheduledAt) <= new Date());
 
     if (shouldNotify) {
-      // پیدا کردن کاربران هدف
-      const targetUserWhere: any = {
-        isActive: true,
-      };
+      try {
+        // پیدا کردن کاربران هدف
+        const targetUserWhere: any = {
+          isActive: true,
+        };
 
-      // اگر بخش خاصی انتخاب شده، فقط کاربران آن بخش
-      if (validatedData.departmentIds && validatedData.departmentIds.length > 0) {
-        targetUserWhere.departmentId = { in: validatedData.departmentIds };
-      } else if (finalDepartmentId) {
-        targetUserWhere.departmentId = finalDepartmentId;
-      }
-      // اگر هیچ بخشی انتخاب نشده، همه کاربران فعال
+        // اگر بخش خاصی انتخاب شده، فقط کاربران آن بخش
+        if (validatedData.departmentIds && validatedData.departmentIds.length > 0) {
+          targetUserWhere.departmentId = { in: validatedData.departmentIds };
+        } else if (finalDepartmentId) {
+          targetUserWhere.departmentId = finalDepartmentId;
+        }
+        // اگر هیچ بخشی انتخاب نشده، همه کاربران فعال
 
-      const targetUsers = await prisma.user.findMany({
-        where: targetUserWhere,
-        select: { id: true },
-      });
+        const targetUsers = await prisma.users.findMany({
+          where: targetUserWhere,
+          select: { id: true },
+        });
 
-      // ایجاد نوتیفیکیشن برای همه کاربران هدف
-      if (targetUsers.length > 0) {
-        const notificationPromises = targetUsers.map(user =>
-          prisma.notification.create({
-            data: {
+        // ایجاد نوتیفیکیشن برای همه کاربران هدف
+        if (targetUsers.length > 0) {
+          // استفاده از createMany برای کارایی بهتر
+          await prisma.notifications.createMany({
+            data: targetUsers.map(user => ({
+              id: randomUUID(),
               userId: user.id,
               title: 'نظرسنجی جدید',
               content: `نظرسنجی جدیدی با عنوان "${poll.title}" ایجاد شده است. لطفاً شرکت کنید.`,
               type: 'INFO',
               redirectUrl: `/mobile/polls/${poll.id}`,
-            },
-          })
-        );
-        await Promise.all(notificationPromises);
+              updatedAt: new Date(),
+            })),
+          });
+        }
+      } catch (notificationError: any) {
+        // در صورت خطا در ایجاد notifications، فقط لاگ می‌کنیم و ادامه می‌دهیم
+        console.error('Error creating notifications:', notificationError?.message || notificationError);
+        console.error('Notification error stack:', notificationError?.stack);
       }
     }
-
-    return NextResponse.json(poll, { status: 201 });
+    return NextResponse.json(responsePoll, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -311,8 +358,13 @@ export async function POST(req: NextRequest) {
     }
 
     console.error('Create poll error:', error);
+    // Log full error details for debugging
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
-      { error: 'خطا در ایجاد نظرسنجی' },
+      { error: 'خطا در ایجاد نظرسنجی', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

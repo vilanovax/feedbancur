@@ -43,6 +43,34 @@ export default function SettingsPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai">("general");
+
+  // State های بکاپ و ریستور انتخابی
+  const [backupSections, setBackupSections] = useState({
+    settings: false,
+    departments: false,
+    users: false,
+    userStatuses: false,
+    feedbacks: false,
+    polls: false,
+    assessments: false,
+    announcements: false,
+    tasks: false,
+    analytics: false,
+  });
+
+  const [restoreSections, setRestoreSections] = useState({
+    settings: false,
+    departments: false,
+    users: false,
+    userStatuses: false,
+    feedbacks: false,
+    polls: false,
+    assessments: false,
+    announcements: false,
+    tasks: false,
+    analytics: false,
+  });
+
   const [settings, setSettings] = useState({
     // تنظیمات عمومی
     siteName: "سیستم فیدبک کارمندان",
@@ -230,21 +258,32 @@ export default function SettingsPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setLogoUrl(data.url);
-        setLogoPreview(data.url);
-        setSettings({ ...settings, logoUrl: data.url });
-        localStorage.setItem("appLogo", data.url);
-        
-        // ذخیره در تنظیمات
-        await fetch("/api/settings", {
+        const newLogoUrl = data.url;
+
+        // ساخت تنظیمات جدید با لوگوی آپلود شده
+        const updatedSettings = { ...settings, logoUrl: newLogoUrl };
+
+        // ذخیره در تنظیمات دیتابیس
+        const saveRes = await fetch("/api/settings", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ...settings, logoUrl: data.url }),
+          body: JSON.stringify(updatedSettings),
         });
 
-        toast.success("لوگو با موفقیت تغییر کرد");
+        if (saveRes.ok) {
+          // فقط اگر ذخیره موفق بود، state را به‌روز کن
+          setLogoUrl(newLogoUrl);
+          setLogoPreview(newLogoUrl);
+          setSettings(updatedSettings);
+          localStorage.setItem("appLogo", newLogoUrl);
+          toast.success("لوگو با موفقیت ذخیره شد");
+        } else {
+          const saveError = await saveRes.json();
+          console.error("Error saving logo to settings:", saveError);
+          toast.error(saveError.message || saveError.error || "خطا در ذخیره لوگو در تنظیمات");
+        }
       } else {
         const error = await res.json();
         toast.error(error.error || "خطا در آپلود لوگو");
@@ -286,19 +325,20 @@ export default function SettingsPage() {
 
       if (res.ok) {
         setSaved(true);
+        toast.success("تنظیمات با موفقیت ذخیره شد");
         setTimeout(() => setSaved(false), 3000);
-        
+
         // Save status texts to localStorage (به صورت array)
         if (settings.statusTexts) {
-          const statusTextsArray = Array.isArray(settings.statusTexts) 
-            ? settings.statusTexts 
+          const statusTextsArray = Array.isArray(settings.statusTexts)
+            ? settings.statusTexts
             : Object.entries(settings.statusTexts).map(([key, label]) => ({ key, label }));
           const statusTextsJson = JSON.stringify(statusTextsArray);
           localStorage.setItem("statusTexts", statusTextsJson);
           // Dispatch custom event برای به‌روزرسانی در همان تب
           window.dispatchEvent(new CustomEvent("statusTextsUpdated", { detail: statusTextsJson }));
         }
-        
+
         // Save feedback types to localStorage
         if (settings.feedbackTypes) {
           const feedbackTypesJson = JSON.stringify(settings.feedbackTypes);
@@ -306,7 +346,7 @@ export default function SettingsPage() {
           // Dispatch custom event برای به‌روزرسانی در همان تب
           window.dispatchEvent(new CustomEvent("feedbackTypesUpdated", { detail: feedbackTypesJson }));
         }
-        
+
         // Save logo to localStorage
         if (settings.logoUrl) {
           localStorage.setItem("appLogo", settings.logoUrl);
@@ -469,13 +509,14 @@ export default function SettingsPage() {
                   </label>
                     <div className="flex items-center space-x-4 space-x-reverse">
                     <div className="relative w-24 h-24 border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                      {logoPreview || (logoUrl && logoUrl !== "/logo.png" && logoUrl.startsWith("/")) ? (
+                      {logoPreview || (logoUrl && logoUrl !== "/logo.png") ? (
                         <Image
                           src={logoPreview || logoUrl}
                           alt="لوگو"
                           fill
                           sizes="96px"
                           className="object-contain p-2"
+                          unoptimized={logoUrl?.startsWith("http")}
                           onError={() => {
                             setLogoUrl("");
                             setLogoPreview(null);
@@ -1791,30 +1832,99 @@ export default function SettingsPage() {
                         دانلود نسخه پشتیبان
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        یک نسخه پشتیبان کامل از دیتابیس دریافت کنید. این فایل شامل تمام جداول، داده‌ها و ساختار دیتابیس است.
+                        بخش‌های مورد نظر برای پشتیبان‌گیری را انتخاب کنید یا بکاپ کامل بگیرید.
                       </p>
+
+                      {/* انتخاب بخش‌ها برای بکاپ */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-blue-100 dark:border-blue-900">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">انتخاب بخش‌ها:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allSelected = backupSections.settings && backupSections.departments &&
+                                backupSections.users && backupSections.feedbacks && backupSections.polls &&
+                                backupSections.assessments && backupSections.announcements && backupSections.tasks;
+                              setBackupSections({
+                                settings: !allSelected,
+                                departments: !allSelected,
+                                users: !allSelected,
+                                userStatuses: !allSelected,
+                                feedbacks: !allSelected,
+                                polls: !allSelected,
+                                assessments: !allSelected,
+                                announcements: !allSelected,
+                                tasks: !allSelected,
+                                analytics: !allSelected,
+                              });
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                          >
+                            انتخاب همه / هیچکدام
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                          {[
+                            { key: 'settings', label: 'تنظیمات', icon: '⚙️' },
+                            { key: 'departments', label: 'بخش‌ها', icon: '🏢' },
+                            { key: 'users', label: 'کاربران', icon: '👥' },
+                            { key: 'userStatuses', label: 'وضعیت کاربران', icon: '📊' },
+                            { key: 'feedbacks', label: 'فیدبک‌ها', icon: '💬' },
+                            { key: 'polls', label: 'نظرسنجی‌ها', icon: '📊' },
+                            { key: 'assessments', label: 'آزمون‌ها', icon: '📝' },
+                            { key: 'announcements', label: 'اعلانات', icon: '📢' },
+                            { key: 'tasks', label: 'وظایف', icon: '✅' },
+                            { key: 'analytics', label: 'تحلیل‌ها', icon: '📈' },
+                          ].map((section) => (
+                            <label
+                              key={section.key}
+                              className={`flex items-center space-x-2 space-x-reverse p-2 rounded-lg cursor-pointer transition ${
+                                backupSections[section.key as keyof typeof backupSections]
+                                  ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500'
+                                  : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={backupSections[section.key as keyof typeof backupSections]}
+                                onChange={(e) => setBackupSections(prev => ({ ...prev, [section.key]: e.target.checked }))}
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-lg">{section.icon}</span>
+                              <span className="text-xs text-gray-700 dark:text-gray-300 ml-[5px]">{section.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
                       <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
-                        💡 فایل به صورت JSON دانلود می‌شود (سازگار با تمام سیستم‌ها)
+                        💡 اگر هیچ بخشی انتخاب نشود، بکاپ کامل گرفته می‌شود
                       </p>
                       <button
                         onClick={async () => {
                           if (!confirm("آیا از دانلود نسخه پشتیبان اطمینان دارید؟")) return;
 
                           try {
-                            const res = await fetch("/api/backup");
+                            // ساخت query string برای بخش‌های انتخاب شده
+                            const hasSelection = Object.values(backupSections).some(v => v);
+                            const url = hasSelection
+                              ? `/api/backup?sections=${encodeURIComponent(JSON.stringify(backupSections))}`
+                              : "/api/backup";
+
+                            const res = await fetch(url);
                             if (res.ok) {
                               const blob = await res.blob();
-                              const url = window.URL.createObjectURL(blob);
+                              const blobUrl = window.URL.createObjectURL(blob);
                               const a = document.createElement("a");
-                              a.href = url;
+                              a.href = blobUrl;
                               const contentDisposition = res.headers.get("Content-Disposition");
                               const filename = contentDisposition
                                 ? contentDisposition.split("filename=")[1].replace(/"/g, "")
-                                : `backup-${new Date().toISOString().split("T")[0]}.sql`;
+                                : `backup-${new Date().toISOString().split("T")[0]}.json`;
                               a.download = filename;
                               document.body.appendChild(a);
                               a.click();
-                              window.URL.revokeObjectURL(url);
+                              window.URL.revokeObjectURL(blobUrl);
                               document.body.removeChild(a);
                               toast.success("نسخه پشتیبان با موفقیت دانلود شد");
                             } else {
@@ -1839,10 +1949,73 @@ export default function SettingsPage() {
                         بازیابی از نسخه پشتیبان
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        دیتابیس را از یک فایل پشتیبان بازیابی کنید. این عملیات تمام داده‌های فعلی را حذف می‌کند.
+                        دیتابیس را از یک فایل پشتیبان بازیابی کنید. می‌توانید بخش‌های مورد نظر را انتخاب کنید.
                       </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-4">
-                        💡 هم فایل‌های JSON و هم SQL پشتیبانی می‌شوند
+
+                      {/* انتخاب بخش‌ها برای ریستور */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-4 border border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">بخش‌های مورد نظر برای بازیابی:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allSelected = restoreSections.settings && restoreSections.departments &&
+                                restoreSections.users && restoreSections.feedbacks && restoreSections.polls &&
+                                restoreSections.assessments && restoreSections.announcements && restoreSections.tasks;
+                              setRestoreSections({
+                                settings: !allSelected,
+                                departments: !allSelected,
+                                users: !allSelected,
+                                userStatuses: !allSelected,
+                                feedbacks: !allSelected,
+                                polls: !allSelected,
+                                assessments: !allSelected,
+                                announcements: !allSelected,
+                                tasks: !allSelected,
+                                analytics: !allSelected,
+                              });
+                            }}
+                            className="text-xs text-gray-600 hover:text-gray-800 dark:text-gray-400"
+                          >
+                            انتخاب همه / هیچکدام
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                          {[
+                            { key: 'settings', label: 'تنظیمات', icon: '⚙️' },
+                            { key: 'departments', label: 'بخش‌ها', icon: '🏢' },
+                            { key: 'users', label: 'کاربران', icon: '👥' },
+                            { key: 'userStatuses', label: 'وضعیت کاربران', icon: '📊' },
+                            { key: 'feedbacks', label: 'فیدبک‌ها', icon: '💬' },
+                            { key: 'polls', label: 'نظرسنجی‌ها', icon: '📊' },
+                            { key: 'assessments', label: 'آزمون‌ها', icon: '📝' },
+                            { key: 'announcements', label: 'اعلانات', icon: '📢' },
+                            { key: 'tasks', label: 'وظایف', icon: '✅' },
+                            { key: 'analytics', label: 'تحلیل‌ها', icon: '📈' },
+                          ].map((section) => (
+                            <label
+                              key={section.key}
+                              className={`flex items-center space-x-2 space-x-reverse p-2 rounded-lg cursor-pointer transition ${
+                                restoreSections[section.key as keyof typeof restoreSections]
+                                  ? 'bg-orange-100 dark:bg-orange-900/50 border-2 border-orange-500'
+                                  : 'bg-gray-50 dark:bg-gray-700 border-2 border-transparent hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={restoreSections[section.key as keyof typeof restoreSections]}
+                                onChange={(e) => setRestoreSections(prev => ({ ...prev, [section.key]: e.target.checked }))}
+                                className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                              />
+                              <span className="text-lg">{section.icon}</span>
+                              <span className="text-xs text-gray-700 dark:text-gray-300 ml-[5px]">{section.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-orange-600 dark:text-orange-400 mb-4">
+                        ⚠️ اگر هیچ بخشی انتخاب نشود، تمام داده‌ها بازیابی می‌شوند. فقط فایل‌های JSON از بازیابی انتخابی پشتیبانی می‌کنند.
                       </p>
                       <div className="space-y-4">
                         <input
@@ -1859,15 +2032,23 @@ export default function SettingsPage() {
                               return;
                             }
 
+                            // بررسی اینکه آیا فایل SQL است و بخش انتخاب شده
+                            const hasSelection = Object.values(restoreSections).some(v => v);
+                            if (file.name.endsWith(".sql") && hasSelection) {
+                              toast.error("بازیابی انتخابی فقط برای فایل‌های JSON امکان‌پذیر است");
+                              e.target.value = "";
+                              return;
+                            }
+
                             if (!confirm(
-                              "⚠️ هشدار: این عملیات تمام داده‌های فعلی را حذف می‌کند و جایگزین داده‌های فایل پشتیبان می‌کند.\\n\\nآیا مطمئن هستید؟"
+                              "⚠️ هشدار: این عملیات داده‌های بخش‌های انتخاب شده را حذف و جایگزین می‌کند.\n\nآیا مطمئن هستید؟"
                             )) {
                               e.target.value = "";
                               return;
                             }
 
                             if (!confirm(
-                              "آیا از دیتابیس فعلی نسخه پشتیبان گرفته‌اید؟\\n\\nبدون نسخه پشتیبان، داده‌های فعلی برای همیشه از بین می‌روند."
+                              "آیا از دیتابیس فعلی نسخه پشتیبان گرفته‌اید؟\n\nبدون نسخه پشتیبان، داده‌های فعلی برای همیشه از بین می‌روند."
                             )) {
                               e.target.value = "";
                               return;
@@ -1877,6 +2058,11 @@ export default function SettingsPage() {
                               const formData = new FormData();
                               formData.append("backup", file);
 
+                              // اضافه کردن بخش‌های انتخاب شده
+                              if (hasSelection) {
+                                formData.append("sections", JSON.stringify(restoreSections));
+                              }
+
                               const res = await fetch("/api/backup", {
                                 method: "POST",
                                 body: formData,
@@ -1885,10 +2071,12 @@ export default function SettingsPage() {
                               const data = await res.json();
 
                               if (res.ok) {
-                                toast.success("دیتابیس با موفقیت بازیابی شد. لطفاً صفحه را رفرش کنید.");
+                                const restoredCount = data.restored?.length || 0;
+                                const skippedCount = data.skipped?.length || 0;
+                                toast.success(`بازیابی موفق! ${restoredCount} بخش بازیابی شد${skippedCount > 0 ? ` و ${skippedCount} بخش رد شد` : ''}`);
                                 if (typeof window !== "undefined") {
-                  window.location.reload();
-                }
+                                  setTimeout(() => window.location.reload(), 2000);
+                                }
                               } else {
                                 toast.error(data.error || "خطا در بازیابی دیتابیس");
                               }
@@ -1902,7 +2090,7 @@ export default function SettingsPage() {
                         />
                         <label
                           htmlFor="restore-file"
-                          className="flex items-center space-x-2 space-x-reverse bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition cursor-pointer inline-flex"
+                          className="flex items-center space-x-2 space-x-reverse bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition cursor-pointer inline-flex"
                         >
                           <Upload className="ml-2" size={20} />
                           <span>انتخاب فایل و بازیابی</span>

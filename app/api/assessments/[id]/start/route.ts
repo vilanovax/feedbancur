@@ -19,13 +19,13 @@ export async function POST(
     // بررسی دسترسی کاربر به آزمون
     let assessment;
     try {
-      assessment = await prisma.assessment.findUnique({
+      assessment = await prisma.assessments.findUnique({
         where: { id },
         include: {
-          questions: {
+          assessment_questions: {
             orderBy: { order: "asc" },
           },
-          assignments: {
+          assessment_assignments: {
             where: {
               departmentId: session.user.departmentId || undefined,
             },
@@ -80,7 +80,7 @@ export async function POST(
     }
 
     // بررسی وجود پیشرفت قبلی
-    let existingProgress = await prisma.assessmentProgress.findFirst({
+    let existingProgress = await prisma.assessment_progress.findFirst({
       where: {
         assessmentId: id,
         userId: session.user.id,
@@ -88,7 +88,7 @@ export async function POST(
     });
 
     // بررسی نتیجه قبلی
-    const existingResult = await prisma.assessmentResult.findFirst({
+    const existingResult = await prisma.assessment_results.findFirst({
       where: {
         assessmentId: id,
         userId: session.user.id,
@@ -106,7 +106,7 @@ export async function POST(
     // اگر پیشرفت جدیدی شروع می‌شود، progress قبلی را پاک کنیم
     if (existingResult && assessment.allowRetake && existingProgress) {
       try {
-        await prisma.assessmentProgress.deleteMany({
+        await prisma.assessment_progress.deleteMany({
           where: {
             assessmentId: id,
             userId: session.user.id,
@@ -124,7 +124,7 @@ export async function POST(
     if (!existingProgress || (existingResult && assessment.allowRetake)) {
       // حذف همه progress های قبلی برای این کاربر و آزمون
       try {
-        await prisma.assessmentProgress.deleteMany({
+        await prisma.assessment_progress.deleteMany({
           where: {
             assessmentId: id,
             userId: session.user.id,
@@ -137,7 +137,7 @@ export async function POST(
       
       // ایجاد progress جدید
       try {
-        progress = await prisma.assessmentProgress.create({
+        progress = await prisma.assessment_progress.create({
           data: {
             assessmentId: id,
             userId: session.user.id,
@@ -151,7 +151,7 @@ export async function POST(
         // اگر create با خطا مواجه شد (مثلاً unique constraint)، سعی می‌کنیم update کنیم
         if (createError.code === 'P2002') {
           // Unique constraint violation - try to update existing
-          const existing = await prisma.assessmentProgress.findFirst({
+          const existing = await prisma.assessment_progress.findFirst({
             where: {
               assessmentId: id,
               userId: session.user.id,
@@ -159,7 +159,7 @@ export async function POST(
           });
           
           if (existing) {
-            progress = await prisma.assessmentProgress.update({
+            progress = await prisma.assessment_progress.update({
               where: { id: existing.id },
               data: {
                 startedAt: new Date(),
@@ -179,7 +179,7 @@ export async function POST(
     }
 
     // Process questions and ensure options are properly formatted
-    const processedQuestions = assessment.questions.map((q) => {
+    const processedQuestions = (assessment as any).assessment_questions.map((q: any) => {
       try {
         // Prisma returns Json fields as parsed objects, but we need to ensure it's serializable
         let options: any = q.options;

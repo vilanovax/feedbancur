@@ -62,6 +62,20 @@ export async function GET() {
     const settings = {
       logoUrl: dbSettings?.logoUrl || "/logo.png",
       siteName: dbSettings?.siteName || "سیستم فیدبک کارمندان",
+      siteDescription: dbSettings?.siteDescription || "سیستم مدیریت و اندازه‌گیری فیدبک کارمندان",
+      language: dbSettings?.language || "fa",
+      timezone: dbSettings?.timezone || "Asia/Tehran",
+      emailNotifications: dbSettings?.emailNotifications ?? true,
+      smsNotifications: dbSettings?.smsNotifications ?? false,
+      pushNotifications: dbSettings?.pushNotifications ?? true,
+      requirePasswordChange: dbSettings?.requirePasswordChange ?? false,
+      sessionTimeout: dbSettings?.sessionTimeout ?? 30,
+      twoFactorAuth: dbSettings?.twoFactorAuth ?? false,
+      allowAnonymous: dbSettings?.allowAnonymous ?? true,
+      autoArchiveDays: dbSettings?.autoArchiveDays ?? 90,
+      maxFeedbackLength: dbSettings?.maxFeedbackLength ?? 5000,
+      itemsPerPage: dbSettings?.itemsPerPage ?? 20,
+      theme: dbSettings?.theme || "light",
       statusTexts: dbSettings?.statusTexts 
         ? (Array.isArray(dbSettings.statusTexts)
             ? dbSettings.statusTexts

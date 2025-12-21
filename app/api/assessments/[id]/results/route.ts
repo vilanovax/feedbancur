@@ -24,7 +24,7 @@ export async function GET(
 
     // For managers, check if they have permission to view results
     if (isManager && !isAdmin) {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: session.user.id },
         select: { departmentId: true },
       });
@@ -33,7 +33,7 @@ export async function GET(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 
-      const assignment = await prisma.assessmentAssignment.findUnique({
+      const assignment = await prisma.assessment_assignments.findUnique({
         where: {
           assessmentId_departmentId: {
             assessmentId: params.id,

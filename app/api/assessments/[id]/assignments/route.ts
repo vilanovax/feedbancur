@@ -19,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const assignments = await prisma.assessmentAssignment.findMany({
+    const assignments = await prisma.assessment_assignments.findMany({
       where: { assessmentId: id },
       include: {
         department: {

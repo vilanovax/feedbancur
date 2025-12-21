@@ -13,6 +13,9 @@ export function useStatusTexts() {
 
   // بارگذاری اولیه از localStorage و سپس از API برای اطمینان از به‌روز بودن
   useEffect(() => {
+    // فقط در client-side اجرا شود
+    if (typeof window === "undefined") return;
+    
     // ابتدا از localStorage بخوان (برای نمایش سریع)
     const texts = loadStatusTextsFromStorage();
     const order = loadStatusTextsOrderFromStorage();
@@ -51,14 +54,18 @@ export function useStatusTexts() {
               if (newOrder) {
                 setStatusTextsOrder(newOrder);
                 // ذخیره به صورت array برای حفظ ترتیب
-                localStorage.setItem("statusTexts", JSON.stringify(newOrder));
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("statusTexts", JSON.stringify(newOrder));
+                }
               } else {
                 saveStatusTextsToStorage(newTexts);
               }
               // Dispatch event برای به‌روزرسانی در سایر کامپوننت‌ها
-              window.dispatchEvent(new CustomEvent("statusTextsUpdated", { 
-                detail: JSON.stringify(newOrder || newTexts) 
-              }));
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("statusTextsUpdated", { 
+                  detail: JSON.stringify(newOrder || newTexts) 
+                }));
+              }
             }
           }
         })
@@ -70,6 +77,9 @@ export function useStatusTexts() {
 
   // گوش دادن به تغییرات localStorage (برای تب‌های دیگر و همان تب)
   useEffect(() => {
+    // فقط در client-side اجرا شود
+    if (typeof window === "undefined") return;
+    
     const handleStorageChange = (e: StorageEvent | CustomEvent) => {
       let newValue: string | null = null;
       
@@ -122,6 +132,11 @@ export function useStatusTexts() {
   // همیشه از localStorage بخوان تا تغییرات تنظیمات را منعکس کند
   // این باعث می‌شود که حتی اگر state به‌روز نشده باشد، از آخرین مقادیر استفاده شود
   const getStatusTextLocal = useCallback((status: string) => {
+    // فقط در client-side اجرا شود
+    if (typeof window === "undefined") {
+      return getStatusText(status, statusTexts || undefined);
+    }
+    
     // ابتدا از localStorage بخوان (برای اطمینان از آخرین مقادیر)
     const texts = loadStatusTextsFromStorage();
     if (texts) {
@@ -137,6 +152,9 @@ export function useStatusTexts() {
 
   // تابع برای به‌روزرسانی دستی از API
   const refreshStatusTexts = useCallback(async () => {
+    // فقط در client-side اجرا شود
+    if (typeof window === "undefined") return;
+    
     try {
       const res = await fetch("/api/settings");
       if (res.ok) {
@@ -156,14 +174,18 @@ export function useStatusTexts() {
           setStatusTexts(newTexts);
           if (newOrder) {
             setStatusTextsOrder(newOrder);
-            localStorage.setItem("statusTexts", JSON.stringify(newOrder));
+            if (typeof window !== "undefined") {
+              localStorage.setItem("statusTexts", JSON.stringify(newOrder));
+            }
           } else {
             saveStatusTextsToStorage(newTexts);
           }
           // Dispatch event برای به‌روزرسانی در سایر کامپوننت‌ها
-          window.dispatchEvent(new CustomEvent("statusTextsUpdated", { 
-            detail: JSON.stringify(newOrder || newTexts) 
-          }));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("statusTextsUpdated", { 
+              detail: JSON.stringify(newOrder || newTexts) 
+            }));
+          }
         }
       }
     } catch (error) {
@@ -173,6 +195,18 @@ export function useStatusTexts() {
 
   // تابع برای دریافت ترتیب statusTexts
   const getStatusTextsOrder = useCallback(() => {
+    // فقط در client-side اجرا شود
+    if (typeof window === "undefined") {
+      // Fallback به ترتیب پیش‌فرض
+      return [
+        { key: "PENDING", label: "در انتظار" },
+        { key: "REVIEWED", label: "بررسی شده" },
+        { key: "ARCHIVED", label: "آرشیو شده" },
+        { key: "DEFERRED", label: "رسیدگی آینده" },
+        { key: "COMPLETED", label: "انجام شد" },
+      ];
+    }
+    
     const order = loadStatusTextsOrderFromStorage();
     if (order) {
       return order;

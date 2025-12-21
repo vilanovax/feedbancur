@@ -30,25 +30,25 @@ export async function GET() {
       feedbacksByDepartment,
       completedFeedbacks,
     ] = await Promise.all([
-      prisma.feedback.count(),
-      prisma.feedback.findMany({
+      prisma.feedbacks.count(),
+      prisma.feedbacks.findMany({
         select: { rating: true, departmentId: true },
       }),
-      prisma.department.findMany({
+      prisma.departments.findMany({
         include: {
           _count: {
             select: { feedbacks: true },
           },
         },
       }),
-      prisma.department.findMany({
+      prisma.departments.findMany({
         include: {
           _count: {
             select: { feedbacks: true },
           },
         },
       }),
-      prisma.feedback.findMany({
+      prisma.feedbacks.findMany({
         where: {
           status: "COMPLETED",
           completedAt: { not: null },

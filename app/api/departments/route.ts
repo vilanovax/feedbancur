@@ -22,7 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const departments = await prisma.department.findMany({
+    const departments = await prisma.departments.findMany({
       include: {
         _count: {
           select: { users: true },
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const department = await prisma.department.create({
+    const department = await prisma.departments.create({
       data: {
         name: validatedData.name,
         description: validatedData.description,

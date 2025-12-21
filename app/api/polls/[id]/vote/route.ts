@@ -27,7 +27,7 @@ export async function POST(
     const { id } = await params;
 
     // دریافت نظرسنجی
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
       include: {
         options: true,
@@ -268,7 +268,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const poll = await prisma.poll.findUnique({
+    const poll = await prisma.polls.findUnique({
       where: { id },
     });
 

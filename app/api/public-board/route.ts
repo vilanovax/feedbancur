@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       where.departmentId = departmentId;
     }
 
-    const tasks = await prisma.task.findMany({
+    const tasks = await prisma.tasks.findMany({
       where,
       select: {
         id: true,
@@ -34,22 +34,22 @@ export async function GET(req: NextRequest) {
         priority: true,
         completedAt: true,
         createdAt: true,
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
           },
         },
-        assignedTo: {
+        task_assignments: {
           select: {
-            employee: {
+            employees: {
               select: {
                 id: true,
                 name: true,
                 position: true,
               },
             },
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        feedback: {
+        feedbacks: {
           select: {
             id: true,
             title: true,

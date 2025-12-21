@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const data = changePasswordSchema.parse(body);
 
     // دریافت کاربر از دیتابیس
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
     });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const hashedNewPassword = await bcrypt.hash(data.newPassword, 10);
 
     // به‌روزرسانی رمز عبور و حذف فلگ mustChangePassword
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: session.user.id },
       data: {
         password: hashedNewPassword,

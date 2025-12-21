@@ -185,15 +185,15 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800">سیستم فیدبک</h2>
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-br from-blue-600 to-blue-700">
+        <h2 className="text-2xl font-bold text-white mb-1">سیستم فیدبک</h2>
         {session?.user && (
-          <div className="mt-3">
-            <p className="text-sm font-medium text-gray-700">
+          <div className="mt-4">
+            <p className="text-sm font-semibold text-white">
               {session.user.name}
             </p>
-            <p className="text-xs text-gray-500">{session.user.mobile}</p>
-            <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+            <p className="text-xs text-blue-100 mt-1">{session.user.mobile}</p>
+            <span className="inline-block mt-3 px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-medium rounded-full border border-white/30">
               {session.user.role === "ADMIN"
                 ? "مدیرعامل"
                 : session.user.role === "MANAGER"
@@ -205,8 +205,8 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
+      <nav className="flex-1 p-4 overflow-y-auto bg-white">
+        <ul className="space-y-1">
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -226,10 +226,10 @@ export default function Sidebar() {
                       <Link
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                        className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                           isActive(item.href) && !hasActiveSubItem
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
+                            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
+                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                         }`}
                       >
                         <Icon className="w-5 h-5" />
@@ -237,10 +237,10 @@ export default function Sidebar() {
                       </Link>
                       <button
                         onClick={() => toggleMenu(item.name)}
-                        className={`px-2 py-3 rounded-lg transition ${
+                        className={`px-2 py-3 rounded-lg transition-all duration-200 ${
                           isActive(item.href) || hasActiveSubItem
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
+                            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                            : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                         }`}
                       >
                         {isExpanded ? (
@@ -265,10 +265,10 @@ export default function Sidebar() {
                                 <Link
                                   href={subItem.href}
                                   onClick={() => setIsOpen(false)}
-                                  className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
+                                  className={`flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
                                     isActive(subItem.href)
-                                      ? "bg-blue-500 text-white"
-                                      : "text-gray-600 hover:bg-gray-100"
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm"
+                                      : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
                                   }`}
                                 >
                                   <SubIcon className="w-4 h-4" />
@@ -284,10 +284,10 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                       isActive(item.href)
-                        ? "bg-blue-600 text-white"
-                        : "text-gray-700 hover:bg-gray-100"
+                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -301,13 +301,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout Button */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 bg-gray-50/50">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition"
+          className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 hover:shadow-sm font-medium"
         >
           <LogOut className="w-5 h-5" />
-          <span className="font-medium">خروج</span>
+          <span>خروج</span>
         </button>
       </div>
     </>
@@ -332,7 +332,7 @@ export default function Sidebar() {
       )}
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col fixed right-0 top-0 h-screen w-64 bg-white border-l border-gray-200 shadow-lg z-30">
+      <aside className="hidden lg:flex lg:flex-col fixed right-0 top-0 h-screen w-64 bg-white border-l border-gray-200 shadow-xl z-30">
         <SidebarContent />
       </aside>
 

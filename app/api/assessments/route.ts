@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // For MANAGER, only show assessments assigned to their department
     if (session.user.role === "MANAGER") {
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: session.user.id },
         select: { departmentId: true },
       });
@@ -31,15 +31,15 @@ export async function GET(request: NextRequest) {
       }
 
       // Get all assignments for manager's department
-      const assignments = await prisma.assessmentAssignment.findMany({
+      const assignments = await prisma.assessment_assignments.findMany({
         where: {
           departmentId: user.departmentId,
           allowManagerView: true, // Only show if manager is allowed to view
         },
         include: {
-          assessment: {
+          assessments: {
             include: {
-              createdBy: {
+              users: {
                 select: {
                   id: true,
                   name: true,
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
               },
               _count: {
                 select: {
-                  questions: true,
-                  assignments: true,
-                  results: true,
+                  assessment_questions: true,
+                  assessment_assignments: true,
+                  assessment_results: true,
                 },
               },
             },
@@ -59,19 +59,33 @@ export async function GET(request: NextRequest) {
       });
 
       // Extract assessments and apply filters
-      let assessments = assignments
-        .map((a) => a.assessment)
-        .filter((a) => a !== null);
+      let assessmentsList = assignments
+        .map((a: any) => {
+          const assessment = a.assessments;
+          if (!assessment) return null;
+          // Transform to frontend format
+          return {
+            ...assessment,
+            createdBy: assessment.users,
+            _count: {
+              questions: assessment._count?.assessment_questions || 0,
+              assignments: assessment._count?.assessment_assignments || 0,
+              results: assessment._count?.assessment_results || 0,
+            },
+            users: undefined,
+          };
+        })
+        .filter((a: any) => a !== null);
 
       if (type) {
-        assessments = assessments.filter((a) => a.type === type);
+        assessmentsList = assessmentsList.filter((a: any) => a.type === type);
       }
       if (isActive !== null) {
         const activeFilter = isActive === "true";
-        assessments = assessments.filter((a) => a.isActive === activeFilter);
+        assessmentsList = assessmentsList.filter((a: any) => a.isActive === activeFilter);
       }
 
-      return NextResponse.json(assessments);
+      return NextResponse.json(assessmentsList);
     }
 
     // For ADMIN, show all assessments
@@ -83,10 +97,10 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === "true";
     }
 
-    const assessments = await prisma.assessment.findMany({
+    const assessments = await prisma.assessments.findMany({
       where,
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -95,9 +109,9 @@ export async function GET(request: NextRequest) {
         },
         _count: {
           select: {
-            questions: true,
-            assignments: true,
-            results: true,
+            assessment_questions: true,
+            assessment_assignments: true,
+            assessment_results: true,
           },
         },
       },
@@ -106,7 +120,19 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(assessments);
+    // Transform to frontend format
+    const responseAssessments = assessments.map((assessment: any) => ({
+      ...assessment,
+      createdBy: assessment.users,
+      _count: {
+        questions: assessment._count?.assessment_questions || 0,
+        assignments: assessment._count?.assessment_assignments || 0,
+        results: assessment._count?.assessment_results || 0,
+      },
+      users: undefined,
+    }));
+
+    return NextResponse.json(responseAssessments);
   } catch (error: any) {
     console.error("Error fetching assessments:", error);
     return NextResponse.json(
@@ -149,7 +175,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const assessment = await prisma.assessment.create({
+    const assessment = await prisma.assessments.create({
       data: {
         title,
         description,
@@ -163,7 +189,7 @@ export async function POST(request: NextRequest) {
         createdById: session.user.id,
       },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -172,15 +198,27 @@ export async function POST(request: NextRequest) {
         },
         _count: {
           select: {
-            questions: true,
-            assignments: true,
-            results: true,
+            assessment_questions: true,
+            assessment_assignments: true,
+            assessment_results: true,
           },
         },
       },
     });
 
-    return NextResponse.json(assessment, { status: 201 });
+    // Transform to frontend format
+    const responseAssessment = {
+      ...assessment,
+      createdBy: (assessment as any).users,
+      _count: {
+        questions: (assessment as any)._count?.assessment_questions || 0,
+        assignments: (assessment as any)._count?.assessment_assignments || 0,
+        results: (assessment as any)._count?.assessment_results || 0,
+      },
+      users: undefined,
+    };
+
+    return NextResponse.json(responseAssessment, { status: 201 });
   } catch (error) {
     console.error("Error creating assessment:", error);
     return NextResponse.json(

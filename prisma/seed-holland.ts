@@ -7,7 +7,7 @@ async function seedHolland(prismaInstance?: PrismaClient) {
   console.log("🌱 Seeding Holland Assessment...");
 
   // پیدا کردن یا ایجاد کاربر ادمین برای creator
-  const adminUser = await prisma.user.findFirst({
+  const adminUser = await prisma.users.findFirst({
     where: { role: "ADMIN" },
   });
 
@@ -17,7 +17,7 @@ async function seedHolland(prismaInstance?: PrismaClient) {
   }
 
   // ایجاد آزمون هالند
-  const hollandAssessment = await prisma.assessment.upsert({
+  const hollandAssessment = await prisma.assessments.upsert({
     where: { id: "holland-standard-assessment" },
     update: {},
     create: {
@@ -33,6 +33,7 @@ async function seedHolland(prismaInstance?: PrismaClient) {
       timeLimit: 25, // 25 دقیقه
       showResults: true,
       createdById: adminUser.id,
+      updatedAt: new Date(),
     },
   });
 
@@ -1297,15 +1298,16 @@ async function seedHolland(prismaInstance?: PrismaClient) {
   ];
 
   // حذف سوالات قبلی
-  await prisma.assessmentQuestion.deleteMany({
+  await prisma.assessment_questions.deleteMany({
     where: { assessmentId: hollandAssessment.id },
   });
 
   // ایجاد سوالات
   console.log(`Creating ${questions.length} questions...`);
   for (const question of questions) {
-    await prisma.assessmentQuestion.create({
+    await prisma.assessment_questions.create({
       data: {
+        id: `holland-q-${question.order}`,
         assessmentId: hollandAssessment.id,
         questionText: question.questionText,
         questionType: "MULTIPLE_CHOICE",

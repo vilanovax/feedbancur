@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     }
 
     // دریافت فیدبک‌هایی که حداقل یک پیام دارند
-    const feedbacksWithMessages = await prisma.feedback.findMany({
+    const feedbacksWithMessages = await prisma.feedbacks.findMany({
       where: {
         forwardedToId: { not: null },
         messages: {
@@ -25,12 +25,12 @@ export async function GET(req: NextRequest) {
         },
       },
       include: {
-        department: true,
-        user: true,
-        forwardedTo: true,
+        departments: true,
+        users_feedbacks_userIdTousers: true,
+        users_feedbacks_forwardedToIdTousers: true,
         messages: {
           include: {
-            sender: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -52,10 +52,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // محاسبه تعداد پیام‌های خوانده نشده برای هر فیدبک
+    // محاسبه تعداد پیام‌های خوانده نشده برای هر فیدبک و تبدیل به فرمت frontend
     const feedbacksWithUnreadCount = await Promise.all(
-      feedbacksWithMessages.map(async (feedback) => {
-        const unreadCount = await prisma.message.count({
+      feedbacksWithMessages.map(async (feedback: any) => {
+        const unreadCount = await prisma.messages.count({
           where: {
             feedbackId: feedback.id,
             isRead: false,
@@ -63,8 +63,22 @@ export async function GET(req: NextRequest) {
           },
         });
 
+        // تبدیل پیام‌ها به فرمت frontend (users → sender)
+        const messagesWithSender = feedback.messages.map((msg: any) => ({
+          ...msg,
+          sender: msg.users,
+          users: undefined,
+        }));
+
         return {
           ...feedback,
+          user: feedback.users_feedbacks_userIdTousers,
+          department: feedback.departments,
+          forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
+          messages: messagesWithSender,
+          users_feedbacks_userIdTousers: undefined,
+          departments: undefined,
+          users_feedbacks_forwardedToIdTousers: undefined,
           unreadCount,
         };
       })
