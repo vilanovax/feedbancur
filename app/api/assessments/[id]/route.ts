@@ -73,7 +73,7 @@ export async function GET(
     const assessment = await prisma.assessments.findUnique({
       where: { id },
       include: {
-        createdBy: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -87,7 +87,7 @@ export async function GET(
         },
         assessment_assignments: {
           include: {
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,
@@ -97,8 +97,8 @@ export async function GET(
         },
         _count: {
           select: {
-            results: true,
-            progress: true,
+            assessment_results: true,
+            assessment_progress: true,
           },
         },
       },
@@ -111,7 +111,21 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(assessment);
+    // Transform to frontend format
+    const formattedAssessment = {
+      ...assessment,
+      createdBy: assessment.users,
+      assessment_assignments: assessment.assessment_assignments.map(a => ({
+        ...a,
+        department: (a as any).departments,
+      })),
+      _count: {
+        results: assessment._count.assessment_results,
+        progress: assessment._count.assessment_progress,
+      },
+    };
+
+    return NextResponse.json(formattedAssessment);
   } catch (error: any) {
     console.error("Error fetching assessment:", error);
     console.error("Error details:", {
@@ -245,7 +259,7 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            results: true,
+            assessment_results: true,
           },
         },
       },
@@ -259,7 +273,7 @@ export async function DELETE(
     }
 
     // Check if there are any results
-    if (existingAssessment._count.results > 0) {
+    if (existingAssessment._count.assessment_results > 0) {
       return NextResponse.json(
         {
           error:
