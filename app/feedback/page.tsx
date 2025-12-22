@@ -299,6 +299,16 @@ function FeedbacksPageContent() {
       if (res.ok) {
         const data = await res.json();
         
+        // Debug: بررسی وجود manager در department
+        if (data.length > 0) {
+          console.log("Total feedbacks:", data.length);
+          data.forEach((fb: any, index: number) => {
+            if (fb.department) {
+              console.log(`Feedback ${index}: department=${fb.department.name}, managerId=${fb.department.managerId}, manager=`, fb.department.manager);
+            }
+          });
+        }
+        
         let filteredData = data;
 
         // اعمال quick filter (فقط اگر selectedStatus خالی باشد)
@@ -1221,9 +1231,16 @@ function FeedbacksPageContent() {
                 </div>
 
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                  <div className="flex items-center space-x-1 space-x-reverse">
+                  <div className="flex items-center space-x-reverse">
                     <Building2 size={14} />
-                    <span>{feedback.department.name}</span>
+                    <span className="mr-[5px]">
+                      {feedback.department?.name || "نامشخص"}
+                      {feedback.department?.manager && (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {" "}({feedback.department.manager.name})
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-1 space-x-reverse">
                     <User size={14} />

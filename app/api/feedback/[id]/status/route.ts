@@ -48,15 +48,18 @@ export async function PATCH(
       );
     }
 
-    // MANAGER فقط می‌تواند فیدبک‌های بخش خودش را تغییر دهد
-    if (
-      session.user.role === "MANAGER" &&
-      feedback.departmentId !== session.user.departmentId
-    ) {
-      return NextResponse.json(
-        { error: "شما فقط می‌توانید وضعیت فیدبک‌های بخش خود را تغییر دهید" },
-        { status: 403 }
-      );
+    // MANAGER فقط می‌تواند فیدبک‌های بخش خودش یا فیدبک‌هایی که به او ارجاع شده‌اند را تغییر دهد
+    if (session.user.role === "MANAGER") {
+      const hasAccess = 
+        feedback.departmentId === session.user.departmentId ||
+        feedback.forwardedToId === session.user.id;
+      
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: "شما فقط می‌توانید وضعیت فیدبک‌های بخش خود یا فیدبک‌هایی که به شما ارجاع شده‌اند را تغییر دهید" },
+          { status: 403 }
+        );
+      }
     }
 
     // داده‌های بروزرسانی

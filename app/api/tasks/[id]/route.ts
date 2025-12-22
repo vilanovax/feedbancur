@@ -172,6 +172,9 @@ export async function PATCH(
         updateData.completedAt = new Date();
       }
     }
+
+    // ذخیره وضعیت قبلی برای بررسی تغییر به COMPLETED
+    const previousStatus = existingTask.status;
     if (data.priority) updateData.priority = data.priority;
     if (typeof data.isPublic !== 'undefined') updateData.isPublic = data.isPublic;
 
@@ -203,6 +206,34 @@ export async function PATCH(
           content: data.comment,
         },
       });
+    }
+
+    // ارسال نوتیفیکیشن به ادمین وقتی تسک توسط مدیر انجام شد
+    if (data.status === 'COMPLETED' && previousStatus !== 'COMPLETED') {
+      // پیدا کردن همه ادمین‌ها
+      const admins = await prisma.users.findMany({
+        where: { role: 'ADMIN', isActive: true },
+        select: { id: true },
+      });
+
+      // دریافت اطلاعات مدیر که تسک را انجام داده
+      const completedByName = session.user.name || 'مدیر';
+      const departmentName = updatedTask.departments?.name || 'نامشخص';
+
+      // ایجاد نوتیفیکیشن برای هر ادمین
+      if (admins.length > 0) {
+        await prisma.notifications.createMany({
+          data: admins.map((admin) => ({
+            id: crypto.randomUUID(),
+            userId: admin.id,
+            title: 'تسک انجام شد',
+            content: `تسک "${updatedTask.title}" توسط ${completedByName} (${departmentName}) انجام شد.`,
+            type: 'TASK_COMPLETED',
+            redirectUrl: `/tasks`,
+            updatedAt: new Date(),
+          })),
+        });
+      }
     }
 
     // بروزرسانی تخصیص‌ها

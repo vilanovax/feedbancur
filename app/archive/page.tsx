@@ -228,9 +228,16 @@ export default function ArchivePage() {
                       </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center space-x-1 space-x-reverse">
+                      <div className="flex items-center space-x-reverse">
                         <Building2 size={16} />
-                        <span>{feedback.department?.name || "نامشخص"}</span>
+                        <span className="mr-[5px]">
+                          {feedback.department?.name || "نامشخص"}
+                          {feedback.department?.manager && (
+                            <span className="text-gray-500 dark:text-gray-400">
+                              {" "}({feedback.department.manager.name})
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-1 space-x-reverse">
                         <User size={16} />

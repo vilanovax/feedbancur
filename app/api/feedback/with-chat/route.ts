@@ -25,7 +25,14 @@ export async function GET(req: NextRequest) {
         },
       },
       include: {
-        departments: true,
+        departments: {
+          select: {
+            id: true,
+            name: true,
+            allowDirectFeedback: true,
+            managerId: true,
+          },
+        },
         users_feedbacks_userIdTousers: true,
         users_feedbacks_forwardedToIdTousers: true,
         messages: {
@@ -52,6 +59,30 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // جمع‌آوری managerId های منحصر به فرد
+    const managerIds = new Set<string>();
+    feedbacksWithMessages.forEach((feedback: any) => {
+      if (feedback.departments?.managerId) {
+        managerIds.add(feedback.departments.managerId);
+      }
+    });
+
+    // دریافت اطلاعات مدیران
+    const managers = managerIds.size > 0 
+      ? await prisma.users.findMany({
+          where: {
+            id: { in: Array.from(managerIds) },
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        })
+      : [];
+
+    // ایجاد map برای دسترسی سریع به مدیر
+    const managerMap = new Map(managers.map(m => [m.id, m]));
+
     // محاسبه تعداد پیام‌های خوانده نشده برای هر فیدبک و تبدیل به فرمت frontend
     const feedbacksWithUnreadCount = await Promise.all(
       feedbacksWithMessages.map(async (feedback: any) => {
@@ -70,10 +101,17 @@ export async function GET(req: NextRequest) {
           users: undefined,
         }));
 
+        const department = feedback.departments ? {
+          ...feedback.departments,
+          manager: feedback.departments.managerId 
+            ? managerMap.get(feedback.departments.managerId) || null
+            : null,
+        } : null;
+
         return {
           ...feedback,
           user: feedback.users_feedbacks_userIdTousers,
-          department: feedback.departments,
+          department: department,
           forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
           messages: messagesWithSender,
           users_feedbacks_userIdTousers: undefined,

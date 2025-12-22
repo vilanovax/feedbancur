@@ -54,28 +54,14 @@ export async function GET(request: NextRequest) {
     else if (session.user.role === "EMPLOYEE") {
       where.userId = session.user.id;
     } 
-    // مدیر در حالت عادی: فیدبک‌های بخش خودش + فیدبک‌های خودش + فیدبک‌های ارجاع شده به او
+    // مدیر در حالت عادی: فقط فیدبک‌های خودش + فیدبک‌های ارجاع شده به او
+    // مدیر نباید همه فیدبک‌های بخش خودش را ببیند، فقط فیدبک‌هایی که به او ارجاع شده‌اند
     else if (session.user.role === "MANAGER") {
-      // دریافت departmentId مدیر
-      const manager = await prisma.users.findUnique({
-        where: { id: session.user.id },
-        select: { departmentId: true },
-      });
-
-      if (manager?.departmentId) {
-        // فیدبک‌های بخش مدیر + فیدبک‌های خود مدیر + فیدبک‌های ارجاع شده به مدیر
-        where.OR = [
-          { departmentId: manager.departmentId },
-          { userId: session.user.id },
-          { forwardedToId: session.user.id },
-        ];
-      } else {
-        // اگر مدیر بخشی ندارد، فقط فیدبک‌های خودش و ارجاع شده به او
-        where.OR = [
-          { userId: session.user.id },
-          { forwardedToId: session.user.id },
-        ];
-      }
+      // فقط فیدبک‌های خود مدیر + فیدبک‌های ارجاع شده به مدیر
+      where.OR = [
+        { userId: session.user.id },
+        { forwardedToId: session.user.id },
+      ];
     }
 
     console.log("Fetching feedbacks with where:", JSON.stringify(where, null, 2));
@@ -94,6 +80,7 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           allowDirectFeedback: true,
+          managerId: true,
         },
       },
       users_feedbacks_forwardedToIdTousers: {
@@ -158,13 +145,60 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // جمع‌آوری managerId های منحصر به فرد
+    const managerIds = new Set<string>();
+    feedbacks.forEach((feedback: any) => {
+      if (feedback.departments?.managerId) {
+        managerIds.add(feedback.departments.managerId);
+      }
+    });
+
+    console.log("Manager IDs found:", Array.from(managerIds));
+
+    // دریافت اطلاعات مدیران
+    const managers = managerIds.size > 0 
+      ? await prisma.users.findMany({
+          where: {
+            id: { in: Array.from(managerIds) },
+          },
+          select: {
+            id: true,
+            name: true,
+          },
+        })
+      : [];
+
+    console.log("Managers found:", managers);
+
+    // ایجاد map برای دسترسی سریع به مدیر
+    const managerMap = new Map(managers.map(m => [m.id, m]));
+
     // پردازش فیدبک‌ها و تبدیل به فرمت frontend
     const processedFeedbacks = feedbacks.map((feedback: any) => {
       // تبدیل نام‌های Prisma به نام‌های frontend
+      const department = feedback.departments ? {
+        ...feedback.departments,
+        manager: feedback.departments.managerId 
+          ? (managerMap.get(feedback.departments.managerId) || null)
+          : null,
+      } : null;
+
+      // Debug log
+      if (feedback.departments?.managerId) {
+        console.log(`Department ${feedback.departments.name} (${feedback.departments.id}) has managerId: ${feedback.departments.managerId}`);
+        console.log(`Manager found:`, department?.manager);
+        if (!department?.manager) {
+          console.log(`Manager not found for department ${feedback.departments.id}, managerId: ${feedback.departments.managerId}`);
+          console.log(`Manager map has:`, Array.from(managerMap.keys()));
+        }
+      } else {
+        console.log(`Department ${feedback.departments?.name} (${feedback.departments?.id}) has no managerId`);
+      }
+
       const processedFeedback = {
         ...feedback,
         user: feedback.users_feedbacks_userIdTousers,
-        department: feedback.departments,
+        department: department,
         forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
         completedBy: feedback.users_feedbacks_completedByIdTousers,
       };

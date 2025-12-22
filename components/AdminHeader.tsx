@@ -327,17 +327,20 @@ export default function AppHeader() {
             )}
           </button>
 
-          {/* باتن شیت نوتیفیکیشن‌ها */}
+          {/* Dropdown نوتیفیکیشن‌ها */}
           {notificationsOpen && (
-            <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
+            <>
+              {/* Backdrop برای بستن با کلیک بیرون */}
               <div
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+                className="fixed inset-0 z-40"
                 onClick={() => setNotificationsOpen(false)}
               ></div>
-              <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col z-[101]">
+
+              {/* Dropdown */}
+              <div className="absolute left-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-[70vh] flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-sm font-semibold text-gray-800 dark:text-white">
                     اعلانات
                   </h2>
                   <div className="flex items-center gap-2">
@@ -346,38 +349,38 @@ export default function AppHeader() {
                         onClick={markAllAsRead}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                       >
-                        همه را خوانده شده علامت بزن
+                        همه خوانده شد
                       </button>
                     )}
                     <button
                       onClick={() => setNotificationsOpen(false)}
-                      className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                      className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                     >
-                      <X size={20} />
+                      <X size={16} />
                     </button>
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-2">
                   {notifications.length > 0 ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {notifications.map((notification) => (
                         <div
                           key={notification.id}
                           onClick={() => handleNotificationClick(notification)}
-                          className={`p-3 rounded-lg border cursor-pointer transition-colors hover:shadow-md ${
+                          className={`p-2.5 rounded-lg border cursor-pointer transition-colors hover:shadow-sm ${
                             notification.isRead
                               ? "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600"
                               : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
                           }`}
                         >
                           <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-medium text-gray-800 dark:text-white mb-0.5 truncate">
                                 {notification.title}
                               </h3>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mb-1 line-clamp-2">
                                 {notification.content}
                               </p>
                               <div className="flex items-center justify-between">
@@ -387,7 +390,7 @@ export default function AppHeader() {
                                   )}
                                 </span>
                                 {!notification.isRead && (
-                                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                  <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
                                 )}
                               </div>
                             </div>
@@ -396,13 +399,13 @@ export default function AppHeader() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                    <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-sm">
                       اعلانی وجود ندارد
                     </div>
                   )}
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
