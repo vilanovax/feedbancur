@@ -151,6 +151,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     console.log("Updating user:", session.user.id, "with avatar length:", avatarValue?.length || 0);
+    console.log("StatusId to update:", statusIdValue);
 
     // به‌روزرسانی اطلاعات کاربر - فقط فیلدهایی که ارسال شده‌اند
     const updateData: any = {};
@@ -158,6 +159,8 @@ export async function PATCH(req: NextRequest) {
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.avatar !== undefined) updateData.avatar = avatarValue;
     if (data.statusId !== undefined) updateData.statusId = statusIdValue;
+
+    console.log("Update data:", updateData);
 
     const updatedUser = await prisma.users.update({
       where: { id: session.user.id },

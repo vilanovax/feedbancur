@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import { Star, Calendar, Building2, User, CheckCircle, Clock, Archive, MessageCircle, CheckSquare, FileText, X, Save, Plus, Trash2, Check, Send, Image as ImageIcon, Download, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
@@ -16,6 +16,7 @@ export default function ManagerForwardedFeedbacksPage() {
   const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
@@ -63,6 +64,22 @@ export default function ManagerForwardedFeedbacksPage() {
       });
     }
   }, [feedbacks]);
+
+  // باز کردن چت از طریق پارامتر URL
+  useEffect(() => {
+    const openChatId = searchParams.get("openChat");
+    if (openChatId && feedbacks.length > 0 && !chatModalOpen) {
+      // بررسی اینکه این فیدبک در لیست وجود دارد
+      const feedbackExists = feedbacks.some((f) => f.id === openChatId);
+      if (feedbackExists) {
+        setSelectedFeedbackForChat(openChatId);
+        fetchMessages(openChatId);
+        setChatModalOpen(true);
+        // پاک کردن پارامتر از URL
+        router.replace("/mobile/manager/forwarded", { scroll: false });
+      }
+    }
+  }, [searchParams, feedbacks, chatModalOpen, router]);
 
   // به‌روزرسانی خودکار پیام‌ها وقتی مودال چت باز است
   useEffect(() => {

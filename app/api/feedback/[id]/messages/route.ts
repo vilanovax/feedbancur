@@ -65,7 +65,7 @@ export async function GET(
     const messages = await prisma.messages.findMany({
       where: { feedbackId: resolvedParams.id },
       include: {
-        sender: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -76,8 +76,14 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     });
 
+    // تبدیل users به sender برای سازگاری با frontend
+    const formattedMessages = messages.map((msg) => ({
+      ...msg,
+      sender: msg.users,
+    }));
+
     // علامت‌گذاری پیام‌های خوانده نشده به عنوان خوانده شده
-    const unreadMessages = messages.filter(
+    const unreadMessages = formattedMessages.filter(
       (msg) => !msg.isRead && msg.senderId !== session.user.id
     );
 
@@ -93,7 +99,7 @@ export async function GET(
       });
 
       // به‌روزرسانی isRead در پاسخ
-      messages.forEach((msg) => {
+      formattedMessages.forEach((msg) => {
         if (unreadMessages.some((um) => um.id === msg.id)) {
           msg.isRead = true;
           msg.readAt = new Date();
@@ -101,7 +107,7 @@ export async function GET(
       });
     }
 
-    return NextResponse.json(messages);
+    return NextResponse.json(formattedMessages);
   } catch (error) {
     console.error("Error fetching messages:", error);
     console.error("Error details:", error instanceof Error ? error.message : String(error));
@@ -334,13 +340,15 @@ export async function POST(
     try {
       const message = await prisma.messages.create({
         data: {
+          id: crypto.randomUUID(),
           feedbackId: resolvedParams.id,
           senderId: session.user.id,
           content: (data.content && data.content.trim()) ? data.content.trim() : "",
           image: data.image || null,
+          updatedAt: new Date(),
         },
         include: {
-          sender: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -350,12 +358,67 @@ export async function POST(
         },
       });
 
+      // تبدیل users به sender برای سازگاری با frontend
+      const formattedMessage = {
+        ...message,
+        sender: message.users,
+      };
+
       console.log("Message created successfully:", {
         id: message.id,
         hasContent: !!message.content,
         hasImage: !!message.image,
       });
-      return NextResponse.json(message, { status: 201 });
+
+      // ایجاد نوتیفیکیشن برای گیرنده پیام
+      try {
+        const senderName = session.user.name || "کاربر";
+        const messagePreview = message.content
+          ? (message.content.length > 50 ? message.content.substring(0, 50) + "..." : message.content)
+          : "تصویر";
+
+        if (session.user.role === "ADMIN") {
+          // ادمین پیام فرستاده → نوتیفیکیشن به مدیر (forwardedToId)
+          if (feedback.forwardedToId) {
+            await prisma.notifications.create({
+              data: {
+                userId: feedback.forwardedToId,
+                feedbackId: resolvedParams.id,
+                title: "پیام جدید از مدیریت",
+                content: `${senderName}: ${messagePreview}`,
+                type: "INFO",
+                redirectUrl: `/mobile/manager/forwarded?openChat=${resolvedParams.id}`,
+              },
+            });
+          }
+        } else if (session.user.role === "MANAGER") {
+          // مدیر پیام فرستاده → نوتیفیکیشن به همه ادمین‌ها
+          const admins = await prisma.users.findMany({
+            where: { role: "ADMIN", isActive: true },
+            select: { id: true },
+          });
+
+          await Promise.all(
+            admins.map((admin) =>
+              prisma.notifications.create({
+                data: {
+                  userId: admin.id,
+                  feedbackId: resolvedParams.id,
+                  title: "پیام جدید در چت فیدبک",
+                  content: `${senderName}: ${messagePreview}`,
+                  type: "INFO",
+                  redirectUrl: `/feedback/with-chat?openChat=${resolvedParams.id}`,
+                },
+              })
+            )
+          );
+        }
+      } catch (notifError) {
+        console.error("Error creating notification for message:", notifError);
+        // ادامه می‌دهیم حتی اگر نوتیفیکیشن ایجاد نشود
+      }
+
+      return NextResponse.json(formattedMessage, { status: 201 });
     } catch (dbError: any) {
       console.error("Database error creating message:", dbError);
       return NextResponse.json(

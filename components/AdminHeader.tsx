@@ -213,11 +213,17 @@ export default function AppHeader() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    if (statusMenuOpen) {
+      // استفاده از setTimeout برای جلوگیری از بسته شدن فوری
+      const timer = setTimeout(() => {
+        document.addEventListener("click", handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }
+  }, [statusMenuOpen]);
 
   const fetchUserStatuses = async () => {
     try {
@@ -249,6 +255,7 @@ export default function AppHeader() {
   };
 
   const handleStatusChange = async (status: UserStatus | null) => {
+    console.log("AdminHeader: handleStatusChange called with:", status);
     setStatusLoading(true);
     try {
       // دریافت اطلاعات فعلی کاربر برای حفظ فیلدهای دیگر
@@ -270,16 +277,19 @@ export default function AppHeader() {
         }),
       });
 
+      const responseData = await res.json();
+      console.log("AdminHeader: Update response:", res.status, responseData);
+
       if (res.ok) {
         setCurrentStatus(status);
         setStatusMenuOpen(false);
         await update();
         toast.success(status ? `استتوس به "${status.name}" تغییر کرد` : "استتوس حذف شد");
       } else {
-        const data = await res.json();
-        toast.error(data.error || "خطا در تغییر استتوس");
+        toast.error(responseData.error || "خطا در تغییر استتوس");
       }
     } catch (err) {
+      console.error("AdminHeader: Error in handleStatusChange:", err);
       toast.error("خطا در تغییر استتوس");
     } finally {
       setStatusLoading(false);

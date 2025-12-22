@@ -81,17 +81,29 @@ export default function Sidebar() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (statusMenuOpen) {
+      // استفاده از setTimeout برای جلوگیری از بسته شدن فوری
+      const timer = setTimeout(() => {
+        document.addEventListener("click", handleClickOutside);
+      }, 100);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }
+  }, [statusMenuOpen]);
 
   const fetchUserStatuses = async () => {
     try {
       const role = session?.user?.role || "EMPLOYEE";
+      console.log("Fetching statuses for role:", role);
       const res = await fetch(`/api/user-statuses?role=${role}&isActive=true`);
       if (res.ok) {
         const data = await res.json();
+        console.log("Fetched statuses:", data);
         setUserStatuses(data);
+      } else {
+        console.error("Failed to fetch statuses:", res.status);
       }
     } catch (err) {
       console.error("Error fetching user statuses:", err);
@@ -103,10 +115,15 @@ export default function Sidebar() {
       const res = await fetch("/api/users/me");
       if (res.ok) {
         const data = await res.json();
+        console.log("Current user data:", data);
         if (data.user?.status) {
+          console.log("Setting current status from user.status:", data.user.status);
           setCurrentStatus(data.user.status);
         } else if (data.status) {
+          console.log("Setting current status from status:", data.status);
           setCurrentStatus(data.status);
+        } else {
+          console.log("No status found in response");
         }
       }
     } catch (err) {
@@ -115,16 +132,34 @@ export default function Sidebar() {
   };
 
   const handleStatusChange = async (status: UserStatus | null) => {
+    console.log("handleStatusChange called with:", status);
     setStatusLoading(true);
     try {
+      // دریافت اطلاعات فعلی کاربر برای حفظ فیلدهای دیگر
+      const currentUserRes = await fetch("/api/users/me");
+      if (!currentUserRes.ok) {
+        throw new Error("خطا در دریافت اطلاعات کاربر");
+      }
+      const currentUserData = await currentUserRes.json();
+      const currentUser = currentUserData.user;
+      console.log("Current user for update:", currentUser);
+
+      const updateBody = {
+        name: currentUser?.name || session?.user?.name,
+        email: currentUser?.email || null,
+        avatar: currentUser?.avatar || null,
+        statusId: status?.id || null,
+      };
+      console.log("Sending update:", updateBody);
+
       const res = await fetch("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: session?.user?.name,
-          statusId: status?.id || null,
-        }),
+        body: JSON.stringify(updateBody),
       });
+
+      const responseData = await res.json();
+      console.log("Update response:", res.status, responseData);
 
       if (res.ok) {
         setCurrentStatus(status);
@@ -132,10 +167,10 @@ export default function Sidebar() {
         await update();
         toast.success(status ? `استتوس به "${status.name}" تغییر کرد` : "استتوس حذف شد");
       } else {
-        const data = await res.json();
-        toast.error(data.error || "خطا در تغییر استتوس");
+        toast.error(responseData.error || "خطا در تغییر استتوس");
       }
     } catch (err) {
+      console.error("Error in handleStatusChange:", err);
       toast.error("خطا در تغییر استتوس");
     } finally {
       setStatusLoading(false);

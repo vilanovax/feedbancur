@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Star, Calendar, Building2, User, MessageCircle, X, Check, Image as ImageIcon, Download, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
@@ -15,6 +15,7 @@ export default function FeedbacksWithChatPage() {
   const toast = useToast();
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatModalOpen, setChatModalOpen] = useState(false);
@@ -40,6 +41,20 @@ export default function FeedbacksWithChatPage() {
       fetchFeedbacksWithChat();
     }
   }, [session]);
+
+  // باز کردن چت از طریق پارامتر URL
+  useEffect(() => {
+    const openChatId = searchParams.get("openChat");
+    if (openChatId && feedbacks.length > 0 && !chatModalOpen) {
+      // بررسی اینکه این فیدبک در لیست وجود دارد
+      const feedbackExists = feedbacks.some((f) => f.id === openChatId);
+      if (feedbackExists) {
+        openChatModal(openChatId);
+        // پاک کردن پارامتر از URL
+        router.replace("/feedback/with-chat", { scroll: false });
+      }
+    }
+  }, [searchParams, feedbacks, chatModalOpen, router]);
 
   const fetchFeedbacksWithChat = async () => {
     setLoading(true);
