@@ -20,8 +20,16 @@ import {
   Settings,
   Edit,
   ClipboardList,
+  ChevronDown,
 } from "lucide-react";
 import { formatPersianDate } from "@/lib/date-utils";
+import { toast } from "sonner";
+
+interface UserStatus {
+  id: string;
+  name: string;
+  color: string;
+}
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -49,6 +57,11 @@ export default function MobileLayout({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [hasAssignedTasks, setHasAssignedTasks] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+  const [userStatuses, setUserStatuses] = useState<UserStatus[]>([]);
+  const [currentStatus, setCurrentStatus] = useState<UserStatus | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (path: string) => pathname === path;
   
@@ -68,6 +81,92 @@ export default function MobileLayout({
       router.push(homePath);
     }
   };
+
+  // دریافت استتوس‌ها
+  useEffect(() => {
+    if (session?.user) {
+      fetchUserStatuses();
+      fetchCurrentStatus();
+    }
+  }, [session]);
+
+  const fetchUserStatuses = async () => {
+    try {
+      const userRole = session?.user?.role || "EMPLOYEE";
+      const res = await fetch(`/api/user-statuses?role=${userRole}&isActive=true`);
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatuses(data);
+      }
+    } catch (err) {
+      console.error("Error fetching user statuses:", err);
+    }
+  };
+
+  const fetchCurrentStatus = async () => {
+    try {
+      const res = await fetch("/api/users/me");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user?.status) {
+          setCurrentStatus(data.user.status);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching current status:", err);
+    }
+  };
+
+  const handleStatusChange = async (status: UserStatus | null) => {
+    setStatusLoading(true);
+    try {
+      // دریافت اطلاعات فعلی کاربر برای حفظ فیلدهای دیگر
+      const currentUserRes = await fetch("/api/users/me");
+      if (!currentUserRes.ok) {
+        throw new Error("خطا در دریافت اطلاعات کاربر");
+      }
+      const currentUserData = await currentUserRes.json();
+      const currentUser = currentUserData.user;
+
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: currentUser?.name || session?.user?.name,
+          email: currentUser?.email || session?.user?.email || null,
+          avatar: currentUser?.avatar || null,
+          statusId: status?.id || null,
+        }),
+      });
+
+      if (res.ok) {
+        setCurrentStatus(status);
+        setStatusMenuOpen(false);
+        toast.success(status ? `استتوس به "${status.name}" تغییر کرد` : "استتوس حذف شد");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "خطا در تغییر استتوس");
+      }
+    } catch (err) {
+      toast.error("خطا در تغییر استتوس");
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  // بستن منوی استتوس با کلیک بیرون
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
+        setStatusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   // دریافت نوتیفیکیشن‌ها
   useEffect(() => {
@@ -319,12 +418,12 @@ export default function MobileLayout({
 
               {/* باتن شیت نوتیفیکیشن‌ها */}
               {notificationsOpen && (
-                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+                <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
                   <div
-                    className="fixed inset-0 bg-black bg-opacity-50"
+                    className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
                     onClick={() => setNotificationsOpen(false)}
                   ></div>
-                  <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col">
+                  <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md max-h-[80vh] flex flex-col z-[101]">
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                       <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
@@ -403,73 +502,99 @@ export default function MobileLayout({
             >
               <Settings className="w-6 h-6 text-gray-700 dark:text-gray-300" />
             </button>
-            <div className="relative">
+            
+            {/* Status Dropdown on Profile Icon */}
+            <div className="relative" ref={statusMenuRef}>
               <button
-                onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label="پروفایل"
+                onClick={() => {
+                  setStatusMenuOpen(!statusMenuOpen);
+                  setShowProfileMenu(false);
+                }}
+                className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                aria-label="وضعیت"
               >
                 <User className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                {currentStatus && (
+                  <span
+                    className="absolute top-1 right-1 w-2 h-2 rounded-full border border-white dark:border-gray-800"
+                    style={{ backgroundColor: currentStatus.color }}
+                  ></span>
+                )}
+                <ChevronDown size={14} className={`absolute bottom-0 left-0 ${statusMenuOpen ? "rotate-180" : ""} transition-transform`} />
               </button>
-              {showProfileMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowProfileMenu(false)}
-                  />
-                  <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                    <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-3 mb-2">
-                        {(session?.user as any)?.avatar ? (
-                          <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                            <Image
-                              src={(session?.user as any)?.avatar}
-                              alt="پروفایل"
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 text-white" />
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-800 dark:text-white text-sm">
-                            {session?.user?.name}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {session?.user?.mobile}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                        {role === "EMPLOYEE" ? "کارمند" : "مدیر"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        router.push("/mobile/profile/edit");
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition text-sm"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span>ویرایش اطلاعات</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        signOut({ callbackUrl: "/login" });
-                      }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition text-sm"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>خروج</span>
-                    </button>
+
+              {/* Status Dropdown */}
+              {statusMenuOpen && (
+                <div className="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                    انتخاب استتوس
                   </div>
-                </>
+
+                  {/* بدون استتوس */}
+                  <button
+                    onClick={() => handleStatusChange(null)}
+                    disabled={statusLoading}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
+                      !currentStatus ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                    }`}
+                  >
+                    <span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+                    <span className="text-gray-700 dark:text-gray-300">بدون استتوس</span>
+                    {!currentStatus && <span className="mr-auto text-blue-600">✓</span>}
+                  </button>
+
+                  {/* لیست استتوس‌ها */}
+                  {userStatuses.map((status) => (
+                    <button
+                      key={status.id}
+                      onClick={() => handleStatusChange(status)}
+                      disabled={statusLoading}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
+                        currentStatus?.id === status.id
+                          ? "bg-blue-50 dark:bg-blue-900/20"
+                          : ""
+                      }`}
+                    >
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      ></span>
+                      <span className="text-gray-700 dark:text-gray-300">{status.name}</span>
+                      {currentStatus?.id === status.id && (
+                        <span className="mr-auto text-blue-600">✓</span>
+                      )}
+                    </button>
+                  ))}
+
+                  {/* Separator */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+                  {/* ویرایش اطلاعات */}
+                  <button
+                    onClick={() => {
+                      setStatusMenuOpen(false);
+                      router.push("/mobile/profile/edit");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>ویرایش اطلاعات</span>
+                  </button>
+
+                  {/* خروج */}
+                  <button
+                    onClick={() => {
+                      setStatusMenuOpen(false);
+                      signOut({ callbackUrl: "/login" });
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>خروج</span>
+                  </button>
+                </div>
               )}
+
             </div>
           </div>
         </div>
@@ -509,9 +634,56 @@ export default function MobileLayout({
                   </p>
                 </div>
               </div>
-              <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
-                {role === "EMPLOYEE" ? "کارمند" : "مدیر"}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full">
+                  {role === "EMPLOYEE" ? "کارمند" : "مدیر"}
+                </span>
+                {/* Status Badge */}
+                {currentStatus && (
+                  <span
+                    className="inline-block px-2 py-1 text-white text-xs rounded-full"
+                    style={{ backgroundColor: currentStatus.color }}
+                  >
+                    {currentStatus.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Status Selector in Sidebar */}
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">استتوس</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    onClick={() => handleStatusChange(null)}
+                    disabled={statusLoading}
+                    className={`px-2 py-1 text-xs rounded-full border transition ${
+                      !currentStatus
+                        ? "bg-gray-200 dark:bg-gray-600 border-gray-400 text-gray-700 dark:text-white"
+                        : "bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"
+                    }`}
+                  >
+                    بدون
+                  </button>
+                  {userStatuses.map((status) => (
+                    <button
+                      key={status.id}
+                      onClick={() => handleStatusChange(status)}
+                      disabled={statusLoading}
+                      className={`px-2 py-1 text-xs rounded-full transition ${
+                        currentStatus?.id === status.id
+                          ? "ring-2 ring-offset-1 ring-blue-500"
+                          : "opacity-80"
+                      }`}
+                      style={{
+                        backgroundColor: status.color,
+                        color: '#fff',
+                      }}
+                    >
+                      {status.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <nav className="p-2">
               {navItems.map((item) => {
