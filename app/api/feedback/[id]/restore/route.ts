@@ -48,26 +48,26 @@ export async function POST(
         deletedAt: null,
       },
       include: {
-        user: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
           },
         },
-        forwardedTo: {
+        users_feedbacks_forwardedToIdTousers: {
           select: {
             id: true,
             name: true,
           },
         },
-        completedBy: {
+        users_feedbacks_completedByIdTousers: {
           select: {
             id: true,
             name: true,

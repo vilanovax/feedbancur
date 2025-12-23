@@ -275,8 +275,8 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }: { name: string; percent: number }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
+                  label={({ name, percent }: { name?: string; percent?: number }) =>
+                    `${name || ''}: ${((percent || 0) * 100).toFixed(0)}%`
                   }
                   outerRadius={80}
                   fill="#8884d8"
@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
                   <LazyXAxis dataKey="name" />
                   <LazyYAxis label={{ value: 'ساعت', angle: -90, position: 'insideLeft' }} />
                   <LazyTooltip
-                    formatter={(value: number) => [`${value} ساعت`, 'میانگین زمان']}
+                    formatter={(value: string | number) => [`${value} ساعت`, 'میانگین زمان']}
                   />
                   <LazyLegend />
                   <LazyBar dataKey="averageHours" fill="#10b981" name="میانگین زمان (ساعت)" />

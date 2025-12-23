@@ -26,10 +26,10 @@ export async function GET(
     const employee = await prisma.employees.findUnique({
       where: { id },
       include: {
-        department: true,
-        taskAssignments: {
+        departments: true,
+        task_assignments: {
           include: {
-            task: true,
+            tasks: true,
           },
         },
       },
@@ -127,7 +127,7 @@ export async function PATCH(
       where: { id },
       data: updateData,
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -135,7 +135,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
@@ -175,7 +175,7 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            taskAssignments: true,
+            task_assignments: true,
           },
         },
       },
@@ -189,10 +189,10 @@ export async function DELETE(
     }
 
     // بررسی اینکه آیا کارمند تسک دارد
-    if (employee._count.taskAssignments > 0) {
+    if (employee._count.task_assignments > 0) {
       return NextResponse.json(
         {
-          error: `این کارمند دارای ${employee._count.taskAssignments} تسک است. ابتدا تسک‌ها را حذف یا به کارمند دیگری انتقال دهید.`,
+          error: `این کارمند دارای ${employee._count.task_assignments} تسک است. ابتدا تسک‌ها را حذف یا به کارمند دیگری انتقال دهید.`,
         },
         { status: 400 }
       );

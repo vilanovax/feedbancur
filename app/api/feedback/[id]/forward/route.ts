@@ -142,8 +142,8 @@ export async function POST(
         },
         include: {
           departments: true,
-          feedback: true,
-          createdBy: {
+          feedbacks: true,
+          users: {
             select: {
               id: true,
               name: true,
@@ -170,7 +170,7 @@ export async function POST(
 
     // تخصیص تسک به مدیر
     try {
-      await prisma.taskAssignment.create({
+      await prisma.task_assignments.create({
         data: {
           taskId: task.id,
           userId: data.managerId,
@@ -200,9 +200,9 @@ export async function POST(
     const taskWithAssignments = await prisma.tasks.findUnique({
       where: { id: task.id },
       include: {
-        assignedTo: {
+        task_assignments: {
           include: {
-            user: {
+            users: {
               select: {
                 id: true,
                 name: true,
@@ -213,8 +213,8 @@ export async function POST(
           },
         },
         departments: true,
-        feedback: true,
-        createdBy: {
+        feedbacks: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -255,7 +255,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

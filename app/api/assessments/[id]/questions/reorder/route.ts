@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // POST /api/assessments/[id]/questions/reorder - تغییر ترتیب سوالات (ADMIN)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -30,7 +31,7 @@ export async function POST(
 
     // Check if assessment exists
     const assessment = await prisma.assessments.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!assessment) {
@@ -42,7 +43,7 @@ export async function POST(
 
     // Update each question's order
     await prisma.$transaction(
-      questionOrders.map((item) =>
+      questionOrders.map((item: { id: string; order: number }) =>
         prisma.assessment_questions.update({
           where: { id: item.id },
           data: { order: item.order },
@@ -52,7 +53,7 @@ export async function POST(
 
     // Fetch updated questions
     const questions = await prisma.assessment_questions.findMany({
-      where: { assessmentId: params.id },
+      where: { assessmentId: id },
       orderBy: { order: "asc" },
     });
 

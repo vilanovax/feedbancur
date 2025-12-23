@@ -33,10 +33,10 @@ export async function PATCH(
     const data = updateChecklistItemSchema.parse(body);
 
     // بررسی وجود آیتم و دسترسی
-    const checklistItem = await prisma.checklistItem.findUnique({
+    const checklistItem = await prisma.checklist_items.findUnique({
       where: { id: resolvedParams.itemId },
       include: {
-        feedback: true,
+        feedbacks: true,
       },
     });
 
@@ -45,7 +45,7 @@ export async function PATCH(
     }
 
     // بررسی دسترسی
-    const feedback = checklistItem.feedback;
+    const feedback = checklistItem.feedbacks;
     const hasAccess =
       feedback.forwardedToId === session.user.id ||
       (feedback.departmentId === session.user.departmentId &&
@@ -55,7 +55,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const updatedItem = await prisma.checklistItem.update({
+    const updatedItem = await prisma.checklist_items.update({
       where: { id: resolvedParams.itemId },
       data: {
         ...(data.title !== undefined && { title: data.title }),
@@ -68,7 +68,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
@@ -100,10 +100,10 @@ export async function DELETE(
     const resolvedParams = params instanceof Promise ? await params : params;
 
     // بررسی وجود آیتم و دسترسی
-    const checklistItem = await prisma.checklistItem.findUnique({
+    const checklistItem = await prisma.checklist_items.findUnique({
       where: { id: resolvedParams.itemId },
       include: {
-        feedback: true,
+        feedbacks: true,
       },
     });
 
@@ -112,7 +112,7 @@ export async function DELETE(
     }
 
     // بررسی دسترسی
-    const feedback = checklistItem.feedback;
+    const feedback = checklistItem.feedbacks;
     const hasAccess =
       feedback.forwardedToId === session.user.id ||
       (feedback.departmentId === session.user.departmentId &&
@@ -122,7 +122,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.checklistItem.delete({
+    await prisma.checklist_items.delete({
       where: { id: resolvedParams.itemId },
     });
 

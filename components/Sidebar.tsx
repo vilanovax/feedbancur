@@ -24,28 +24,28 @@ import {
   Brain,
   ClipboardList,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
-
-interface UserStatus {
-  id: string;
-  name: string;
-  color: string;
-}
+import { useStatusChange } from "@/lib/hooks/useStatusChange";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { data: session, update } = useSession();
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
-  const [userStatuses, setUserStatuses] = useState<UserStatus[]>([]);
-  const [currentStatus, setCurrentStatus] = useState<UserStatus | null>(null);
-  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const statusMenuRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (path: string) => {
+  // استفاده از hook مشترک
+  const {
+    userStatuses,
+    currentStatus,
+    statusMenuOpen,
+    statusLoading,
+    statusMenuRef,
+    setStatusMenuOpen,
+    handleStatusChange,
+  } = useStatusChange();
+
+  const isActive = useCallback((path: string) => {
     if (path.includes("?")) {
       const [basePath] = path.split("?");
       return pathname === basePath || pathname.startsWith(basePath);
@@ -55,129 +55,17 @@ export default function Sidebar() {
       return pathname === "/";
     }
     return pathname === path || pathname.startsWith(path);
-  };
+  }, [pathname]);
 
-  const toggleMenu = (menuName: string) => {
+  const toggleMenu = useCallback((menuName: string) => {
     setExpandedMenus((prev) =>
       prev.includes(menuName)
         ? prev.filter((m) => m !== menuName)
         : [...prev, menuName]
     );
-  };
+  }, []);
 
-  // دریافت استتوس‌های موجود و استتوس فعلی کاربر
-  useEffect(() => {
-    if (session?.user) {
-      fetchUserStatuses();
-      fetchCurrentStatus();
-    }
-  }, [session]);
-
-  // بستن منوی استتوس با کلیک بیرون
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (statusMenuRef.current && !statusMenuRef.current.contains(event.target as Node)) {
-        setStatusMenuOpen(false);
-      }
-    };
-
-    if (statusMenuOpen) {
-      // استفاده از setTimeout برای جلوگیری از بسته شدن فوری
-      const timer = setTimeout(() => {
-        document.addEventListener("click", handleClickOutside);
-      }, 100);
-      return () => {
-        clearTimeout(timer);
-        document.removeEventListener("click", handleClickOutside);
-      };
-    }
-  }, [statusMenuOpen]);
-
-  const fetchUserStatuses = async () => {
-    try {
-      const role = session?.user?.role || "EMPLOYEE";
-      console.log("Fetching statuses for role:", role);
-      const res = await fetch(`/api/user-statuses?role=${role}&isActive=true`);
-      if (res.ok) {
-        const data = await res.json();
-        console.log("Fetched statuses:", data);
-        setUserStatuses(data);
-      } else {
-        console.error("Failed to fetch statuses:", res.status);
-      }
-    } catch (err) {
-      console.error("Error fetching user statuses:", err);
-    }
-  };
-
-  const fetchCurrentStatus = async () => {
-    try {
-      const res = await fetch("/api/users/me");
-      if (res.ok) {
-        const data = await res.json();
-        console.log("Current user data:", data);
-        if (data.user?.status) {
-          console.log("Setting current status from user.status:", data.user.status);
-          setCurrentStatus(data.user.status);
-        } else if (data.status) {
-          console.log("Setting current status from status:", data.status);
-          setCurrentStatus(data.status);
-        } else {
-          console.log("No status found in response");
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching current status:", err);
-    }
-  };
-
-  const handleStatusChange = async (status: UserStatus | null) => {
-    console.log("handleStatusChange called with:", status);
-    setStatusLoading(true);
-    try {
-      // دریافت اطلاعات فعلی کاربر برای حفظ فیلدهای دیگر
-      const currentUserRes = await fetch("/api/users/me");
-      if (!currentUserRes.ok) {
-        throw new Error("خطا در دریافت اطلاعات کاربر");
-      }
-      const currentUserData = await currentUserRes.json();
-      const currentUser = currentUserData.user;
-      console.log("Current user for update:", currentUser);
-
-      const updateBody = {
-        name: currentUser?.name || session?.user?.name,
-        email: currentUser?.email || null,
-        avatar: currentUser?.avatar || null,
-        statusId: status?.id || null,
-      };
-      console.log("Sending update:", updateBody);
-
-      const res = await fetch("/api/users/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateBody),
-      });
-
-      const responseData = await res.json();
-      console.log("Update response:", res.status, responseData);
-
-      if (res.ok) {
-        setCurrentStatus(status);
-        setStatusMenuOpen(false);
-        await update();
-        toast.success(status ? `استتوس به "${status.name}" تغییر کرد` : "استتوس حذف شد");
-      } else {
-        toast.error(responseData.error || "خطا در تغییر استتوس");
-      }
-    } catch (err) {
-      console.error("Error in handleStatusChange:", err);
-      toast.error("خطا در تغییر استتوس");
-    } finally {
-      setStatusLoading(false);
-    }
-  };
-
-  const navItems = [
+  const navItems = useMemo(() => [
     {
       name: "داشبورد",
       href: "/",
@@ -306,11 +194,11 @@ export default function Sidebar() {
         },
       ],
     },
-  ];
+  ], []);
 
-  const filteredNavItems = navItems.filter((item) =>
+  const filteredNavItems = useMemo(() => navItems.filter((item) =>
     item.roles.includes(session?.user?.role || "")
-  );
+  ), [navItems, session?.user?.role]);
 
   const SidebarContent = () => (
     <>

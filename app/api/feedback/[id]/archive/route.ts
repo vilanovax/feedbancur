@@ -67,20 +67,20 @@ export async function POST(
         completedAt: new Date(),
       },
       include: {
-        user: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
           },
         },
-        completedBy: {
+        users_feedbacks_completedByIdTousers: {
           select: {
             id: true,
             name: true,
@@ -97,7 +97,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

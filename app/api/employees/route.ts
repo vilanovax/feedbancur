@@ -35,10 +35,10 @@ export async function GET(req: NextRequest) {
     const employees = await prisma.employees.findMany({
       where,
       include: {
-        department: true,
-        taskAssignments: {
+        departments: true,
+        task_assignments: {
           include: {
-            task: {
+            tasks: {
               select: {
                 id: true,
                 title: true,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         departmentId: data.departmentId,
       },
       include: {
-        department: true,
+        departments: true,
       },
     });
 
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

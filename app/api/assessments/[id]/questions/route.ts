@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/assessments/[id]/questions - لیست سوالات (ADMIN)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -19,7 +20,7 @@ export async function GET(
     }
 
     const questions = await prisma.assessment_questions.findMany({
-      where: { assessmentId: params.id },
+      where: { assessmentId: id },
       orderBy: { order: "asc" },
     });
 
@@ -36,9 +37,10 @@ export async function GET(
 // POST /api/assessments/[id]/questions - افزودن سوال (ADMIN)
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -62,7 +64,7 @@ export async function POST(
 
     // Check if assessment exists
     const assessment = await prisma.assessments.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!assessment) {
@@ -76,7 +78,7 @@ export async function POST(
     let questionOrder = order;
     if (questionOrder === undefined) {
       const lastQuestion = await prisma.assessment_questions.findFirst({
-        where: { assessmentId: params.id },
+        where: { assessmentId: id },
         orderBy: { order: "desc" },
       });
       questionOrder = lastQuestion ? lastQuestion.order + 1 : 1;
@@ -84,7 +86,7 @@ export async function POST(
 
     const question = await prisma.assessment_questions.create({
       data: {
-        assessmentId: params.id,
+        assessmentId: id,
         questionText,
         questionType,
         order: questionOrder,

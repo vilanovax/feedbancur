@@ -26,8 +26,8 @@ export async function GET(
     const announcement = await prisma.announcements.findUnique({
       where: { id },
       include: {
-        department: true,
-        createdBy: {
+        departments: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -61,7 +61,7 @@ export async function GET(
         name: true,
         mobile: true,
         role: true,
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,
@@ -74,18 +74,18 @@ export async function GET(
     });
 
     // لیست بازدیدکنندگان
-    const views = await prisma.announcementView.findMany({
+    const views = await prisma.announcement_views.findMany({
       where: {
         announcementId: id,
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
             mobile: true,
             role: true,
-            department: {
+            departments: {
               select: {
                 id: true,
                 name: true,
@@ -100,7 +100,7 @@ export async function GET(
     });
 
     // ایجاد لیست کامل با status دیده شده/ندیده شده
-    const viewersMap = new Map(views.map(v => [v.userId, v]));
+    const viewersMap = new Map(views.map((v: { userId: string; viewedAt: Date }) => [v.userId, v]));
 
     const usersWithStatus = targetUsers.map(user => ({
       ...user,
@@ -124,8 +124,8 @@ export async function GET(
         priority: announcement.priority,
         createdAt: announcement.createdAt,
         departmentId: announcement.departmentId,
-        department: announcement.department,
-        createdBy: announcement.createdBy,
+        department: announcement.departments,
+        createdBy: announcement.users,
       },
       stats,
       users: usersWithStatus,

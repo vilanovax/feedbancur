@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const { mobile, code } = verifyOTPSchema.parse(body);
 
     // یافتن OTP
-    const otp = await prisma.oTP.findFirst({
+    const otp = await prisma.otps.findFirst({
       where: {
         mobile,
         code,
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // علامت‌گذاری OTP به عنوان تایید شده
-    await prisma.oTP.update({
+    await prisma.otps.update({
       where: { id: otp.id },
       data: { verified: true },
     });
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

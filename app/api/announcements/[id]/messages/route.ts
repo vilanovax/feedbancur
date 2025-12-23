@@ -220,8 +220,7 @@ export async function POST(
         announcementId: resolvedParams.id,
         content: data.content,
         createdById: session.user.id,
-        attachment: attachmentUrl,
-        attachmentName: attachmentName,
+        attachments: attachmentUrl ? JSON.stringify({ url: attachmentUrl, name: attachmentName }) : null,
       },
       include: {
         users: {
@@ -294,7 +293,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

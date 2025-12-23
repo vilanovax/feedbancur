@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { getCachedDepartments, revalidateCacheTag, CACHE_TAGS } from "@/lib/cache";
 
 const departmentSchema = z.object({
   name: z.string().min(1, "نام بخش الزامی است"),
@@ -22,16 +23,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const departments = await prisma.departments.findMany({
-      include: {
-        _count: {
-          select: { users: true },
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+    // استفاده از کش برای بهبود performance
+    const departments = await getCachedDepartments();
 
     return NextResponse.json(departments);
   } catch (error) {
@@ -82,11 +75,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // بی‌اعتبار کردن کش بخش‌ها
+    await revalidateCacheTag(CACHE_TAGS.DEPARTMENTS);
+
     return NextResponse.json(department, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

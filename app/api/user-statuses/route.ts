@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { revalidateCacheTag, CACHE_TAGS } from "@/lib/cache";
 
 const createUserStatusSchema = z.object({
   name: z.string().min(1, "نام استتوس الزامی است"),
@@ -126,11 +127,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // بی‌اعتبار کردن کش استتوس‌ها
+    await revalidateCacheTag(CACHE_TAGS.USER_STATUSES);
+
     return NextResponse.json(status, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
@@ -193,11 +197,14 @@ export async function PATCH(request: NextRequest) {
       data,
     });
 
+    // بی‌اعتبار کردن کش استتوس‌ها
+    await revalidateCacheTag(CACHE_TAGS.USER_STATUSES);
+
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
@@ -242,6 +249,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.user_statuses.delete({
       where: { id },
     });
+
+    // بی‌اعتبار کردن کش استتوس‌ها
+    await revalidateCacheTag(CACHE_TAGS.USER_STATUSES);
 
     return NextResponse.json({ success: true });
   } catch (error) {

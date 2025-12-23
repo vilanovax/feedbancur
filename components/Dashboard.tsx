@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import Sidebar from "./Sidebar";
@@ -58,7 +58,7 @@ export default function Dashboard() {
     }
   }, [status]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const res = await fetch("/api/stats");
       if (res.ok) {
@@ -70,9 +70,9 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchAssessmentResults = async () => {
+  const fetchAssessmentResults = useCallback(async () => {
     try {
       const response = await fetch("/api/assessments/my-results");
       if (response.ok) {
@@ -82,9 +82,9 @@ export default function Dashboard() {
     } catch (error) {
       console.error("Error fetching assessment results:", error);
     }
-  };
+  }, []);
 
-  const getResultDisplay = (result: any) => {
+  const getResultDisplay = useCallback((result: any) => {
     if (result.assessment.type === "MBTI" && result.result) {
       return result.result.type || "N/A";
     } else if (result.assessment.type === "DISC" && result.result) {
@@ -97,18 +97,19 @@ export default function Dashboard() {
       return `${result.score}%`;
     }
     return "N/A";
-  };
+  }, []);
 
-  const getTypeLabel = (type: string) => {
-    const labels: { [key: string]: string } = {
-      MBTI: "MBTI",
-      DISC: "DISC",
-      HOLLAND: "هالند",
-      MSQ: "MSQ",
-      CUSTOM: "سفارشی",
-    };
-    return labels[type] || type;
-  };
+  const typeLabels = useMemo(() => ({
+    MBTI: "MBTI",
+    DISC: "DISC",
+    HOLLAND: "هالند",
+    MSQ: "MSQ",
+    CUSTOM: "سفارشی",
+  }), []);
+
+  const getTypeLabel = useCallback((type: string) => {
+    return typeLabels[type as keyof typeof typeLabels] || type;
+  }, [typeLabels]);
 
   if (status === "loading" || loading) {
     return (

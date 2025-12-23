@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 دقیقه
 
     // حذف OTPهای قبلی برای این شماره
-    await prisma.oTP.deleteMany({
+    await prisma.otps.deleteMany({
       where: {
         mobile,
         verified: false,
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     });
 
     // ایجاد OTP جدید
-    const otp = await prisma.oTP.create({
+    const otp = await prisma.otps.create({
       data: {
         mobile,
         code,
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

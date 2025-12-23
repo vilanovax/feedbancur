@@ -155,7 +155,7 @@ export async function PATCH(
               userId: feedback.forwardedToId,
               feedbackId: id,
               title: "فیدبک تمام شد",
-              content: `فیدبک "${feedback.title}" شما توسط ${updatedFeedback.department.name} انجام شد.`,
+              content: `فیدبک "${feedback.title}" شما توسط ${updatedFeedback.departments?.name || "نامشخص"} انجام شد.`,
               type: "SUCCESS",
               redirectUrl: `/feedback/${id}`,
             },
@@ -197,7 +197,7 @@ export async function PATCH(
                   userId: admin.id,
                   feedbackId: id,
                   title: "فیدبک تکمیل شد",
-                  content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.completedBy?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
+                  content: `فیدبک "${feedback.title}" توسط مدیر ${updatedFeedback.users_feedbacks_completedByIdTousers?.name || "نامشخص"} به وضعیت انجام شد تغییر یافت.`,
                   type: "INFO",
                   redirectUrl: `/feedback/${id}`,
                 },
@@ -223,7 +223,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }

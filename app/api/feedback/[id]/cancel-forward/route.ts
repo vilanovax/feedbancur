@@ -25,9 +25,9 @@ export async function POST(
     const feedback = await prisma.feedbacks.findUnique({
       where: { id },
       include: {
-        task: {
+        tasks: {
           include: {
-            assignedTo: true,
+            task_assignments: true,
           },
         },
         users_feedbacks_forwardedToIdTousers: true,
@@ -60,8 +60,8 @@ export async function POST(
     }
 
     // بررسی اینکه تسک مرتبط شروع نشده باشد
-    if (feedback.task) {
-      if (feedback.task.status !== "PENDING") {
+    if (feedback.tasks) {
+      if (feedback.tasks.status !== "PENDING") {
         return NextResponse.json(
           { error: "امکان لغو ارجاع وجود ندارد. تسک مرتبط در حال انجام است" },
           { status: 400 }
@@ -70,7 +70,7 @@ export async function POST(
 
       // حذف تسک
       await prisma.tasks.delete({
-        where: { id: feedback.task.id },
+        where: { id: feedback.tasks.id },
       });
     }
 
@@ -83,14 +83,14 @@ export async function POST(
         forwardedAt: null,
       },
       include: {
-        user: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
             mobile: true,
           },
         },
-        department: {
+        departments: {
           select: {
             id: true,
             name: true,

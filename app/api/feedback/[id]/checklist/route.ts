@@ -31,7 +31,7 @@ export async function GET(
     const feedback = await prisma.feedbacks.findUnique({
       where: { id: resolvedParams.id },
       include: {
-        checklistItems: {
+        checklist_items: {
           orderBy: { order: "asc" },
         },
       },
@@ -58,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json(feedback.checklistItems || []);
+    return NextResponse.json(feedback.checklist_items || []);
   } catch (error) {
     console.error("Error fetching checklist:", error);
     console.error("Error details:", error instanceof Error ? error.message : String(error));
@@ -114,14 +114,14 @@ export async function POST(
     }
 
     // دریافت آخرین order برای قرار دادن آیتم جدید در انتها
-    const lastItem = await prisma.checklistItem.findFirst({
+    const lastItem = await prisma.checklist_items.findFirst({
       where: { feedbackId: resolvedParams.id },
       orderBy: { order: "desc" },
     });
 
     const newOrder = lastItem ? lastItem.order + 1 : 0;
 
-    const checklistItem = await prisma.checklistItem.create({
+    const checklistItem = await prisma.checklist_items.create({
       data: {
         feedbackId: resolvedParams.id,
         title: data.title,
@@ -133,7 +133,7 @@ export async function POST(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 }
       );
     }
