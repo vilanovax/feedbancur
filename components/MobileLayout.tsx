@@ -15,6 +15,7 @@ import {
   X,
   LogOut,
   User,
+  Users,
   Send,
   ArrowRight,
   Settings,
@@ -369,6 +370,11 @@ export default function MobileLayout({
       name: "بورد افتخارات",
       href: "/mobile/public-board",
       icon: Trophy,
+    },
+    {
+      name: "وضعیت تیم",
+      href: role === "MANAGER" ? "/mobile/manager/team-status" : "/mobile/team-status",
+      icon: Users,
     },
   ];
 

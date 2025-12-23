@@ -370,6 +370,7 @@ model settings {
   objectStorageSettings Json?
   workingHoursSettings  Json?
   openAISettings        Json?
+  teamStatusSettings    Json?
 }
 
 model task_assignments {
@@ -443,6 +444,7 @@ model users {
   updatedAt                                DateTime
   mustChangePassword                       Boolean                 @default(false)
   statusId                                 String?
+  lastSeen                                 DateTime?
   announcement_messages                    announcement_messages[]
   announcement_views                       announcement_views[]
   announcements                            announcements[]

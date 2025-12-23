@@ -263,6 +263,12 @@ export default function Sidebar() {
       ],
     },
     {
+      name: "وضعیت تیم",
+      href: "/team-status",
+      icon: Users,
+      roles: ["ADMIN"],
+    },
+    {
       name: "مدیریت کاربران",
       href: "/users",
       icon: Users,

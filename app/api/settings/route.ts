@@ -159,6 +159,24 @@ export async function GET() {
             apiKey: "",
             model: "gpt-3.5-turbo",
           },
+      teamStatusSettings: dbSettings?.teamStatusSettings
+        ? (typeof dbSettings.teamStatusSettings === 'string'
+            ? JSON.parse(dbSettings.teamStatusSettings)
+            : dbSettings.teamStatusSettings)
+        : {
+            enabled: true,
+            onlineThresholdMinutes: 5,
+            managerAccess: {
+              canViewOwnDepartment: true,
+              canViewOtherDepartments: false,
+              allowedDepartments: [],
+            },
+            employeeAccess: {
+              canViewOwnDepartment: true,
+              canViewOtherDepartments: false,
+              allowedDepartments: [],
+            },
+          },
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
@@ -415,6 +433,57 @@ export async function POST(request: NextRequest) {
         enabled: false,
         apiKey: "",
         model: "gpt-3.5-turbo",
+      };
+    }
+
+    // ذخیره teamStatusSettings
+    if (body.teamStatusSettings && typeof body.teamStatusSettings === 'object') {
+      updateData.teamStatusSettings = {
+        enabled: body.teamStatusSettings.enabled !== undefined
+          ? Boolean(body.teamStatusSettings.enabled)
+          : true,
+        onlineThresholdMinutes: Number(body.teamStatusSettings.onlineThresholdMinutes) || 5,
+        managerAccess: body.teamStatusSettings.managerAccess
+          ? {
+              canViewOwnDepartment: Boolean(body.teamStatusSettings.managerAccess.canViewOwnDepartment),
+              canViewOtherDepartments: Boolean(body.teamStatusSettings.managerAccess.canViewOtherDepartments),
+              allowedDepartments: Array.isArray(body.teamStatusSettings.managerAccess.allowedDepartments)
+                ? body.teamStatusSettings.managerAccess.allowedDepartments.filter((d: any) => typeof d === 'string')
+                : [],
+            }
+          : {
+              canViewOwnDepartment: true,
+              canViewOtherDepartments: false,
+              allowedDepartments: [],
+            },
+        employeeAccess: body.teamStatusSettings.employeeAccess
+          ? {
+              canViewOwnDepartment: Boolean(body.teamStatusSettings.employeeAccess.canViewOwnDepartment),
+              canViewOtherDepartments: Boolean(body.teamStatusSettings.employeeAccess.canViewOtherDepartments),
+              allowedDepartments: Array.isArray(body.teamStatusSettings.employeeAccess.allowedDepartments)
+                ? body.teamStatusSettings.employeeAccess.allowedDepartments.filter((d: any) => typeof d === 'string')
+                : [],
+            }
+          : {
+              canViewOwnDepartment: true,
+              canViewOtherDepartments: false,
+              allowedDepartments: [],
+            },
+      };
+    } else if (!existingSettings) {
+      updateData.teamStatusSettings = {
+        enabled: true,
+        onlineThresholdMinutes: 5,
+        managerAccess: {
+          canViewOwnDepartment: true,
+          canViewOtherDepartments: false,
+          allowedDepartments: [],
+        },
+        employeeAccess: {
+          canViewOwnDepartment: true,
+          canViewOtherDepartments: false,
+          allowedDepartments: [],
+        },
       };
     }
 
