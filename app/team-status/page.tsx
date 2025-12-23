@@ -203,9 +203,16 @@ export default function TeamStatusPage() {
         <AdminHeader title="وضعیت تیم" />
 
         <main className="mt-16 p-4 md:p-6">
-          {/* Stats Cards */}
+          {/* Stats Cards - Clickable for filtering */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+            <button
+              onClick={() => setStatusFilter("all")}
+              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+                statusFilter === "all"
+                  ? "border-blue-500 ring-2 ring-blue-200"
+                  : "border-gray-200 hover:border-blue-300"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <Users className="w-6 h-6 text-blue-600" />
@@ -215,9 +222,16 @@ export default function TeamStatusPage() {
                   <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
                 </div>
               </div>
-            </div>
+            </button>
 
-            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+            <button
+              onClick={() => setStatusFilter("online")}
+              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+                statusFilter === "online"
+                  ? "border-green-500 ring-2 ring-green-200"
+                  : "border-gray-200 hover:border-green-300"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                   <Circle className="w-6 h-6 text-green-600 fill-current" />
@@ -227,9 +241,16 @@ export default function TeamStatusPage() {
                   <p className="text-2xl font-bold text-green-600">{stats.online}</p>
                 </div>
               </div>
-            </div>
+            </button>
 
-            <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
+            <button
+              onClick={() => setStatusFilter("offline")}
+              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+                statusFilter === "offline"
+                  ? "border-gray-500 ring-2 ring-gray-200"
+                  : "border-gray-200 hover:border-gray-400"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                   <Circle className="w-6 h-6 text-gray-400" />
@@ -239,7 +260,7 @@ export default function TeamStatusPage() {
                   <p className="text-2xl font-bold text-gray-600">{stats.offline}</p>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Filters */}

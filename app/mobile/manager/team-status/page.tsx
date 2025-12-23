@@ -194,20 +194,41 @@ export default function ManagerTeamStatusPage() {
 
   return (
     <MobileLayout role="MANAGER" title="وضعیت تیم">
-      {/* Stats */}
+      {/* Stats - Clickable for filtering */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm">
+        <button
+          onClick={() => setStatusFilter("all")}
+          className={`bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm border-2 transition-all ${
+            statusFilter === "all"
+              ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800"
+              : "border-transparent"
+          }`}
+        >
           <p className="text-2xl font-bold text-gray-800 dark:text-white">{stats.total}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">کل</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm">
+        </button>
+        <button
+          onClick={() => setStatusFilter("online")}
+          className={`bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm border-2 transition-all ${
+            statusFilter === "online"
+              ? "border-green-500 ring-2 ring-green-200 dark:ring-green-800"
+              : "border-transparent"
+          }`}
+        >
           <p className="text-2xl font-bold text-green-600">{stats.online}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">آنلاین</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm">
+        </button>
+        <button
+          onClick={() => setStatusFilter("offline")}
+          className={`bg-white dark:bg-gray-800 rounded-xl p-3 text-center shadow-sm border-2 transition-all ${
+            statusFilter === "offline"
+              ? "border-gray-500 ring-2 ring-gray-200 dark:ring-gray-700"
+              : "border-transparent"
+          }`}
+        >
           <p className="text-2xl font-bold text-gray-500">{stats.offline}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">آفلاین</p>
-        </div>
+        </button>
       </div>
 
       {/* Search & Filters */}

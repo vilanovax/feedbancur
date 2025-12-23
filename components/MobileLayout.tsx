@@ -307,6 +307,23 @@ export default function MobileLayout({
     }
   }, [session]);
 
+  // Heartbeat - ارسال وضعیت آنلاین هر 30 ثانیه
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        await fetch("/api/users/heartbeat", { method: "POST" });
+      } catch (error) {
+        console.error("Error sending heartbeat:", error);
+      }
+    };
+
+    if (session?.user) {
+      sendHeartbeat(); // ارسال فوری
+      const interval = setInterval(sendHeartbeat, 30000); // هر 30 ثانیه
+      return () => clearInterval(interval);
+    }
+  }, [session]);
+
   // بررسی تسک‌های ارجاع شده برای مدیر
   useEffect(() => {
     const checkAssignedTasks = async () => {
