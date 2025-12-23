@@ -202,7 +202,7 @@ export default function TeamStatusPage() {
       <div className="flex-1 lg:mr-64">
         <AdminHeader title="وضعیت تیم" />
 
-        <main className="p-4 md:p-6">
+        <main className="mt-16 p-4 md:p-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-200">
