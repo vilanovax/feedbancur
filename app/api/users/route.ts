@@ -37,6 +37,12 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search");
     const showAdmins = searchParams.get("showAdmins") === "true";
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100); // حداکثر 100
+    const skip = (page - 1) * limit;
+    const usePagination = searchParams.get("paginated") === "true";
+
     const where: any = {};
 
     // فقط اگر showAdmins فعال نباشد، ادمین‌ها را فیلتر کن
@@ -68,39 +74,51 @@ export async function GET(req: NextRequest) {
     }
 
     let users;
-    try {
-      // استفاده از type assertion برای جلوگیری از خطای TypeScript
-      users = await (prisma.users.findMany as any)({
-        where,
+    let total = 0;
+
+    const selectFields = {
+      id: true,
+      mobile: true,
+      email: true,
+      name: true,
+      role: true,
+      departmentId: true,
+      departments: {
         select: {
           id: true,
-          mobile: true,
-          email: true,
           name: true,
-          role: true,
-          departmentId: true,
-          departments: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          statusId: true,
-          user_statuses: {
-            select: {
-              id: true,
-              name: true,
-              color: true,
-            },
-          },
-          isActive: true,
-          createdAt: true,
-          updatedAt: true,
         },
-        orderBy: {
-          createdAt: "desc",
+      },
+      statusId: true,
+      user_statuses: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
         },
-      });
+      },
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+    };
+
+    try {
+      // بهینه‌سازی: اجرای همزمان query و count
+      const [usersResult, countResult] = await Promise.all([
+        (prisma.users.findMany as any)({
+          where,
+          select: selectFields,
+          orderBy: {
+            createdAt: "desc",
+          },
+          skip,
+          take: limit,
+        }),
+        prisma.users.count({ where }),
+      ]);
+
+      users = usersResult;
+      total = countResult;
     } catch (dbError: any) {
       // اگر فیلد isActive وجود نداشت، بدون آن query بزن
       if (
@@ -111,36 +129,24 @@ export async function GET(req: NextRequest) {
         dbError?.message?.includes("Unknown arg")
       ) {
         console.warn("isActive field not found, fetching without it:", dbError.message);
-        users = await prisma.users.findMany({
-          where,
-          select: {
-            id: true,
-            mobile: true,
-            email: true,
-            name: true,
-            role: true,
-            departmentId: true,
-            departments: {
-              select: {
-                id: true,
-                name: true,
-              },
+        const selectWithoutIsActive = { ...selectFields };
+        delete (selectWithoutIsActive as any).isActive;
+
+        const [usersResult, countResult] = await Promise.all([
+          prisma.users.findMany({
+            where,
+            select: selectWithoutIsActive,
+            orderBy: {
+              createdAt: "desc",
             },
-            statusId: true,
-            user_statuses: {
-              select: {
-                id: true,
-                name: true,
-                color: true,
-              },
-            },
-            createdAt: true,
-            updatedAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-        });
+            skip,
+            take: limit,
+          }),
+          prisma.users.count({ where }),
+        ]);
+
+        users = usersResult;
+        total = countResult;
       } else {
         throw dbError;
       }
@@ -151,6 +157,19 @@ export async function GET(req: NextRequest) {
       ...user,
       isActive: user.isActive ?? true,
     }));
+
+    // پاسخ با pagination یا بدون آن (برای سازگاری با frontend قدیمی)
+    if (usePagination) {
+      return NextResponse.json({
+        data: usersWithDefaultActive,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
 
     return NextResponse.json(usersWithDefaultActive);
   } catch (error: any) {

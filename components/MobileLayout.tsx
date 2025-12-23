@@ -390,7 +390,7 @@ export default function MobileLayout({
     },
     {
       name: "وضعیت تیم",
-      href: role === "MANAGER" ? "/mobile/manager/team-status" : "/mobile/team-status",
+      href: role === "MANAGER" ? "/mobile/manager/team-status" : "/mobile/employee/team-status",
       icon: Users,
     },
   ];

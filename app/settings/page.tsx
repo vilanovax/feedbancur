@@ -10,6 +10,7 @@ import {
   Save,
   Bell,
   User,
+  Users,
   Shield,
   Database,
   Mail,
@@ -29,6 +30,8 @@ import {
   Clock,
   Calendar,
   X,
+  Eye,
+  Building2,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
@@ -42,7 +45,8 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai" | "teamStatus">("general");
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
 
   // State های بکاپ و ریستور انتخابی
   const [backupSections, setBackupSections] = useState({
@@ -151,6 +155,22 @@ export default function SettingsPage() {
       apiKey: "",
       model: "gpt-3.5-turbo",
     },
+
+    // تنظیمات وضعیت تیم
+    teamStatusSettings: {
+      enabled: true,
+      onlineThresholdMinutes: 5,
+      managerAccess: {
+        canViewOwnDepartment: true,
+        canViewOtherDepartments: false,
+        allowedDepartments: [] as string[],
+      },
+      employeeAccess: {
+        canViewOwnDepartment: true,
+        canViewOtherDepartments: false,
+        allowedDepartments: [] as string[],
+      },
+    },
   });
 
   useEffect(() => {
@@ -163,6 +183,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
+    fetchDepartments();
   }, []);
 
   const fetchSettings = async () => {
@@ -222,10 +243,47 @@ export default function SettingsPage() {
               },
             }));
           }
+          // بارگذاری teamStatusSettings اگر وجود دارد
+          if (data.teamStatusSettings) {
+            setSettings((prev) => ({
+              ...prev,
+              teamStatusSettings: {
+                enabled: data.teamStatusSettings.enabled ?? true,
+                onlineThresholdMinutes: data.teamStatusSettings.onlineThresholdMinutes ?? 5,
+                managerAccess: {
+                  canViewOwnDepartment: data.teamStatusSettings.managerAccess?.canViewOwnDepartment ?? true,
+                  canViewOtherDepartments: data.teamStatusSettings.managerAccess?.canViewOtherDepartments ?? false,
+                  allowedDepartments: Array.isArray(data.teamStatusSettings.managerAccess?.allowedDepartments)
+                    ? data.teamStatusSettings.managerAccess.allowedDepartments
+                    : [],
+                },
+                employeeAccess: {
+                  canViewOwnDepartment: data.teamStatusSettings.employeeAccess?.canViewOwnDepartment ?? true,
+                  canViewOtherDepartments: data.teamStatusSettings.employeeAccess?.canViewOtherDepartments ?? false,
+                  allowedDepartments: Array.isArray(data.teamStatusSettings.employeeAccess?.allowedDepartments)
+                    ? data.teamStatusSettings.employeeAccess.allowedDepartments
+                    : [],
+                },
+              },
+            }));
+          }
         }
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
+    }
+  };
+
+  // دریافت لیست دپارتمان‌ها
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch("/api/departments");
+      if (res.ok) {
+        const data = await res.json();
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
     }
   };
 
@@ -473,6 +531,16 @@ export default function SettingsPage() {
                 }`}
               >
                 پشتیبان‌گیری
+              </button>
+              <button
+                onClick={() => setActiveTab("teamStatus")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "teamStatus"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                وضعیت تیم
               </button>
               <button
                 onClick={() => setActiveTab("openai")}
@@ -1668,6 +1736,295 @@ export default function SettingsPage() {
                             <li>• ساعات کاری: {settings.workingHoursSettings?.startHour?.toString().padStart(2, '0')}:00 تا {settings.workingHoursSettings?.endHour?.toString().padStart(2, '0')}:00 ({(settings.workingHoursSettings?.endHour ?? 17) - (settings.workingHoursSettings?.startHour ?? 8)} ساعت در روز)</li>
                             <li>• روزهای کاری: {(settings.workingHoursSettings?.workingDays || []).length} روز در هفته</li>
                             <li>• تعطیلات رسمی: {(settings.workingHoursSettings?.holidays || []).length} روز</li>
+                          </ul>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب وضعیت تیم */}
+            {activeTab === "teamStatus" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Users className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات وضعیت تیم
+                    </h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* فعال/غیرفعال کردن */}
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div>
+                        <h3 className="font-medium text-gray-800 dark:text-white">فعال بودن قابلیت وضعیت تیم</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">امکان مشاهده وضعیت آنلاین/آفلاین کاربران</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settings.teamStatusSettings?.enabled ?? true}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              teamStatusSettings: {
+                                ...settings.teamStatusSettings,
+                                enabled: e.target.checked,
+                              },
+                            })
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    {settings.teamStatusSettings?.enabled && (
+                      <>
+                        {/* زمان آستانه آنلاین */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <Clock className="inline ml-2" size={16} />
+                            زمان آستانه آنلاین (دقیقه)
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={60}
+                            value={settings.teamStatusSettings?.onlineThresholdMinutes ?? 5}
+                            onChange={(e) =>
+                              setSettings({
+                                ...settings,
+                                teamStatusSettings: {
+                                  ...settings.teamStatusSettings,
+                                  onlineThresholdMinutes: parseInt(e.target.value) || 5,
+                                },
+                              })
+                            }
+                            className="w-32 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            کاربرانی که در این مدت فعالیت داشته‌اند، آنلاین نمایش داده می‌شوند
+                          </p>
+                        </div>
+
+                        {/* تنظیمات دسترسی مدیران */}
+                        <div className="border border-blue-200 dark:border-blue-800 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                          <h3 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                            <Shield className="ml-2 text-blue-600" size={20} />
+                            دسترسی مدیران
+                          </h3>
+
+                          <div className="space-y-4">
+                            <label className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={settings.teamStatusSettings?.managerAccess?.canViewOwnDepartment ?? true}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    teamStatusSettings: {
+                                      ...settings.teamStatusSettings,
+                                      managerAccess: {
+                                        ...settings.teamStatusSettings?.managerAccess,
+                                        canViewOwnDepartment: e.target.checked,
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">مشاهده بخش خود</span>
+                            </label>
+
+                            <label className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={settings.teamStatusSettings?.managerAccess?.canViewOtherDepartments ?? false}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    teamStatusSettings: {
+                                      ...settings.teamStatusSettings,
+                                      managerAccess: {
+                                        ...settings.teamStatusSettings?.managerAccess,
+                                        canViewOtherDepartments: e.target.checked,
+                                        allowedDepartments: e.target.checked
+                                          ? settings.teamStatusSettings?.managerAccess?.allowedDepartments ?? []
+                                          : [],
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">مشاهده سایر بخش‌ها</span>
+                            </label>
+
+                            {settings.teamStatusSettings?.managerAccess?.canViewOtherDepartments && (
+                              <div className="mr-7">
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                  <Building2 className="inline ml-1" size={14} />
+                                  بخش‌های مجاز (خالی = همه بخش‌ها):
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  {departments.map((dept) => (
+                                    <label
+                                      key={dept.id}
+                                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer text-sm transition ${
+                                        settings.teamStatusSettings?.managerAccess?.allowedDepartments?.includes(dept.id)
+                                          ? "bg-blue-600 text-white"
+                                          : "bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={settings.teamStatusSettings?.managerAccess?.allowedDepartments?.includes(dept.id) ?? false}
+                                        onChange={(e) => {
+                                          const currentDepts = settings.teamStatusSettings?.managerAccess?.allowedDepartments ?? [];
+                                          const newDepts = e.target.checked
+                                            ? [...currentDepts, dept.id]
+                                            : currentDepts.filter((d) => d !== dept.id);
+                                          setSettings({
+                                            ...settings,
+                                            teamStatusSettings: {
+                                              ...settings.teamStatusSettings,
+                                              managerAccess: {
+                                                ...settings.teamStatusSettings?.managerAccess,
+                                                allowedDepartments: newDepts,
+                                              },
+                                            },
+                                          });
+                                        }}
+                                        className="sr-only"
+                                      />
+                                      {dept.name}
+                                    </label>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                  اگر هیچ بخشی انتخاب نشود، مدیران به همه بخش‌ها دسترسی خواهند داشت
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* تنظیمات دسترسی کارمندان */}
+                        <div className="border border-green-200 dark:border-green-800 rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+                          <h3 className="font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                            <User className="ml-2 text-green-600" size={20} />
+                            دسترسی کارمندان
+                          </h3>
+
+                          <div className="space-y-4">
+                            <label className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={settings.teamStatusSettings?.employeeAccess?.canViewOwnDepartment ?? true}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    teamStatusSettings: {
+                                      ...settings.teamStatusSettings,
+                                      employeeAccess: {
+                                        ...settings.teamStatusSettings?.employeeAccess,
+                                        canViewOwnDepartment: e.target.checked,
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">مشاهده بخش خود</span>
+                            </label>
+
+                            <label className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={settings.teamStatusSettings?.employeeAccess?.canViewOtherDepartments ?? false}
+                                onChange={(e) =>
+                                  setSettings({
+                                    ...settings,
+                                    teamStatusSettings: {
+                                      ...settings.teamStatusSettings,
+                                      employeeAccess: {
+                                        ...settings.teamStatusSettings?.employeeAccess,
+                                        canViewOtherDepartments: e.target.checked,
+                                        allowedDepartments: e.target.checked
+                                          ? settings.teamStatusSettings?.employeeAccess?.allowedDepartments ?? []
+                                          : [],
+                                      },
+                                    },
+                                  })
+                                }
+                                className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">مشاهده سایر بخش‌ها</span>
+                            </label>
+
+                            {settings.teamStatusSettings?.employeeAccess?.canViewOtherDepartments && (
+                              <div className="mr-7">
+                                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                  <Building2 className="inline ml-1" size={14} />
+                                  بخش‌های مجاز (خالی = همه بخش‌ها):
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  {departments.map((dept) => (
+                                    <label
+                                      key={dept.id}
+                                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full cursor-pointer text-sm transition ${
+                                        settings.teamStatusSettings?.employeeAccess?.allowedDepartments?.includes(dept.id)
+                                          ? "bg-green-600 text-white"
+                                          : "bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={settings.teamStatusSettings?.employeeAccess?.allowedDepartments?.includes(dept.id) ?? false}
+                                        onChange={(e) => {
+                                          const currentDepts = settings.teamStatusSettings?.employeeAccess?.allowedDepartments ?? [];
+                                          const newDepts = e.target.checked
+                                            ? [...currentDepts, dept.id]
+                                            : currentDepts.filter((d) => d !== dept.id);
+                                          setSettings({
+                                            ...settings,
+                                            teamStatusSettings: {
+                                              ...settings.teamStatusSettings,
+                                              employeeAccess: {
+                                                ...settings.teamStatusSettings?.employeeAccess,
+                                                allowedDepartments: newDepts,
+                                              },
+                                            },
+                                          });
+                                        }}
+                                        className="sr-only"
+                                      />
+                                      {dept.name}
+                                    </label>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                  اگر هیچ بخشی انتخاب نشود، کارمندان به همه بخش‌ها دسترسی خواهند داشت
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* نکات */}
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                          <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
+                            💡 نکات مهم:
+                          </h4>
+                          <ul className="text-xs text-yellow-700 dark:text-yellow-400 space-y-1 list-disc list-inside">
+                            <li>ادمین‌ها همیشه به همه بخش‌ها دسترسی دارند</li>
+                            <li>وضعیت آنلاین بر اساس آخرین فعالیت کاربر محاسبه می‌شود</li>
+                            <li>اگر "مشاهده سایر بخش‌ها" فعال باشد و هیچ بخشی انتخاب نشود، همه بخش‌ها قابل مشاهده خواهند بود</li>
+                            <li>برای دسترسی کارمندان به صفحه وضعیت تیم، باید حداقل یکی از گزینه‌ها فعال باشد</li>
                           </ul>
                         </div>
                       </>

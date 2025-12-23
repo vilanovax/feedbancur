@@ -1,26 +1,61 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { BarChart3, TrendingUp, Star } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+
+// Lazy load recharts components برای بهبود performance
+const LazyBarChart = dynamic(
+  () => import("recharts").then((mod) => mod.BarChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const LazyBar = dynamic(() => import("recharts").then((mod) => mod.Bar), {
+  ssr: false,
+});
+const LazyXAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), {
+  ssr: false,
+});
+const LazyYAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), {
+  ssr: false,
+});
+const LazyCartesianGrid = dynamic(
+  () => import("recharts").then((mod) => mod.CartesianGrid),
+  { ssr: false }
+);
+const LazyTooltip = dynamic(
+  () => import("recharts").then((mod) => mod.Tooltip),
+  { ssr: false }
+);
+const LazyLegend = dynamic(() => import("recharts").then((mod) => mod.Legend), {
+  ssr: false,
+});
+const LazyResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false }
+);
+const LazyPieChart = dynamic(
+  () => import("recharts").then((mod) => mod.PieChart),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+const LazyPie = dynamic(() => import("recharts").then((mod) => mod.Pie), {
+  ssr: false,
+});
+const LazyCell = dynamic(() => import("recharts").then((mod) => mod.Cell), {
+  ssr: false,
+});
+
+// Skeleton component for chart loading
+function ChartSkeleton() {
+  return (
+    <div className="h-[300px] bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex items-center justify-center">
+      <div className="text-gray-400">در حال بارگذاری نمودار...</div>
+    </div>
+  );
+}
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
@@ -217,30 +252,30 @@ export default function AnalyticsPage() {
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
               فیدبک‌ها بر اساس بخش
             </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analytics.feedbacksByDepartment || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
+            <LazyResponsiveContainer width="100%" height={300}>
+              <LazyBarChart data={analytics.feedbacksByDepartment || []}>
+                <LazyCartesianGrid strokeDasharray="3 3" />
+                <LazyXAxis dataKey="name" />
+                <LazyYAxis />
+                <LazyTooltip />
+                <LazyLegend />
+                <LazyBar dataKey="count" fill="#3b82f6" />
+              </LazyBarChart>
+            </LazyResponsiveContainer>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
               توزیع امتیازها
             </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
+            <LazyResponsiveContainer width="100%" height={300}>
+              <LazyPieChart>
+                <LazyPie
                   data={analytics.ratingDistribution || []}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
+                  label={({ name, percent }: { name: string; percent: number }) =>
                     `${name}: ${(percent * 100).toFixed(0)}%`
                   }
                   outerRadius={80}
@@ -249,16 +284,16 @@ export default function AnalyticsPage() {
                 >
                   {(analytics.ratingDistribution || []).map(
                     (entry: any, index: number) => (
-                      <Cell
+                      <LazyCell
                         key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
                       />
                     )
                   )}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+                </LazyPie>
+                <LazyTooltip />
+              </LazyPieChart>
+            </LazyResponsiveContainer>
           </div>
         </div>
 
@@ -272,18 +307,18 @@ export default function AnalyticsPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 میانگین زمان انجام فیدبک‌ها (ساعت کاری)
               </p>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.departmentCompletionSpeed}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis label={{ value: 'ساعت', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip 
+              <LazyResponsiveContainer width="100%" height={300}>
+                <LazyBarChart data={analytics.departmentCompletionSpeed}>
+                  <LazyCartesianGrid strokeDasharray="3 3" />
+                  <LazyXAxis dataKey="name" />
+                  <LazyYAxis label={{ value: 'ساعت', angle: -90, position: 'insideLeft' }} />
+                  <LazyTooltip
                     formatter={(value: number) => [`${value} ساعت`, 'میانگین زمان']}
                   />
-                  <Legend />
-                  <Bar dataKey="averageHours" fill="#10b981" name="میانگین زمان (ساعت)" />
-                </BarChart>
-              </ResponsiveContainer>
+                  <LazyLegend />
+                  <LazyBar dataKey="averageHours" fill="#10b981" name="میانگین زمان (ساعت)" />
+                </LazyBarChart>
+              </LazyResponsiveContainer>
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
@@ -293,16 +328,16 @@ export default function AnalyticsPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 تعداد فیدبک‌های تکمیل شده در هر بخش
               </p>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.departmentCompletionSpeed}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="totalCompleted" fill="#f59e0b" name="تعداد انجام شده" />
-                </BarChart>
-              </ResponsiveContainer>
+              <LazyResponsiveContainer width="100%" height={300}>
+                <LazyBarChart data={analytics.departmentCompletionSpeed}>
+                  <LazyCartesianGrid strokeDasharray="3 3" />
+                  <LazyXAxis dataKey="name" />
+                  <LazyYAxis />
+                  <LazyTooltip />
+                  <LazyLegend />
+                  <LazyBar dataKey="totalCompleted" fill="#f59e0b" name="تعداد انجام شده" />
+                </LazyBarChart>
+              </LazyResponsiveContainer>
             </div>
           </div>
         )}

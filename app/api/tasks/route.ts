@@ -27,6 +27,12 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const departmentId = searchParams.get('departmentId');
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const skip = (page - 1) * limit;
+    const usePagination = searchParams.get('paginated') === 'true';
+
     const where: any = {};
 
     // فیلتر براساس نقش کاربر
@@ -53,47 +59,89 @@ export async function GET(req: NextRequest) {
       where.departmentId = departmentId;
     }
 
-    const tasks = await prisma.tasks.findMany({
-      where,
-      include: {
-        departments: true,
-        users: {
-          select: {
-            id: true,
-            name: true,
-            mobile: true,
+    // بهینه‌سازی: استفاده از select بجای include کامل و اجرای همزمان query و count
+    const [tasks, total] = await Promise.all([
+      prisma.tasks.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          status: true,
+          priority: true,
+          createdAt: true,
+          updatedAt: true,
+          departmentId: true,
+          feedbackId: true,
+          createdById: true,
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
-        },
-        task_assignments: {
-          include: {
-            employees: true,
-            users: {
-              select: {
-                id: true,
-                name: true,
-                mobile: true,
+          users: {
+            select: {
+              id: true,
+              name: true,
+              mobile: true,
+            },
+          },
+          task_assignments: {
+            select: {
+              id: true,
+              employeeId: true,
+              userId: true,
+              employees: {
+                select: {
+                  id: true,
+                  name: true,
+                  position: true,
+                },
+              },
+              users: {
+                select: {
+                  id: true,
+                  name: true,
+                  mobile: true,
+                },
               },
             },
           },
-        },
-        feedbacks: {
-          select: {
-            id: true,
-            title: true,
-            type: true,
+          feedbacks: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+            },
+          },
+          _count: {
+            select: {
+              task_comments: true,
+            },
           },
         },
-        task_comments: {
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 5,
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        skip,
+        take: limit,
+      }),
+      prisma.tasks.count({ where }),
+    ]);
+
+    // پاسخ با pagination یا بدون آن
+    if (usePagination) {
+      return NextResponse.json({
+        data: tasks,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
 
     return NextResponse.json(tasks);
   } catch (error) {

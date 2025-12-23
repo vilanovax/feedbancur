@@ -27,6 +27,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const showAll = searchParams.get('showAll') === 'true'; // برای صفحه مدیریت
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const skip = (page - 1) * limit;
+    const usePagination = searchParams.get('paginated') === 'true';
+
     // ساخت فیلتر اعلانات
     const where: any = {};
 
@@ -75,28 +81,45 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const announcements = await prisma.announcements.findMany({
-      where,
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
+    // بهینه‌سازی: اجرای همزمان query و count
+    const [announcements, total] = await Promise.all([
+      prisma.announcements.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          content: true,
+          priority: true,
+          isActive: true,
+          scheduledAt: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          attachments: true,
+          departmentId: true,
+          createdById: true,
+          users: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
+          },
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        departments: {
-          select: {
-            id: true,
-            name: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 50, // آخرین 50 اعلان
-    });
+        skip,
+        take: limit,
+      }),
+      prisma.announcements.count({ where }),
+    ]);
 
     // تبدیل به فرمت frontend
     const responseAnnouncements = announcements.map((announcement: any) => ({
@@ -106,6 +129,19 @@ export async function GET(req: NextRequest) {
       users: undefined,
       departments: undefined,
     }));
+
+    // پاسخ با pagination یا بدون آن
+    if (usePagination) {
+      return NextResponse.json({
+        data: responseAnnouncements,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
 
     return NextResponse.json(responseAnnouncements);
   } catch (error) {

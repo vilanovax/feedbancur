@@ -66,7 +66,12 @@ export async function GET(request: NextRequest) {
 
     console.log("Fetching feedbacks with where:", JSON.stringify(where, null, 2));
 
-    // بهینه‌سازی: تعریف include config یکبار
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100); // حداکثر 100
+    const skip = (page - 1) * limit;
+
+    // بهینه‌سازی: تعریف include config یکبار - با manager include شده در department
     const includeConfig = {
       users_feedbacks_userIdTousers: {
         select: {
@@ -81,6 +86,13 @@ export async function GET(request: NextRequest) {
           name: true,
           allowDirectFeedback: true,
           managerId: true,
+          // بهینه‌سازی N+1: include کردن manager مستقیماً در department query
+          users: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
       users_feedbacks_forwardedToIdTousers: {
@@ -103,41 +115,58 @@ export async function GET(request: NextRequest) {
     };
 
     let feedbacks;
+    let total = 0;
+
     try {
-      feedbacks = await prisma.feedbacks.findMany({
-        where,
-        include: includeConfig,
-        orderBy: {
-          createdAt: "desc",
-        },
-        // محدود کردن تعداد نتایج برای مدیر (می‌تواند بعداً pagination اضافه شود)
-        ...(receivedFeedbacks && session.user.role === "MANAGER" ? { take: 100 } : {}),
-      });
-      console.log("Found", feedbacks.length, "feedbacks");
+      // بهینه‌سازی: اجرای همزمان query و count
+      const [feedbacksResult, countResult] = await Promise.all([
+        prisma.feedbacks.findMany({
+          where,
+          include: includeConfig,
+          orderBy: {
+            createdAt: "desc",
+          },
+          skip,
+          take: limit,
+        }),
+        prisma.feedbacks.count({ where }),
+      ]);
+
+      feedbacks = feedbacksResult;
+      total = countResult;
+      console.log("Found", feedbacks.length, "feedbacks out of", total, "total");
     } catch (error: any) {
       console.error("Error fetching feedbacks (inner catch):", error);
       console.error("Error message:", error?.message);
       console.error("Error code:", error?.code);
       // اگر مشکل از deletedAt است، بدون آن query بزن
       if (
-        error?.message?.includes("deletedAt") || 
+        error?.message?.includes("deletedAt") ||
         error?.message?.includes("Unknown field") ||
         error?.message?.includes("Unknown column") ||
-        error?.code === "P2009" || 
+        error?.code === "P2009" ||
         error?.code === "P2011" ||
         error?.code === "P2021"
       ) {
         console.warn("deletedAt field error, trying without it");
         const whereWithoutDeleted = { ...where };
         delete whereWithoutDeleted.deletedAt;
-        feedbacks = await prisma.feedbacks.findMany({
-          where: whereWithoutDeleted,
-          include: includeConfig,
-          orderBy: {
-            createdAt: "desc",
-          },
-          ...(receivedFeedbacks && session.user.role === "MANAGER" ? { take: 100 } : {}),
-        });
+
+        const [feedbacksResult, countResult] = await Promise.all([
+          prisma.feedbacks.findMany({
+            where: whereWithoutDeleted,
+            include: includeConfig,
+            orderBy: {
+              createdAt: "desc",
+            },
+            skip,
+            take: limit,
+          }),
+          prisma.feedbacks.count({ where: whereWithoutDeleted }),
+        ]);
+
+        feedbacks = feedbacksResult;
+        total = countResult;
         console.log("Found", feedbacks.length, "feedbacks (without deletedAt filter)");
       } else {
         // اگر خطای دیگری است، آن را throw کن تا catch block بیرونی آن را بگیرد
@@ -145,55 +174,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // جمع‌آوری managerId های منحصر به فرد
-    const managerIds = new Set<string>();
-    feedbacks.forEach((feedback: any) => {
-      if (feedback.departments?.managerId) {
-        managerIds.add(feedback.departments.managerId);
-      }
-    });
-
-    console.log("Manager IDs found:", Array.from(managerIds));
-
-    // دریافت اطلاعات مدیران
-    const managers = managerIds.size > 0 
-      ? await prisma.users.findMany({
-          where: {
-            id: { in: Array.from(managerIds) },
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-        })
-      : [];
-
-    console.log("Managers found:", managers);
-
-    // ایجاد map برای دسترسی سریع به مدیر
-    const managerMap = new Map(managers.map(m => [m.id, m]));
-
     // پردازش فیدبک‌ها و تبدیل به فرمت frontend
     const processedFeedbacks = feedbacks.map((feedback: any) => {
       // تبدیل نام‌های Prisma به نام‌های frontend
-      const department = feedback.departments ? {
-        ...feedback.departments,
-        manager: feedback.departments.managerId 
-          ? (managerMap.get(feedback.departments.managerId) || null)
-          : null,
-      } : null;
-
-      // Debug log
-      if (feedback.departments?.managerId) {
-        console.log(`Department ${feedback.departments.name} (${feedback.departments.id}) has managerId: ${feedback.departments.managerId}`);
-        console.log(`Manager found:`, department?.manager);
-        if (!department?.manager) {
-          console.log(`Manager not found for department ${feedback.departments.id}, managerId: ${feedback.departments.managerId}`);
-          console.log(`Manager map has:`, Array.from(managerMap.keys()));
-        }
-      } else {
-        console.log(`Department ${feedback.departments?.name} (${feedback.departments?.id}) has no managerId`);
-      }
+      // بهینه‌سازی: استفاده از manager که در include آمده (بجای query جداگانه)
+      const department = feedback.departments
+        ? {
+            id: feedback.departments.id,
+            name: feedback.departments.name,
+            allowDirectFeedback: feedback.departments.allowDirectFeedback,
+            managerId: feedback.departments.managerId,
+            manager: feedback.departments.users || null,
+          }
+        : null;
 
       const processedFeedback = {
         ...feedback,
@@ -210,16 +203,34 @@ export async function GET(request: NextRequest) {
       delete processedFeedback.users_feedbacks_completedByIdTousers;
 
       // پردازش فیدبک‌های ناشناس (حذف اطلاعات کاربر اگر isAnonymous = true)
-      if (feedback.isAnonymous && session.user.role !== 'ADMIN') {
+      if (feedback.isAnonymous && session.user.role !== "ADMIN") {
         processedFeedback.user = {
-          id: 'anonymous',
-          name: 'ناشناس',
+          id: "anonymous",
+          name: "ناشناس",
           mobile: null,
         };
       }
       return processedFeedback;
     });
 
+    // برگرداندن response - backward compatible
+    // اگر paginated=true باشد، ساختار جدید با pagination برگردان
+    // در غیر این صورت، فقط array برگردان برای سازگاری با frontend فعلی
+    const usePagination = searchParams.get("paginated") === "true";
+
+    if (usePagination) {
+      return NextResponse.json({
+        data: processedFeedbacks,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
+
+    // Backward compatible: فقط array برگردان
     return NextResponse.json(processedFeedbacks);
   } catch (error: any) {
     console.error("Error fetching feedbacks:", error);
