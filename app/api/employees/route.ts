@@ -32,26 +32,49 @@ export async function GET(req: NextRequest) {
       where.departmentId = session.user.departmentId;
     }
 
-    const employees = await prisma.employees.findMany({
-      where,
-      include: {
-        departments: true,
-        task_assignments: {
-          include: {
-            tasks: {
-              select: {
-                id: true,
-                title: true,
-                status: true,
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const skip = (page - 1) * limit;
+    const usePagination = searchParams.get('paginated') === 'true';
+
+    const [employees, total] = await Promise.all([
+      prisma.employees.findMany({
+        where,
+        include: {
+          departments: true,
+          task_assignments: {
+            include: {
+              tasks: {
+                select: {
+                  id: true,
+                  title: true,
+                  status: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
+        orderBy: {
+          name: 'asc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.employees.count({ where }),
+    ]);
+
+    if (usePagination) {
+      return NextResponse.json({
+        data: employees,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
 
     return NextResponse.json(employees);
   } catch (error) {

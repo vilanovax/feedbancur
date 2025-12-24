@@ -3,10 +3,15 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import MobileLayout from "@/components/MobileLayout";
 import { CheckCircle, Plus } from "lucide-react";
 import { TypeBadge, VisibilityBadge, StatusBadge } from "@/components/PollBadges";
-import PollResultsModal from "@/components/PollResultsModal";
+
+// Lazy load modal component
+const PollResultsModal = dynamic(() => import("@/components/PollResultsModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-48" />,
+});
 
 export default function MobilePollsPage() {
   const { data: session, status } = useSession();

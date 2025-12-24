@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   Bell,
   Plus,
@@ -21,9 +22,15 @@ import {
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
-import AnnouncementModal from "@/components/AnnouncementModal";
-import AnnouncementViewersModal from "@/components/AnnouncementViewersModal";
 import { useToast } from "@/contexts/ToastContext";
+
+// Lazy load modal components
+const AnnouncementModal = dynamic(() => import("@/components/AnnouncementModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-64" />,
+});
+const AnnouncementViewersModal = dynamic(() => import("@/components/AnnouncementViewersModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-64" />,
+});
 
 export default function ManageAnnouncementsPage() {
   const toast = useToast();

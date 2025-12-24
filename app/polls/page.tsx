@@ -4,11 +4,16 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { BarChart3, Plus, Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import PollCard from "@/components/PollCard";
-import PollResultsModal from "@/components/PollResultsModal";
+
+// Lazy load modal component
+const PollResultsModal = dynamic(() => import("@/components/PollResultsModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-48" />,
+});
 
 export default function PollsPage() {
   const { data: session, status } = useSession();

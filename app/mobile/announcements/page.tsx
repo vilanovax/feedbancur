@@ -4,9 +4,14 @@ import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import MobileLayout from "@/components/MobileLayout";
-import AnnouncementModal from "@/components/AnnouncementModal";
 import { Bell, AlertTriangle, AlertCircle, Info, Calendar, User, ArrowUpDown, Paperclip, Plus } from "lucide-react";
+
+// Lazy load modal component
+const AnnouncementModal = dynamic(() => import("@/components/AnnouncementModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-48" />,
+});
 import { format } from "date-fns";
 
 type SortOption = "newest" | "oldest" | "priority" | "title";

@@ -126,36 +126,46 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ users: [], departments: [] });
     }
 
-    // دریافت کاربران
-    const users = await prisma.users.findMany({
-      where: whereClause,
-      select: {
-        id: true,
-        name: true,
-        avatar: true,
-        role: true,
-        lastSeen: true,
-        departmentId: true,
-        departments: {
-          select: {
-            id: true,
-            name: true,
+    // Pagination parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 200);
+    const skip = (page - 1) * limit;
+
+    // دریافت کاربران با pagination
+    const [users, totalUsers] = await Promise.all([
+      prisma.users.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          avatar: true,
+          role: true,
+          lastSeen: true,
+          departmentId: true,
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          statusId: true,
+          user_statuses: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
           },
         },
-        statusId: true,
-        user_statuses: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
-          },
-        },
-      },
-      orderBy: [
-        { lastSeen: "desc" },
-        { name: "asc" },
-      ],
-    });
+        orderBy: [
+          { lastSeen: "desc" },
+          { name: "asc" },
+        ],
+        skip,
+        take: limit,
+      }),
+      prisma.users.count({ where: whereClause }),
+    ]);
 
     // محاسبه وضعیت آنلاین
     const onlineThreshold = new Date(
@@ -206,9 +216,16 @@ export async function GET(req: NextRequest) {
         userCount: d._count.users,
       })),
       stats: {
-        total: formattedUsers.length,
+        total: totalUsers,
         online: onlineCount,
         offline: offlineCount,
+        pageTotal: formattedUsers.length,
+      },
+      pagination: {
+        page,
+        limit,
+        total: totalUsers,
+        pages: Math.ceil(totalUsers / limit),
       },
       settings: {
         onlineThresholdMinutes: teamStatusSettings.onlineThresholdMinutes,

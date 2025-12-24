@@ -86,13 +86,6 @@ export async function GET(request: NextRequest) {
           name: true,
           allowDirectFeedback: true,
           managerId: true,
-          // بهینه‌سازی N+1: include کردن manager مستقیماً در department query
-          users: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
         },
       },
       users_feedbacks_forwardedToIdTousers: {
@@ -174,17 +167,37 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // بهینه‌سازی N+1: جمع‌آوری همه managerIds و گرفتن آن‌ها با یک query
+    const managerIds = new Set<string>();
+    feedbacks.forEach((feedback: any) => {
+      if (feedback.departments?.managerId) {
+        managerIds.add(feedback.departments.managerId);
+      }
+    });
+
+    // گرفتن اطلاعات managers با یک query (بجای N query)
+    let managersMap: Map<string, { id: string; name: string }> = new Map();
+    if (managerIds.size > 0) {
+      const managers = await prisma.users.findMany({
+        where: { id: { in: Array.from(managerIds) } },
+        select: { id: true, name: true },
+      });
+      managers.forEach((m) => managersMap.set(m.id, m));
+    }
+
     // پردازش فیدبک‌ها و تبدیل به فرمت frontend
     const processedFeedbacks = feedbacks.map((feedback: any) => {
       // تبدیل نام‌های Prisma به نام‌های frontend
-      // بهینه‌سازی: استفاده از manager که در include آمده (بجای query جداگانه)
+      // بهینه‌سازی: استفاده از managersMap (یک query بجای N query)
       const department = feedback.departments
         ? {
             id: feedback.departments.id,
             name: feedback.departments.name,
             allowDirectFeedback: feedback.departments.allowDirectFeedback,
             managerId: feedback.departments.managerId,
-            manager: feedback.departments.users || null,
+            manager: feedback.departments.managerId
+              ? managersMap.get(feedback.departments.managerId) || null
+              : null,
           }
         : null;
 

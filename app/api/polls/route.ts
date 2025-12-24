@@ -60,57 +60,81 @@ export async function GET(req: NextRequest) {
       where.AND[2].OR.push({ departmentId: session.user.departmentId });
     }
 
-    const polls = await prisma.polls.findMany({
-      where,
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
-          },
-        },
-        departments: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            poll_responses: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
+    const skip = (page - 1) * limit;
+    const usePagination = searchParams.get('paginated') === 'true';
 
-    // بررسی اینکه آیا کاربر رای داده است یا نه
-    const pollsWithVoteStatus = await Promise.all(
-      polls.map(async (poll: any) => {
-        const userResponse = await prisma.poll_responses.findFirst({
+    const [polls, total] = await Promise.all([
+      prisma.polls.findMany({
+        where,
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
+          },
+          departments: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              poll_responses: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.polls.count({ where }),
+    ]);
+
+    // بهینه‌سازی N+1: گرفتن همه responses کاربر با یک query (بجای N query)
+    const pollIds = polls.map((p: any) => p.id);
+    const userResponses = pollIds.length > 0
+      ? await prisma.poll_responses.findMany({
           where: {
-            pollId: poll.id,
+            pollId: { in: pollIds },
             userId: session.user.id,
           },
-        });
+          select: { pollId: true },
+        })
+      : [];
+    const votedPollIds = new Set(userResponses.map((r) => r.pollId));
 
-        // تبدیل نام‌های Prisma به فرمت frontend
-        return {
-          ...poll,
-          createdBy: poll.users,
-          department: poll.departments,
-          _count: {
-            responses: poll._count.poll_responses,
-          },
-          users: undefined,
-          departments: undefined,
-          hasVoted: !!userResponse,
-        };
-      })
-    );
+    // تبدیل نام‌های Prisma به فرمت frontend
+    const pollsWithVoteStatus = polls.map((poll: any) => ({
+      ...poll,
+      createdBy: poll.users,
+      department: poll.departments,
+      _count: {
+        responses: poll._count.poll_responses,
+      },
+      users: undefined,
+      departments: undefined,
+      hasVoted: votedPollIds.has(poll.id),
+    }));
+
+    if (usePagination) {
+      return NextResponse.json({
+        data: pollsWithVoteStatus,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    }
 
     return NextResponse.json(pollsWithVoteStatus);
   } catch (error) {

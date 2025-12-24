@@ -4,10 +4,15 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Bell, ArrowRight, AlertCircle, Info, AlertTriangle, Plus, Settings, Grid3x3, List, Search, Paperclip } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
-import AnnouncementModal from "@/components/AnnouncementModal";
+
+// Lazy load modal component
+const AnnouncementModal = dynamic(() => import("@/components/AnnouncementModal"), {
+  loading: () => <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-64" />,
+});
 
 type ViewMode = "grid" | "list";
 type SortOption = "newest" | "oldest" | "priority" | "title";
