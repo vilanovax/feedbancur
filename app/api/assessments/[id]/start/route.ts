@@ -187,14 +187,7 @@ export async function POST(
         // Prisma returns Json fields as parsed objects, but we need to ensure it's serializable
         let options: any = q.options;
         
-        // Debug log for first question
-        if (q.order === 1) {
-          console.log('Processing first question:', q.id);
-          console.log('Options type:', typeof options);
-          console.log('Options value:', JSON.stringify(options, null, 2));
-        }
-        
-        // If options is null or undefined, set to empty array
+// If options is null or undefined, set to empty array
         if (options === null || options === undefined) {
           options = [];
         }
