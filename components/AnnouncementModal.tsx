@@ -1,6 +1,7 @@
 "use client";
 
 import { X, Paperclip, Download, FileText, Image as ImageIcon, Building2, User, Calendar } from "lucide-react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface AnnouncementModalProps {
   announcement: any;
@@ -179,15 +180,12 @@ export default function AnnouncementModal({ announcement, onClose }: Announcemen
 
                     {isImageFile(attachment.url) ? (
                       <div className="mt-3">
-                        <img
-                          src={
-                            attachment.url.includes("liara.space")
-                              ? `/api/image-proxy?url=${encodeURIComponent(attachment.url)}`
-                              : attachment.url
-                          }
+                        <OptimizedImage
+                          src={attachment.url}
                           alt={attachment.name || "ضمیمه"}
                           className="w-full h-auto rounded-lg border border-gray-200 dark:border-gray-600"
-                          loading="lazy"
+                          width={600}
+                          height={400}
                         />
                         <a
                           href={`/api/download?url=${encodeURIComponent(attachment.url)}`}

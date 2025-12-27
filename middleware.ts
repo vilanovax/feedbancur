@@ -10,6 +10,7 @@ const publicPaths = [
   "/_next",
   "/favicon.ico",
   "/manifest.json",
+  "/manifest.webmanifest",
   "/icons",
 ];
 

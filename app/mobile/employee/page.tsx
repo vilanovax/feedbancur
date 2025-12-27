@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Image from "next/image";
 import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3, ClipboardList, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -99,25 +100,14 @@ export default function EmployeeMobilePage() {
       const response = await fetch("/api/assessments/my-results");
       if (response.ok) {
         const results = await response.json();
-        console.log("Fetched assessment results:", results);
         setAssessmentResults(results);
-      } else {
-        console.error("Failed to fetch results:", response.status, response.statusText);
       }
-    } catch (error) {
-      console.error("Error fetching assessment results:", error);
+    } catch {
+      // Silently handle error
     }
   };
 
   const getResultDisplay = (result: AssessmentResult) => {
-    // بررسی و لاگ برای دیباگ
-    console.log("Assessment Result:", {
-      type: result.assessment.type,
-      hasResult: !!result.result,
-      result: result.result,
-      score: result.score,
-    });
-
     // برای آزمون‌های شخصیت‌سنجی، ابتدا result.result را بررسی کن
     if (result.assessment.type === "MBTI" && result.result) {
       // اگر result یک object است و type دارد
@@ -182,6 +172,7 @@ export default function EmployeeMobilePage() {
 
   return (
     <MobileLayout role="EMPLOYEE" title="داشبورد">
+      <ErrorBoundary>
       <div className="space-y-4">
         {/* Welcome Card */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
@@ -385,6 +376,7 @@ export default function EmployeeMobilePage() {
           </Link>
         </div>
       </div>
+      </ErrorBoundary>
     </MobileLayout>
   );
 }

@@ -9,6 +9,7 @@ import { BarChart3, Plus, Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import PollCard from "@/components/PollCard";
+import { PollCardSkeleton } from "@/components/ui/skeleton";
 
 // Lazy load modal component
 const PollResultsModal = dynamic(() => import("@/components/PollResultsModal"), {
@@ -85,13 +86,21 @@ export default function PollsPage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-xl">در حال بارگذاری...</div>
       </div>
     );
   }
+
+  const renderSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <PollCardSkeleton key={i} />
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
@@ -134,7 +143,9 @@ export default function PollsPage() {
           </div>
 
           {/* Polls Grid */}
-          {filteredPolls.length === 0 ? (
+          {loading ? (
+            renderSkeleton()
+          ) : filteredPolls.length === 0 ? (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
               <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500 dark:text-gray-400 text-lg">

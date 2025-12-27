@@ -66,7 +66,6 @@ export default function AnnouncementsPage() {
   const isFirstRender = useRef(true);
 
   const openModal = (announcement: any) => {
-    console.log('Opening modal for announcement:', announcement.id);
     setSelectedAnnouncement(announcement);
     setShowModal(true);
   };

@@ -9,6 +9,7 @@ import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import MobileLayout from "@/components/MobileLayout";
 import { useToast } from "@/contexts/ToastContext";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 export default function AnnouncementDetailPage() {
   const { data: session, status } = useSession();
@@ -297,14 +298,12 @@ export default function AnnouncementDetailPage() {
                         
                         {isImageFile(attachment.url) ? (
                           <div className="mt-3">
-                            <img
-                              src={
-                                attachment.url.includes("liara.space")
-                                  ? `/api/image-proxy?url=${encodeURIComponent(attachment.url)}`
-                                  : attachment.url
-                              }
+                            <OptimizedImage
+                              src={attachment.url}
                               alt={attachment.name || "ضمیمه"}
                               className="max-w-full h-auto rounded-lg"
+                              width={600}
+                              height={400}
                             />
                             <a
                               href={`/api/download?url=${encodeURIComponent(attachment.url)}`}
@@ -398,14 +397,12 @@ export default function AnnouncementDetailPage() {
                         </div>
                         {isImageFile(message.attachment) ? (
                           <div className="mt-2">
-                            <img
-                              src={
-                                message.attachment.includes("liara.space")
-                                  ? `/api/image-proxy?url=${encodeURIComponent(message.attachment)}`
-                                  : message.attachment
-                              }
+                            <OptimizedImage
+                              src={message.attachment}
                               alt={message.attachmentName || "ضمیمه"}
                               className="max-w-full h-auto rounded-lg"
+                              width={400}
+                              height={300}
                             />
                           </div>
                         ) : (

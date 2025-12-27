@@ -64,8 +64,6 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    console.log("Fetching feedbacks with where:", JSON.stringify(where, null, 2));
-
     // Pagination parameters
     const page = parseInt(searchParams.get("page") || "1");
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100); // حداکثر 100
@@ -127,11 +125,7 @@ export async function GET(request: NextRequest) {
 
       feedbacks = feedbacksResult;
       total = countResult;
-      console.log("Found", feedbacks.length, "feedbacks out of", total, "total");
     } catch (error: any) {
-      console.error("Error fetching feedbacks (inner catch):", error);
-      console.error("Error message:", error?.message);
-      console.error("Error code:", error?.code);
       // اگر مشکل از deletedAt است، بدون آن query بزن
       if (
         error?.message?.includes("deletedAt") ||
@@ -141,7 +135,6 @@ export async function GET(request: NextRequest) {
         error?.code === "P2011" ||
         error?.code === "P2021"
       ) {
-        console.warn("deletedAt field error, trying without it");
         const whereWithoutDeleted = { ...where };
         delete whereWithoutDeleted.deletedAt;
 
@@ -160,7 +153,6 @@ export async function GET(request: NextRequest) {
 
         feedbacks = feedbacksResult;
         total = countResult;
-        console.log("Found", feedbacks.length, "feedbacks (without deletedAt filter)");
       } else {
         // اگر خطای دیگری است، آن را throw کن تا catch block بیرونی آن را بگیرد
         throw error;
@@ -350,11 +342,8 @@ export async function POST(request: NextRequest) {
                   objectStorageSettings,
                   "feedback"
                 );
-                console.log("Feedback image uploaded to Liara:", imageUrl);
-              } catch (uploadError: any) {
-                console.error("Error uploading feedback image to Liara:", uploadError);
+              } catch {
                 // اگر آپلود به Object Storage ناموفق بود، به آپلود محلی fallback می‌کنیم
-                console.log("Falling back to local upload...");
               }
             }
 
@@ -368,9 +357,7 @@ export async function POST(request: NextRequest) {
                 await writeFile(filePath, buffer);
 
                 imageUrl = `/uploads/feedback/${filename}`;
-                console.log("Feedback image uploaded locally:", imageUrl);
               } catch (localUploadError: any) {
-                console.error("Error uploading feedback image locally:", localUploadError);
                 return NextResponse.json(
                   { error: `خطا در آپلود تصویر: ${localUploadError.message || "خطای نامشخص"}` },
                   { status: 500 }
@@ -395,23 +382,9 @@ export async function POST(request: NextRequest) {
         image: imageUrls.length > 0 ? JSON.stringify(imageUrls) : null,
       };
 
-      console.log("FormData parsed:", {
-        hasTitle: !!data.title,
-        hasContent: !!data.content,
-        type: data.type,
-        isAnonymous: data.isAnonymous,
-        departmentId: data.departmentId,
-        imageCount: imageUrls.length,
-      });
-
       validatedData = feedbackSchema.parse(data);
     } else {
       const body = await request.json();
-      console.log("JSON body received:", {
-        hasTitle: !!body.title,
-        hasContent: !!body.content,
-        type: body.type,
-      });
       validatedData = feedbackSchema.parse(body);
       // اگر image به صورت array است، آن را به JSON string تبدیل کن
       if (Array.isArray(validatedData.image)) {
@@ -440,8 +413,7 @@ export async function POST(request: NextRequest) {
           },
         },
       });
-    } catch (deptError: any) {
-      console.error("Error fetching department:", deptError);
+    } catch {
       return NextResponse.json(
         { error: "خطا در دریافت اطلاعات بخش" },
         { status: 500 }
@@ -469,13 +441,6 @@ export async function POST(request: NextRequest) {
         isDirectFeedback = true;
       }
       
-      console.log("Direct feedback check:", {
-        allowDirectFeedback: department.allowDirectFeedback,
-        managerId: department.managerId,
-        usersCount: department.users.length,
-        forwardedToId,
-        isDirectFeedback,
-      });
     }
 
     let feedback;
@@ -516,16 +481,7 @@ export async function POST(request: NextRequest) {
         },
       },
       });
-      console.log("Feedback created successfully:", {
-        id: feedback.id,
-        title: feedback.title,
-        departmentId: feedback.departmentId,
-        forwardedToId: feedback.forwardedToId,
-      });
     } catch (dbError: any) {
-      console.error("Database error creating feedback:", dbError);
-      console.error("Error details:", dbError.message);
-      console.error("Error code:", dbError.code);
       return NextResponse.json(
         { 
           error: "خطا در ایجاد فیدبک",
@@ -548,12 +504,6 @@ export async function POST(request: NextRequest) {
 
         // اگر تنظیمات اجازه می‌دهد، نوتیفیکیشن ایجاد کن
         if (notificationSettings.directFeedbackToManager !== false) {
-          console.log("Creating admin notifications for direct feedback:", {
-            feedbackId: feedback.id,
-            feedbackTitle: feedback.title,
-            departmentName: feedback.departments.name,
-          });
-
           // پیدا کردن همه ادمین‌ها
           const admins = await prisma.users.findMany({
             where: {
@@ -565,11 +515,7 @@ export async function POST(request: NextRequest) {
             },
           });
 
-          console.log("Found admins:", admins.length);
-
-          if (admins.length === 0) {
-            console.warn("No active admins found to send notification");
-          } else {
+          if (admins.length > 0) {
             // ایجاد نوتیفیکیشن برای هر ادمین
             const notificationPromises = admins.map((admin) =>
               prisma.notifications.create({
@@ -584,23 +530,12 @@ export async function POST(request: NextRequest) {
               })
             );
 
-            const createdNotifications = await Promise.all(notificationPromises);
-            console.log("Created notifications:", createdNotifications.length);
+            await Promise.all(notificationPromises);
           }
-        } else {
-          console.log("Admin notification disabled for direct feedback in settings");
         }
-      } catch (error) {
-        console.error("Error creating admin notifications for direct feedback:", error);
-        console.error("Error details:", error instanceof Error ? error.stack : String(error));
+      } catch {
         // ادامه می‌دهیم حتی اگر خطا رخ دهد
       }
-    } else {
-      console.log("Skipping admin notification:", {
-        isDirectFeedback,
-        forwardedToId,
-        allowDirectFeedback: department?.allowDirectFeedback,
-      });
     }
 
     // تبدیل نام‌های Prisma به نام‌های frontend

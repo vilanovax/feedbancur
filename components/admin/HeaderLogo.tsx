@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -8,7 +9,7 @@ interface HeaderLogoProps {
   onLogoError: () => void;
 }
 
-export default function HeaderLogo({ logoUrl, onLogoError }: HeaderLogoProps) {
+function HeaderLogo({ logoUrl, onLogoError }: HeaderLogoProps) {
   return (
     <Link href="/" className="flex items-center space-x-2 space-x-reverse">
       <div className="relative w-10 h-10 flex items-center justify-center bg-blue-600 rounded-lg">
@@ -31,3 +32,5 @@ export default function HeaderLogo({ logoUrl, onLogoError }: HeaderLogoProps) {
     </Link>
   );
 }
+
+export default memo(HeaderLogo);

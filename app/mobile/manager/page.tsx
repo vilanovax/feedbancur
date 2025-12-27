@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Image from "next/image";
 import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -158,6 +159,7 @@ export default function ManagerMobilePage() {
 
   return (
     <MobileLayout role="MANAGER" title="داشبورد">
+      <ErrorBoundary>
       <div className="space-y-4">
         {/* Welcome Card */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-white">
@@ -403,6 +405,7 @@ export default function ManagerMobilePage() {
           </Link>
         </div>
       </div>
+      </ErrorBoundary>
     </MobileLayout>
   );
 }

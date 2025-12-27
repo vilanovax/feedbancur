@@ -37,15 +37,11 @@ export default function TrashPage() {
       const res = await fetch("/api/feedback/trash");
       if (res.ok) {
         const data = await res.json();
-        console.log("Trash fetched:", data.length, "items");
         setFeedbacks(data);
       } else {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Error fetching trash:", res.status, errorData);
         setFeedbacks([]);
       }
-    } catch (error) {
-      console.error("Error fetching trash:", error);
+    } catch {
       setFeedbacks([]);
     } finally {
       setLoading(false);

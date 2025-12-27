@@ -53,9 +53,7 @@ export async function uploadToLiara(
 
   try {
     await s3Client.send(command);
-    console.log("File uploaded successfully to Liara");
   } catch (uploadError: any) {
-    console.error("Error uploading file to Liara:", uploadError);
     throw new Error(`خطا در آپلود فایل به لیارا: ${uploadError.message || "خطای نامشخص"}`);
   }
 
@@ -79,15 +77,6 @@ export async function uploadToLiara(
     publicUrl = `https://${settings.bucket}.${cleanEndpoint}/${folder}/${fileName}`;
   }
 
-  console.log("=== Liara Upload Details ===");
-  console.log("Endpoint:", settings.endpoint);
-  console.log("Clean Endpoint:", cleanEndpoint);
-  console.log("Bucket:", settings.bucket);
-  console.log("Folder:", folder);
-  console.log("FileName:", fileName);
-  console.log("Generated public URL:", publicUrl);
-  console.log("===========================");
-  
   return publicUrl;
 }
 

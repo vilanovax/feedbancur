@@ -68,12 +68,6 @@ export default function TakeAssessmentPage() {
     );
   }
 
-  // Debug: Log questions to see if options are present
-  if (data.questions && data.questions.length > 0) {
-    console.log('Assessment questions:', data.questions);
-    console.log('First question options:', data.questions[0]?.options);
-  }
-
   return (
     <AssessmentTaker
       assessmentId={assessmentId}

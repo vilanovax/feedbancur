@@ -1,10 +1,11 @@
 "use client";
 
+import { memo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Star } from "lucide-react";
-import { useState } from "react";
+import { OptimizedImage } from "@/components/ui/optimized-image";
 
 interface QuestionOption {
   text: string;
@@ -26,7 +27,7 @@ interface QuestionRendererProps {
   onAutoNext?: () => void;
 }
 
-export function QuestionRenderer({
+function QuestionRendererComponent({
   question,
   value,
   onChange,
@@ -44,12 +45,8 @@ export function QuestionRenderer({
   const renderMultipleChoice = () => {
     // Parse options - handle different formats
     let options: QuestionOption[] = [];
-    
-    // Debug log
-    console.log('Question options raw:', question.options, 'Type:', typeof question.options);
-    
+
     if (!question.options) {
-      console.warn('No options found for question:', question.id);
       return (
         <div className="text-sm text-gray-500 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           گزینه‌ای برای این سوال تعریف نشده است
@@ -66,8 +63,7 @@ export function QuestionRenderer({
       try {
         const parsed = JSON.parse(question.options);
         options = Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        console.error('Error parsing options:', e);
+      } catch {
         options = [];
       }
     }
@@ -109,10 +105,7 @@ export function QuestionRenderer({
       };
     });
 
-    console.log('Normalized options:', normalizedOptions);
-
     if (normalizedOptions.length === 0) {
-      console.warn('No normalized options for question:', question.id);
       return (
         <div className="text-sm text-gray-500 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           گزینه‌ای برای این سوال تعریف نشده است. لطفاً با مدیر سیستم تماس بگیرید.
@@ -227,10 +220,12 @@ export function QuestionRenderer({
 
         {question.image && (
           <div className="my-4">
-            <img
+            <OptimizedImage
               src={question.image}
               alt="تصویر سوال"
               className="max-w-full h-auto rounded-lg shadow-sm"
+              width={600}
+              height={400}
             />
           </div>
         )}
@@ -245,3 +240,5 @@ export function QuestionRenderer({
     </div>
   );
 }
+
+export const QuestionRenderer = memo(QuestionRendererComponent);

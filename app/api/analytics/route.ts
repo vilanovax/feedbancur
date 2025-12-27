@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { calculateWorkingHours, type WorkingHoursSettings } from "@/lib/working-hours-utils";
+import { getCachedAnalytics, getCachedSettings } from "@/lib/cache";
+import type { WorkingHoursSettings } from "@/lib/working-hours-utils";
 
 export async function GET() {
   try {
@@ -15,134 +16,18 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // دریافت تنظیمات ساعت کاری
-    const settings = await prisma.settings.findFirst();
+    // دریافت تنظیمات ساعت کاری (cached)
+    const settings = await getCachedSettings();
     const workingHoursSettings: WorkingHoursSettings = settings?.workingHoursSettings
       ? typeof settings.workingHoursSettings === 'string'
         ? JSON.parse(settings.workingHoursSettings)
         : settings.workingHoursSettings
       : { enabled: false, startHour: 8, endHour: 17, workingDays: [6, 0, 1, 2, 3], holidays: [] };
 
-    const [
-      totalFeedbacks,
-      allFeedbacks,
-      departments,
-      feedbacksByDepartment,
-      completedFeedbacks,
-    ] = await Promise.all([
-      prisma.feedbacks.count(),
-      prisma.feedbacks.findMany({
-        select: { rating: true, departmentId: true },
-      }),
-      prisma.departments.findMany({
-        include: {
-          _count: {
-            select: { feedbacks: true },
-          },
-        },
-      }),
-      prisma.departments.findMany({
-        include: {
-          _count: {
-            select: { feedbacks: true },
-          },
-        },
-      }),
-      prisma.feedbacks.findMany({
-        where: {
-          status: "COMPLETED",
-          completedAt: { not: null },
-          forwardedAt: { not: null },
-        },
-        select: {
-          id: true,
-          departmentId: true,
-          forwardedAt: true,
-          completedAt: true,
-        },
-      }),
-    ]);
+    // استفاده از کش برای داده‌های آنالیز
+    const analyticsData = await getCachedAnalytics(workingHoursSettings);
 
-    const averageRating =
-      allFeedbacks.length > 0
-        ? allFeedbacks.reduce((sum, f) => sum + (f.rating || 0), 0) /
-          allFeedbacks.length
-        : 0;
-
-    const activeDepartments = departments.filter(
-      (d) => d._count.feedbacks > 0
-    ).length;
-
-    const ratingCounts: { [key: number]: number } = {};
-    allFeedbacks.forEach((f) => {
-      if (f.rating !== null) {
-        ratingCounts[f.rating] = (ratingCounts[f.rating] || 0) + 1;
-      }
-    });
-
-    const ratingDistribution = [1, 2, 3, 4, 5].map((rating) => ({
-      name: `${rating} ستاره`,
-      value: ratingCounts[rating] || 0,
-    }));
-
-    const departmentStats = feedbacksByDepartment.map((dept) => ({
-      name: dept.name,
-      count: dept._count.feedbacks,
-    }));
-
-    // محاسبه سرعت انجام فیدبک‌ها بر اساس بخش
-    const departmentCompletionStats: Record<string, { total: number; totalHours: number; averageHours: number }> = {};
-    
-    completedFeedbacks.forEach((feedback) => {
-      if (!feedback.forwardedAt || !feedback.completedAt) return;
-      
-      const startDate = new Date(feedback.forwardedAt);
-      const endDate = new Date(feedback.completedAt);
-      const hours = calculateWorkingHours(startDate, endDate, workingHoursSettings);
-      
-      if (!departmentCompletionStats[feedback.departmentId]) {
-        departmentCompletionStats[feedback.departmentId] = {
-          total: 0,
-          totalHours: 0,
-          averageHours: 0,
-        };
-      }
-      
-      departmentCompletionStats[feedback.departmentId].total += 1;
-      departmentCompletionStats[feedback.departmentId].totalHours += hours;
-    });
-
-    // محاسبه میانگین برای هر بخش
-    const departmentCompletionData = departments
-      .map((dept) => {
-        const stats = departmentCompletionStats[dept.id];
-        if (!stats || stats.total === 0) {
-          return {
-            name: dept.name,
-            count: 0,
-            averageHours: 0,
-            totalCompleted: 0,
-          };
-        }
-        
-        return {
-          name: dept.name,
-          count: stats.total,
-          averageHours: Math.round((stats.totalHours / stats.total) * 10) / 10,
-          totalCompleted: stats.total,
-        };
-      })
-      .filter((d) => d.totalCompleted > 0)
-      .sort((a, b) => a.averageHours - b.averageHours); // مرتب‌سازی بر اساس سرعت (کمترین زمان = سریع‌تر)
-
-    return NextResponse.json({
-      totalFeedbacks,
-      averageRating,
-      activeDepartments,
-      ratingDistribution,
-      feedbacksByDepartment: departmentStats,
-      departmentCompletionSpeed: departmentCompletionData,
-    });
+    return NextResponse.json(analyticsData);
   } catch (error) {
     console.error("Error fetching analytics:", error);
     return NextResponse.json(

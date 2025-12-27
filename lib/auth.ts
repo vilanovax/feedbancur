@@ -14,22 +14,17 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         try {
           if (!credentials?.mobile || !credentials?.password) {
-            console.log("❌ Missing credentials");
             return null;
           }
 
-          console.log("🔍 Looking for user:", credentials.mobile);
           const user = await prisma.users.findUnique({
             where: { mobile: credentials.mobile },
             include: { departments: true },
           });
 
           if (!user) {
-            console.log("❌ User not found:", credentials.mobile);
             return null;
           }
-
-          console.log("✅ User found:", user.name, "Role:", user.role, "Active:", user.isActive);
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
@@ -37,20 +32,14 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            console.log("❌ Invalid password for user:", credentials.mobile);
             return null;
           }
 
-          console.log("✅ Password valid");
-
           // بررسی فعال بودن کاربر (اگر فیلد وجود نداشت، به عنوان فعال در نظر بگیر)
           if (user.isActive === false) {
-            console.log("❌ User is inactive");
             throw new Error("حساب کاربری شما غیرفعال است. لطفاً با مدیر سیستم تماس بگیرید.");
           }
 
-          console.log("✅ User authorized:", user.id);
-          console.log("   mustChangePassword:", user.mustChangePassword);
           const userObject = {
             id: user.id,
             mobile: user.mobile,
@@ -62,7 +51,6 @@ export const authOptions: NextAuthOptions = {
             mustChangePassword: user.mustChangePassword ?? false,
             // avatar را در JWT token نگه نمی‌داریم چون base64 string خیلی بزرگ است
           };
-          console.log("   Returning user object:", JSON.stringify({ ...userObject, email: userObject.email ? "***" : undefined }));
           return userObject;
         } catch (error) {
           console.error("❌ Auth error:", error);

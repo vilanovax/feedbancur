@@ -1,6 +1,6 @@
 "use client";
 
-import { RefObject } from "react";
+import { memo, RefObject } from "react";
 import { Bell, X } from "lucide-react";
 import { formatPersianDate } from "@/lib/date-utils";
 import { Notification } from "@/lib/hooks/useNotifications";
@@ -16,7 +16,7 @@ interface HeaderNotificationDropdownProps {
   onNotificationClick: (notification: Notification) => void;
 }
 
-export default function HeaderNotificationDropdown({
+function HeaderNotificationDropdown({
   notifications,
   unreadCount,
   notificationsOpen,
@@ -121,3 +121,5 @@ export default function HeaderNotificationDropdown({
     </div>
   );
 }
+
+export default memo(HeaderNotificationDropdown);

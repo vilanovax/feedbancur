@@ -1,7 +1,7 @@
 "use client";
 
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -30,7 +30,7 @@ interface AssessmentCardProps {
   showStats?: boolean;
 }
 
-export function AssessmentCard({
+function AssessmentCardComponent({
   assessment,
   actions,
   showStats = false,
@@ -145,3 +145,5 @@ export function AssessmentCard({
     </Card>
   );
 }
+
+export const AssessmentCard = memo(AssessmentCardComponent);

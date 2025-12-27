@@ -224,9 +224,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Debug: Log available Prisma models
-    console.log("Prisma client available models:", Object.keys(prisma).filter(key => !key.startsWith('_') && typeof prisma[key as keyof typeof prisma] === 'object'));
-
     // Try to access settings model - if it doesn't exist, it will be undefined
     // This can happen if Prisma client wasn't regenerated or server needs restart
     try {
@@ -248,16 +245,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log("Received body keys:", Object.keys(body));
-    console.log("Body statusTexts:", body.statusTexts);
 
     // دریافت تنظیمات موجود یا ایجاد جدید
     let existingSettings;
     try {
       existingSettings = await prisma.settings.findFirst();
-      console.log("Existing settings found:", !!existingSettings);
     } catch (dbError) {
-      console.error("Error fetching existing settings:", dbError);
       throw dbError;
     }
     
@@ -397,7 +390,6 @@ export async function POST(request: NextRequest) {
     }
 
     // ذخیره workingHoursSettings
-    console.log("workingHoursSettings in body:", body.workingHoursSettings);
     if (body.workingHoursSettings && typeof body.workingHoursSettings === 'object') {
       updateData.workingHoursSettings = {
         enabled: Boolean(body.workingHoursSettings.enabled),
@@ -410,7 +402,6 @@ export async function POST(request: NextRequest) {
           ? body.workingHoursSettings.holidays.filter((h: any) => typeof h === 'string')
           : [],
       };
-      console.log("Processed workingHoursSettings:", updateData.workingHoursSettings);
     } else if (!existingSettings) {
       updateData.workingHoursSettings = {
         enabled: false,
@@ -502,21 +493,16 @@ export async function POST(request: NextRequest) {
     if (body.itemsPerPage !== undefined) updateData.itemsPerPage = Number(body.itemsPerPage);
     if (body.theme !== undefined) updateData.theme = body.theme;
 
-    console.log("Update data keys:", Object.keys(updateData));
-
     // ذخیره یا به‌روزرسانی در دیتابیس
     if (existingSettings) {
       // فقط فیلدهایی که واقعاً تغییر کرده‌اند را به‌روزرسانی کن
       if (Object.keys(updateData).length > 0) {
-        console.log("Updating settings with data:", JSON.stringify(updateData, null, 2));
         await prisma.settings.update({
           where: { id: existingSettings.id },
           data: updateData,
         });
-        console.log("Settings updated successfully");
       }
     } else {
-      console.log("Creating new settings");
       // ایجاد تنظیمات جدید با مقادیر پیش‌فرض
       const createData: any = {
         siteName: updateData.siteName || "سیستم فیدبک کارمندان",
@@ -572,11 +558,9 @@ export async function POST(request: NextRequest) {
         itemsPerPage: updateData.itemsPerPage !== undefined ? updateData.itemsPerPage : 20,
         theme: updateData.theme || "light",
       };
-      console.log("Creating settings with data:", JSON.stringify(createData, null, 2));
       await prisma.settings.create({
         data: createData,
       });
-      console.log("Settings created successfully");
     }
 
     return NextResponse.json({ success: true });

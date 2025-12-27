@@ -236,6 +236,16 @@ model feedbacks {
   messages                             messages[]
   notifications                        notifications[]
   tasks                                tasks?
+
+  // Indexes for common queries
+  @@index([status])
+  @@index([departmentId])
+  @@index([userId])
+  @@index([forwardedToId])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([status, departmentId])
+  @@index([status, forwardedToId])
 }
 
 model messages {
@@ -462,6 +472,13 @@ model users {
   tasks                                    tasks[]
   departments                              departments?            @relation(fields: [departmentId], references: [id])
   user_statuses                            user_statuses?          @relation(fields: [statusId], references: [id])
+
+  // Indexes for common queries
+  @@index([role])
+  @@index([isActive])
+  @@index([departmentId])
+  @@index([role, isActive])
+  @@index([departmentId, role])
 }
 
 enum AssessmentType {

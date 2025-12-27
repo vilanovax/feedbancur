@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import AppHeader from "@/components/AdminHeader";
+import { DynamicSidebar, DynamicHeader } from "@/components/layout";
 import {
   Settings,
   Save,
@@ -368,9 +367,6 @@ export default function SettingsPage() {
         }, {} as Record<string, string>);
       }
 
-      console.log("Saving settings:", settingsToSave);
-      console.log("workingHoursSettings:", settingsToSave.workingHoursSettings);
-
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: {
@@ -378,8 +374,6 @@ export default function SettingsPage() {
         },
         body: JSON.stringify(settingsToSave),
       });
-
-      console.log("Response status:", res.status, res.statusText);
 
       if (res.ok) {
         setSaved(true);
@@ -436,8 +430,8 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <Sidebar />
-      <AppHeader />
+      <DynamicSidebar />
+      <DynamicHeader />
       
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
         <div className="max-w-4xl mx-auto">

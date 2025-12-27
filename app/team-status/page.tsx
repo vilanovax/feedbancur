@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
-import AdminHeader from "@/components/AdminHeader";
+import { DynamicSidebar, DynamicHeader } from "@/components/layout";
 import {
   Users,
   Circle,
@@ -15,6 +14,8 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { UserListSkeleton, StatCardSkeleton } from "@/components/ui/skeleton";
+import { Avatar } from "@/components/ui/avatar";
 
 interface TeamUser {
   id: string;
@@ -160,13 +161,13 @@ export default function TeamStatusPage() {
   const getRoleBadgeColor = (role: string): string => {
     switch (role) {
       case "ADMIN":
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300";
       case "MANAGER":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
       case "EMPLOYEE":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -182,12 +183,33 @@ export default function TeamStatusPage() {
     return matchesSearch && matchesDepartment && matchesStatus;
   });
 
-  if (status === "loading" || loading) {
+  if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">در حال بارگذاری...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl text-gray-800 dark:text-white">در حال بارگذاری...</div>
       </div>
     );
+  }
+
+  const renderSkeleton = () => (
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <DynamicSidebar />
+      <div className="flex-1 lg:mr-64">
+        <DynamicHeader />
+        <main className="mt-16 p-4 md:p-6 lg:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </div>
+          <UserListSkeleton count={8} />
+        </main>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return renderSkeleton();
   }
 
   if (session?.user?.role !== "ADMIN") {
@@ -196,86 +218,86 @@ export default function TeamStatusPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+      <DynamicSidebar />
 
       <div className="flex-1 lg:mr-64">
-        <AdminHeader title="وضعیت تیم" />
+        <DynamicHeader />
 
-        <main className="mt-16 p-4 md:p-6">
+        <main className="mt-16 p-4 md:p-6 lg:p-8">
           {/* Stats Cards - Clickable for filtering */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <button
               onClick={() => setStatusFilter("all")}
-              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 transition-all text-right ${
                 statusFilter === "all"
-                  ? "border-blue-500 ring-2 ring-blue-200"
-                  : "border-gray-200 hover:border-blue-300"
+                  ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800"
+                  : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">کل کاربران</p>
-                  <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">کل کاربران</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
                 </div>
               </div>
             </button>
 
             <button
               onClick={() => setStatusFilter("online")}
-              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 transition-all text-right ${
                 statusFilter === "online"
-                  ? "border-green-500 ring-2 ring-green-200"
-                  : "border-gray-200 hover:border-green-300"
+                  ? "border-green-500 ring-2 ring-green-200 dark:ring-green-800"
+                  : "border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-600"
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <Circle className="w-6 h-6 text-green-600 fill-current" />
+                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                  <Circle className="w-6 h-6 text-green-600 dark:text-green-400 fill-current" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">آنلاین</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.online}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">آنلاین</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.online}</p>
                 </div>
               </div>
             </button>
 
             <button
               onClick={() => setStatusFilter("offline")}
-              className={`bg-white rounded-xl shadow-sm p-5 border-2 transition-all text-right ${
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 transition-all text-right ${
                 statusFilter === "offline"
-                  ? "border-gray-500 ring-2 ring-gray-200"
-                  : "border-gray-200 hover:border-gray-400"
+                  ? "border-gray-500 ring-2 ring-gray-200 dark:ring-gray-700"
+                  : "border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500"
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Circle className="w-6 h-6 text-gray-400" />
+                <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                  <Circle className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">آفلاین</p>
-                  <p className="text-2xl font-bold text-gray-600">{stats.offline}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">آفلاین</p>
+                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">{stats.offline}</p>
                 </div>
               </div>
             </button>
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-200">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="flex flex-col md:flex-row gap-3 flex-1 w-full">
                 {/* Search */}
                 <div className="relative flex-1">
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                   <input
                     type="text"
                     placeholder="جستجوی نام..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
@@ -283,7 +305,7 @@ export default function TeamStatusPage() {
                 <select
                   value={selectedDepartment}
                   onChange={(e) => setSelectedDepartment(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">همه بخش‌ها</option>
                   {departments.map((dept) => (
@@ -297,7 +319,7 @@ export default function TeamStatusPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as "all" | "online" | "offline")}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
                   <option value="all">همه وضعیت‌ها</option>
                   <option value="online">آنلاین</option>
@@ -307,7 +329,7 @@ export default function TeamStatusPage() {
 
               {/* Refresh Button */}
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   آخرین بروزرسانی: {formatLastSeen(lastRefresh.toISOString())}
                 </span>
                 <button
@@ -315,7 +337,7 @@ export default function TeamStatusPage() {
                     setLoading(true);
                     fetchTeamStatus();
                   }}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                   بروزرسانی
@@ -323,56 +345,44 @@ export default function TeamStatusPage() {
               </div>
             </div>
 
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               کاربرانی که در {onlineThreshold} دقیقه اخیر فعالیت داشته‌اند به عنوان آنلاین نمایش داده می‌شوند.
             </p>
           </div>
 
           {/* Users Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
-                className="bg-white rounded-xl shadow-sm p-4 border border-gray-200 hover:shadow-md transition"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition"
               >
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
-                  <div className="relative">
-                    {user.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        className="w-14 h-14 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center">
-                        <User className="w-7 h-7 text-gray-500" />
-                      </div>
-                    )}
-                    {/* Online Indicator */}
-                    <span
-                      className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${
-                        user.isOnline ? "bg-green-500" : "bg-gray-400"
-                      }`}
-                    />
-                  </div>
+                  <Avatar
+                    src={user.avatar}
+                    alt={user.name}
+                    size="lg"
+                    showOnlineIndicator
+                    isOnline={user.isOnline}
+                  />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800 truncate">{user.name}</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-white truncate">{user.name}</h3>
 
                     {/* Role Badge */}
                     <span
                       className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 ${getRoleBadgeColor(
                         user.role
-                      )}`}
+                      )} dark:opacity-90`}
                     >
                       {getRoleLabel(user.role)}
                     </span>
 
                     {/* Department */}
                     {user.department && (
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-600 dark:text-gray-400">
                         <Building2 className="w-3 h-3" />
                         <span className="truncate">{user.department.name}</span>
                       </div>
@@ -385,12 +395,12 @@ export default function TeamStatusPage() {
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: user.status.color }}
                         />
-                        <span className="text-xs text-gray-600">{user.status.name}</span>
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{user.status.name}</span>
                       </div>
                     )}
 
                     {/* Last Seen */}
-                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
+                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-500 dark:text-gray-500">
                       <Clock className="w-3 h-3" />
                       <span>
                         {user.isOnline ? "آنلاین" : formatLastSeen(user.lastSeen)}
@@ -403,9 +413,9 @@ export default function TeamStatusPage() {
           </div>
 
           {filteredUsers.length === 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-200">
-              <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">کاربری یافت نشد</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+              <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-600 dark:text-gray-400">کاربری یافت نشد</p>
             </div>
           )}
         </main>

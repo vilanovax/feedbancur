@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import {
   Users,
-  Circle,
   Search,
   Building2,
   RefreshCw,
   Clock,
-  User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar } from "@/components/ui/avatar";
 
 interface TeamUser {
   id: string;
@@ -293,24 +292,13 @@ export default function ManagerTeamStatusPage() {
           >
             <div className="flex items-center gap-3">
               {/* Avatar */}
-              <div className="relative">
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-500" />
-                  </div>
-                )}
-                <span
-                  className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 ${
-                    user.isOnline ? "bg-green-500" : "bg-gray-400"
-                  }`}
-                />
-              </div>
+              <Avatar
+                src={user.avatar}
+                alt={user.name}
+                size="md"
+                showOnlineIndicator
+                isOnline={user.isOnline}
+              />
 
               {/* Info */}
               <div className="flex-1 min-w-0">

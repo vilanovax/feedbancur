@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import Dashboard from "@/components/Dashboard";
+import DashboardWithErrorBoundary from "@/components/DashboardWithErrorBoundary";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -25,6 +25,6 @@ export default async function Home() {
   }
 
   // ادمین به داشبورد معمولی
-  return <Dashboard />;
+  return <DashboardWithErrorBoundary />;
 }
 

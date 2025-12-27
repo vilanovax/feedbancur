@@ -302,17 +302,7 @@ function FeedbacksPageContent() {
       
       if (res.ok) {
         const data = await res.json();
-        
-        // Debug: بررسی وجود manager در department
-        if (data.length > 0) {
-          console.log("Total feedbacks:", data.length);
-          data.forEach((fb: any, index: number) => {
-            if (fb.department) {
-              console.log(`Feedback ${index}: department=${fb.department.name}, managerId=${fb.department.managerId}, manager=`, fb.department.manager);
-            }
-          });
-        }
-        
+
         let filteredData = data;
 
         // اعمال quick filter (فقط اگر selectedStatus خالی باشد)

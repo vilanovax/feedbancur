@@ -1,61 +1,25 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import { BarChart3, TrendingUp, Star } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
-
-// Lazy load recharts components برای بهبود performance
-const LazyBarChart = dynamic(
-  () => import("recharts").then((mod) => mod.BarChart),
-  { ssr: false, loading: () => <ChartSkeleton /> }
-);
-const LazyBar = dynamic(() => import("recharts").then((mod) => mod.Bar), {
-  ssr: false,
-});
-const LazyXAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), {
-  ssr: false,
-});
-const LazyYAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), {
-  ssr: false,
-});
-const LazyCartesianGrid = dynamic(
-  () => import("recharts").then((mod) => mod.CartesianGrid),
-  { ssr: false }
-);
-const LazyTooltip = dynamic(
-  () => import("recharts").then((mod) => mod.Tooltip),
-  { ssr: false }
-);
-const LazyLegend = dynamic(() => import("recharts").then((mod) => mod.Legend), {
-  ssr: false,
-});
-const LazyResponsiveContainer = dynamic(
-  () => import("recharts").then((mod) => mod.ResponsiveContainer),
-  { ssr: false }
-);
-const LazyPieChart = dynamic(
-  () => import("recharts").then((mod) => mod.PieChart),
-  { ssr: false, loading: () => <ChartSkeleton /> }
-);
-const LazyPie = dynamic(() => import("recharts").then((mod) => mod.Pie), {
-  ssr: false,
-});
-const LazyCell = dynamic(() => import("recharts").then((mod) => mod.Cell), {
-  ssr: false,
-});
-
-// Skeleton component for chart loading
-function ChartSkeleton() {
-  return (
-    <div className="h-[300px] bg-gray-200 dark:bg-gray-700 rounded animate-pulse flex items-center justify-center">
-      <div className="text-gray-400">در حال بارگذاری نمودار...</div>
-    </div>
-  );
-}
+import {
+  LazyResponsiveContainer,
+  LazyBarChart,
+  LazyBar,
+  LazyPieChart,
+  LazyPie,
+  LazyCell,
+  LazyXAxis,
+  LazyYAxis,
+  LazyCartesianGrid,
+  LazyTooltip,
+  LazyLegend,
+  CHART_COLORS,
+} from "@/components/charts";
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession();
@@ -144,7 +108,7 @@ export default function AnalyticsPage() {
     }
   };
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+  const COLORS = CHART_COLORS;
 
   if (status === "loading") {
     return (

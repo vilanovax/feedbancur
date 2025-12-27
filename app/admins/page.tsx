@@ -4,9 +4,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { UserPlus, Shield, Trash2, Key, CheckCircle, XCircle } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
-import AppHeader from "@/components/AdminHeader";
+import { DynamicSidebar, DynamicHeader } from "@/components/layout";
 import { useToast } from "@/contexts/ToastContext";
+import { TableSkeleton } from "@/components/ui/skeleton";
 
 interface AdminUser {
   id: string;
@@ -156,8 +156,8 @@ export default function AdminsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
-      <Sidebar />
-      <AppHeader />
+      <DynamicSidebar />
+      <DynamicHeader />
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-8">
@@ -233,6 +233,9 @@ export default function AdminsPage() {
         </div>
 
         {/* Admins Table */}
+        {loading ? (
+          <TableSkeleton rows={5} columns={6} />
+        ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -318,6 +321,7 @@ export default function AdminsPage() {
             </tbody>
           </table>
         </div>
+        )}
 
         {/* Create Admin Modal */}
         {showCreateModal && (

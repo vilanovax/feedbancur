@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { Toaster } from "sonner";
+import WebVitalsReporter from "@/components/WebVitalsReporter";
 
 const vazirmatn = localFont({
   src: [
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body className={`${vazirmatn.variable} ${vazirmatn.className}`}>
         <AuthProvider>
           <ToastProvider>
+            <WebVitalsReporter />
             {children}
             <Toaster />
           </ToastProvider>

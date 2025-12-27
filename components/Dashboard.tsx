@@ -2,17 +2,16 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
 import Sidebar from "./Sidebar";
 import AppHeader from "./AdminHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
+import { useStats, useMyAssessmentResults } from "@/lib/swr";
 import {
   MessageSquare,
   BarChart3,
   Users,
-  LogOut,
   Plus,
   Building2,
   CheckSquare,
@@ -28,61 +27,18 @@ import {
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalFeedbacks: 0,
-    pendingFeedbacks: 0,
-    departments: 0,
-    completedFeedbacks: 0,
-    deferredFeedbacks: 0,
-    archivedFeedbacks: 0,
-    totalAnnouncements: 0,
-    activeAnnouncements: 0,
-    newAnnouncements: 0,
-    totalPolls: 0,
-    activePolls: 0,
-    newPolls: 0,
-  });
-  const [assessmentResults, setAssessmentResults] = useState<any[]>([]);
+
+  // Use SWR for data fetching with caching
+  const { data: stats, isLoading: statsLoading } = useStats();
+  const { data: assessmentResults, isLoading: resultsLoading } = useMyAssessmentResults();
+
+  const loading = statsLoading || resultsLoading;
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
   }, [status, router]);
-
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchStats();
-      fetchAssessmentResults();
-    }
-  }, [status]);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await fetch("/api/stats");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchAssessmentResults = useCallback(async () => {
-    try {
-      const response = await fetch("/api/assessments/my-results");
-      if (response.ok) {
-        const results = await response.json();
-        setAssessmentResults(results);
-      }
-    } catch (error) {
-      console.error("Error fetching assessment results:", error);
-    }
-  }, []);
 
   const getResultDisplay = useCallback((result: any) => {
     if (result.assessment.type === "MBTI" && result.result) {
@@ -139,7 +95,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">کل فیدبک‌ها</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.totalFeedbacks}
+                  {stats?.totalFeedbacks ?? 0}
                 </p>
               </div>
               <MessageSquare className="text-blue-500" size={40} />
@@ -151,7 +107,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های در انتظار</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.pendingFeedbacks}
+                  {stats?.pendingFeedbacks ?? 0}
                 </p>
               </div>
               <BarChart3 className="text-yellow-500" size={40} />
@@ -163,7 +119,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های انجام شده</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.completedFeedbacks}
+                  {stats?.completedFeedbacks ?? 0}
                 </p>
               </div>
               <CheckCircle className="text-green-500" size={40} />
@@ -175,7 +131,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های برای آینده</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.deferredFeedbacks}
+                  {stats?.deferredFeedbacks ?? 0}
                 </p>
               </div>
               <Clock className="text-orange-500" size={40} />
@@ -187,7 +143,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های آرشیو شده</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.archivedFeedbacks}
+                  {stats?.archivedFeedbacks ?? 0}
                 </p>
               </div>
               <Archive className="text-gray-500" size={40} />
@@ -199,7 +155,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">بخش‌ها</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.departments}
+                  {stats?.departments ?? 0}
                 </p>
               </div>
               <Building2 className="text-purple-500" size={40} />
@@ -215,24 +171,24 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">اعلانات فعال</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.activeAnnouncements}
+                  {stats?.activeAnnouncements ?? 0}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  از {stats.totalAnnouncements} کل
+                  از {stats?.totalAnnouncements ?? 0} کل
                 </p>
               </div>
               <div className="relative">
                 <Bell className="text-yellow-500" size={40} />
-                {stats.newAnnouncements > 0 && (
+                {(stats?.newAnnouncements ?? 0) > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                    {stats.newAnnouncements}
+                    {stats?.newAnnouncements}
                   </span>
                 )}
               </div>
             </div>
-            {stats.newAnnouncements > 0 && (
+            {(stats?.newAnnouncements ?? 0) > 0 && (
               <div className="mt-3 text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg px-2 py-1 inline-block">
-                {stats.newAnnouncements} اعلان جدید در ۲۴ ساعت گذشته
+                {stats?.newAnnouncements} اعلان جدید در ۲۴ ساعت گذشته
               </div>
             )}
           </Link>
@@ -243,24 +199,24 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">نظرسنجی‌های فعال</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.activePolls}
+                  {stats?.activePolls ?? 0}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  از {stats.totalPolls} کل
+                  از {stats?.totalPolls ?? 0} کل
                 </p>
               </div>
               <div className="relative">
                 <CheckSquare className="text-indigo-500" size={40} />
-                {stats.newPolls > 0 && (
+                {(stats?.newPolls ?? 0) > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
-                    {stats.newPolls}
+                    {stats?.newPolls}
                   </span>
                 )}
               </div>
             </div>
-            {stats.newPolls > 0 && (
+            {(stats?.newPolls ?? 0) > 0 && (
               <div className="mt-3 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg px-2 py-1 inline-block">
-                {stats.newPolls} نظرسنجی جدید در ۲۴ ساعت گذشته
+                {stats?.newPolls} نظرسنجی جدید در ۲۴ ساعت گذشته
               </div>
             )}
           </Link>
@@ -271,7 +227,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">کل اعلانات</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.totalAnnouncements}
+                  {stats?.totalAnnouncements ?? 0}
                 </p>
               </div>
               <Bell className="text-gray-400" size={40} />
@@ -284,7 +240,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">کل نظرسنجی‌ها</p>
                 <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats.totalPolls}
+                  {stats?.totalPolls ?? 0}
                 </p>
               </div>
               <CheckSquare className="text-gray-400" size={40} />
@@ -293,13 +249,13 @@ export default function Dashboard() {
         </div>
 
         {/* نتایج آزمون‌ها */}
-        {assessmentResults.length > 0 && (
+        {(assessmentResults?.length ?? 0) > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
               نتایج آزمون‌های شما
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {assessmentResults.map((result) => (
+              {assessmentResults?.map((result) => (
                 <Link
                   key={result.id}
                   href={`/assessments/${result.assessmentId}/result`}
