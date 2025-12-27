@@ -15,11 +15,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Check if MBTI assessment already exists
+    // Check if MBTI assessment already exists (by id or type+title)
     const existingMBTI = await prisma.assessments.findFirst({
       where: {
-        type: "MBTI",
-        title: "آزمون شخصیت‌سنجی MBTI",
+        OR: [
+          { id: "mbti-standard-assessment" },
+          { type: "MBTI", title: "آزمون شخصیت‌سنجی MBTI" },
+        ],
       },
     });
 
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest) {
     // Create MBTI assessment with questions
     const assessment = await prisma.assessments.create({
       data: {
+        id: "mbti-standard-assessment", // Fixed ID for consistent reference
         title: "آزمون شخصیت‌سنجی MBTI",
         description:
           "آزمون شخصیت‌سنجی مایرز-بریگز (MBTI) یکی از معتبرترین ابزارهای شناخت تیپ شخصیتی است که بر اساس نظریه کارل یونگ طراحی شده و افراد را در 16 تیپ شخصیتی دسته‌بندی می‌کند.",
