@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET - لیست بازدیدکنندگان یک اعلان
+// GET - لیست بازدیدکنندگان یک اعلان با pagination
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,6 +19,13 @@ export async function GET(
     if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Pagination parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const filter = searchParams.get("filter") || "all"; // all, viewed, not_viewed
+    const skip = (page - 1) * limit;
 
     const { id } = await params;
 
@@ -54,66 +61,64 @@ export async function GET(
       targetUsersQuery.departmentId = announcement.departmentId;
     }
 
-    const targetUsers = await prisma.users.findMany({
-      where: targetUsersQuery,
-      select: {
-        id: true,
-        name: true,
-        mobile: true,
-        role: true,
-        departments: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+    // ابتدا آمار کلی را محاسبه می‌کنیم (بدون pagination)
+    const [totalTarget, totalViewed, viewedUserIds] = await Promise.all([
+      prisma.users.count({ where: targetUsersQuery }),
+      prisma.announcement_views.count({ where: { announcementId: id } }),
+      prisma.announcement_views.findMany({
+        where: { announcementId: id },
+        select: { userId: true, viewedAt: true },
+      }),
+    ]);
 
-    // لیست بازدیدکنندگان
-    const views = await prisma.announcement_views.findMany({
-      where: {
-        announcementId: id,
-      },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            mobile: true,
-            role: true,
-            departments: {
-              select: {
-                id: true,
-                name: true,
-              },
+    const viewersMap = new Map(viewedUserIds.map((v) => [v.userId, v.viewedAt]));
+
+    // اعمال فیلتر بر اساس پارامتر filter
+    let filteredQuery = { ...targetUsersQuery };
+    if (filter === "viewed") {
+      filteredQuery.id = { in: Array.from(viewersMap.keys()) };
+    } else if (filter === "not_viewed") {
+      filteredQuery.id = { notIn: Array.from(viewersMap.keys()) };
+    }
+
+    // دریافت کاربران با pagination
+    const [filteredTotal, targetUsers] = await Promise.all([
+      prisma.users.count({ where: filteredQuery }),
+      prisma.users.findMany({
+        where: filteredQuery,
+        select: {
+          id: true,
+          name: true,
+          mobile: true,
+          role: true,
+          departments: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
-      },
-      orderBy: {
-        viewedAt: "desc",
-      },
-    });
+        orderBy: {
+          name: "asc",
+        },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    // ایجاد لیست کامل با status دیده شده/ندیده شده
-    const viewersMap = new Map(views.map((v: { userId: string; viewedAt: Date }) => [v.userId, v]));
-
+    // ایجاد لیست با status دیده شده/ندیده شده
     const usersWithStatus = targetUsers.map(user => ({
       ...user,
       viewed: viewersMap.has(user.id),
-      viewedAt: viewersMap.get(user.id)?.viewedAt || null,
+      viewedAt: viewersMap.get(user.id) || null,
     }));
 
     const stats = {
-      totalTarget: targetUsers.length,
-      totalViewed: views.length,
-      totalNotViewed: targetUsers.length - views.length,
-      viewPercentage: targetUsers.length > 0
-        ? Math.round((views.length / targetUsers.length) * 100)
+      totalTarget,
+      totalViewed,
+      totalNotViewed: totalTarget - totalViewed,
+      viewPercentage: totalTarget > 0
+        ? Math.round((totalViewed / totalTarget) * 100)
         : 0,
     };
 
@@ -129,6 +134,13 @@ export async function GET(
       },
       stats,
       users: usersWithStatus,
+      pagination: {
+        page,
+        limit,
+        total: filteredTotal,
+        totalPages: Math.ceil(filteredTotal / limit),
+        filter,
+      },
     });
   } catch (error) {
     console.error("Error fetching announcement viewers:", error);

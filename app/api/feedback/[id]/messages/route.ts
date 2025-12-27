@@ -12,7 +12,7 @@ const messageSchema = z.object({
   image: z.string().optional(),
 });
 
-// GET - دریافت پیام‌های یک فیدبک
+// GET - دریافت پیام‌های یک فیدبک با pagination
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
@@ -27,6 +27,12 @@ export async function GET(
     if (session.user.role !== "ADMIN" && session.user.role !== "MANAGER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Pagination parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const skip = (page - 1) * limit;
 
     // Handle both Promise and direct params
     const resolvedParams = params instanceof Promise ? await params : params;
@@ -61,20 +67,27 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // دریافت پیام‌ها
-    const messages = await prisma.messages.findMany({
-      where: { feedbackId: resolvedParams.id },
-      include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            role: true,
+    // دریافت پیام‌ها با pagination
+    const [total, messages] = await Promise.all([
+      prisma.messages.count({
+        where: { feedbackId: resolvedParams.id },
+      }),
+      prisma.messages.findMany({
+        where: { feedbackId: resolvedParams.id },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+        orderBy: { createdAt: "asc" },
+        skip,
+        take: limit,
+      }),
+    ]);
 
     // تبدیل users به sender برای سازگاری با frontend
     const formattedMessages = messages.map((msg) => ({
@@ -107,7 +120,16 @@ export async function GET(
       });
     }
 
-    return NextResponse.json(formattedMessages);
+    // برگرداندن با اطلاعات pagination
+    return NextResponse.json({
+      data: formattedMessages,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching messages:", error);
     console.error("Error details:", error instanceof Error ? error.message : String(error));

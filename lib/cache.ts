@@ -150,23 +150,16 @@ export const getCachedAnalytics = unstable_cache(
   }) => {
     const { calculateWorkingHours } = await import("@/lib/working-hours-utils");
 
+    // کوئری‌های بهینه‌شده - حذف کوئری تکراری departments
     const [
       totalFeedbacks,
       allFeedbacks,
       departments,
-      feedbacksByDepartment,
       completedFeedbacks,
     ] = await Promise.all([
       prisma.feedbacks.count(),
       prisma.feedbacks.findMany({
         select: { rating: true, departmentId: true },
-      }),
-      prisma.departments.findMany({
-        include: {
-          _count: {
-            select: { feedbacks: true },
-          },
-        },
       }),
       prisma.departments.findMany({
         include: {
@@ -212,7 +205,8 @@ export const getCachedAnalytics = unstable_cache(
       value: ratingCounts[rating] || 0,
     }));
 
-    const departmentStats = feedbacksByDepartment.map((dept) => ({
+    // استفاده مجدد از departments به جای کوئری تکراری
+    const departmentStats = departments.map((dept) => ({
       name: dept.name,
       count: dept._count.feedbacks,
     }));

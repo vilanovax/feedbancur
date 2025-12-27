@@ -61,66 +61,75 @@ export async function GET(req: NextRequest) {
 
     // جمع‌آوری managerId های منحصر به فرد
     const managerIds = new Set<string>();
+    const feedbackIds: string[] = [];
     feedbacksWithMessages.forEach((feedback: any) => {
+      feedbackIds.push(feedback.id);
       if (feedback.departments?.managerId) {
         managerIds.add(feedback.departments.managerId);
       }
     });
 
-    // دریافت اطلاعات مدیران
-    const managers = managerIds.size > 0 
-      ? await prisma.users.findMany({
-          where: {
-            id: { in: Array.from(managerIds) },
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-        })
-      : [];
+    // دریافت اطلاعات مدیران و تعداد پیام‌های خوانده نشده با یک کوئری واحد
+    const [managers, unreadCounts] = await Promise.all([
+      managerIds.size > 0
+        ? prisma.users.findMany({
+            where: {
+              id: { in: Array.from(managerIds) },
+            },
+            select: {
+              id: true,
+              name: true,
+            },
+          })
+        : [],
+      // کوئری واحد برای تعداد پیام‌های خوانده نشده همه فیدبک‌ها (بجای N+1)
+      prisma.messages.groupBy({
+        by: ["feedbackId"],
+        where: {
+          feedbackId: { in: feedbackIds },
+          isRead: false,
+          senderId: { not: session.user.id },
+        },
+        _count: {
+          id: true,
+        },
+      }),
+    ]);
 
-    // ایجاد map برای دسترسی سریع به مدیر
+    // ایجاد map برای دسترسی سریع به مدیر و تعداد خوانده نشده
     const managerMap = new Map(managers.map(m => [m.id, m]));
-
-    // محاسبه تعداد پیام‌های خوانده نشده برای هر فیدبک و تبدیل به فرمت frontend
-    const feedbacksWithUnreadCount = await Promise.all(
-      feedbacksWithMessages.map(async (feedback: any) => {
-        const unreadCount = await prisma.messages.count({
-          where: {
-            feedbackId: feedback.id,
-            isRead: false,
-            senderId: { not: session.user.id },
-          },
-        });
-
-        // تبدیل پیام‌ها به فرمت frontend (users → sender)
-        const messagesWithSender = feedback.messages.map((msg: any) => ({
-          ...msg,
-          sender: msg.users,
-          users: undefined,
-        }));
-
-        const department = feedback.departments ? {
-          ...feedback.departments,
-          manager: feedback.departments.managerId 
-            ? managerMap.get(feedback.departments.managerId) || null
-            : null,
-        } : null;
-
-        return {
-          ...feedback,
-          user: feedback.users_feedbacks_userIdTousers,
-          department: department,
-          forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
-          messages: messagesWithSender,
-          users_feedbacks_userIdTousers: undefined,
-          departments: undefined,
-          users_feedbacks_forwardedToIdTousers: undefined,
-          unreadCount,
-        };
-      })
+    const unreadCountMap = new Map(
+      unreadCounts.map((item) => [item.feedbackId, item._count.id])
     );
+
+    // تبدیل به فرمت frontend (بدون N+1)
+    const feedbacksWithUnreadCount = feedbacksWithMessages.map((feedback: any) => {
+      // تبدیل پیام‌ها به فرمت frontend (users → sender)
+      const messagesWithSender = feedback.messages.map((msg: any) => ({
+        ...msg,
+        sender: msg.users,
+        users: undefined,
+      }));
+
+      const department = feedback.departments ? {
+        ...feedback.departments,
+        manager: feedback.departments.managerId
+          ? managerMap.get(feedback.departments.managerId) || null
+          : null,
+      } : null;
+
+      return {
+        ...feedback,
+        user: feedback.users_feedbacks_userIdTousers,
+        department: department,
+        forwardedTo: feedback.users_feedbacks_forwardedToIdTousers,
+        messages: messagesWithSender,
+        users_feedbacks_userIdTousers: undefined,
+        departments: undefined,
+        users_feedbacks_forwardedToIdTousers: undefined,
+        unreadCount: unreadCountMap.get(feedback.id) || 0,
+      };
+    });
 
     return NextResponse.json(feedbacksWithUnreadCount);
   } catch (error) {

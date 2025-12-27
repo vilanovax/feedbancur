@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET - دریافت فیدبک‌های حذف شده (سطل آشغال)
+// GET - دریافت فیدبک‌های حذف شده (سطل آشغال) با pagination
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,6 +16,12 @@ export async function GET(req: NextRequest) {
     if (session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    // Pagination parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "20");
+    const skip = (page - 1) * limit;
 
     const includeConfig = {
       users_feedbacks_userIdTousers: {
@@ -47,17 +53,28 @@ export async function GET(req: NextRequest) {
     };
 
     let feedbacks;
+    let total = 0;
+
     try {
-      feedbacks = await (prisma.feedbacks.findMany as any)({
-        where: {
-          deletedAt: { not: null },
-        },
-        include: includeConfig,
-        orderBy: {
-          deletedAt: "desc",
-        },
-      });
-      console.log("Found", feedbacks.length, "deleted feedbacks");
+      // شمارش کل و دریافت با pagination
+      const [count, data] = await Promise.all([
+        prisma.feedbacks.count({
+          where: { deletedAt: { not: null } },
+        }),
+        (prisma.feedbacks.findMany as any)({
+          where: {
+            deletedAt: { not: null },
+          },
+          include: includeConfig,
+          orderBy: {
+            deletedAt: "desc",
+          },
+          skip,
+          take: limit,
+        }),
+      ]);
+      total = count;
+      feedbacks = data;
     } catch (dbError: any) {
       console.error("Error fetching trash:", dbError);
       // اگر فیلد deletedAt وجود نداشت، از status ARCHIVED استفاده کن
@@ -68,15 +85,24 @@ export async function GET(req: NextRequest) {
         dbError?.message?.includes("Unknown field")
       ) {
         console.warn("deletedAt field not found, using ARCHIVED status");
-        feedbacks = await prisma.feedbacks.findMany({
-          where: {
-            status: "ARCHIVED",
-          },
-          include: includeConfig,
-          orderBy: {
-            updatedAt: "desc",
-          },
-        });
+        const [count, data] = await Promise.all([
+          prisma.feedbacks.count({
+            where: { status: "ARCHIVED" },
+          }),
+          prisma.feedbacks.findMany({
+            where: {
+              status: "ARCHIVED",
+            },
+            include: includeConfig,
+            orderBy: {
+              updatedAt: "desc",
+            },
+            skip,
+            take: limit,
+          }),
+        ]);
+        total = count;
+        feedbacks = data;
       } else {
         throw dbError;
       }
@@ -140,7 +166,16 @@ export async function GET(req: NextRequest) {
       return processed;
     });
 
-    return NextResponse.json(processedFeedbacks);
+    // برگرداندن با اطلاعات pagination
+    return NextResponse.json({
+      data: processedFeedbacks,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching trash:", error);
     return NextResponse.json(
