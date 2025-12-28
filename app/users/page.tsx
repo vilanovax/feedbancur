@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { UserPlus, Pencil, Trash2, Search, Shield, User, CheckCircle, XCircle, Tag, Plus, ArrowUp, ArrowDown, Edit2 } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Search, Shield, User, CheckCircle, XCircle, Tag, Plus, ArrowUp, ArrowDown, Edit2, KeyRound, Users, Building2, AlertTriangle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
 import { useToast } from "@/contexts/ToastContext";
@@ -91,7 +91,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
-  const [activeTab, setActiveTab] = useState<"users" | "statuses">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "statuses" | "passwordReset">("users");
   
   // User Status states
   const [userStatuses, setUserStatuses] = useState<UserStatus[]>([]);
@@ -106,6 +106,14 @@ export default function UsersPage() {
     isActive: true,
     order: 0,
   });
+
+  // Password Reset states
+  const [passwordResetScope, setPasswordResetScope] = useState<"user" | "department" | "all">("user");
+  const [passwordResetUserId, setPasswordResetUserId] = useState("");
+  const [passwordResetDepartmentId, setPasswordResetDepartmentId] = useState("");
+  const [passwordResetNewPassword, setPasswordResetNewPassword] = useState("");
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+  const [showPasswordResetConfirm, setShowPasswordResetConfirm] = useState(false);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -527,6 +535,61 @@ export default function UsersPage() {
     setShowStatusModal(true);
   };
 
+  const handleForcePasswordReset = async () => {
+    setPasswordResetLoading(true);
+    setError("");
+
+    try {
+      const body: any = {
+        scope: passwordResetScope,
+        newPassword: passwordResetNewPassword,
+      };
+
+      if (passwordResetScope === "user") {
+        body.userId = passwordResetUserId;
+      } else if (passwordResetScope === "department") {
+        body.departmentId = passwordResetDepartmentId;
+      }
+
+      const res = await fetch("/api/users/force-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        toast.success(data.message);
+        setShowPasswordResetConfirm(false);
+        setPasswordResetNewPassword("");
+        setPasswordResetUserId("");
+        setPasswordResetDepartmentId("");
+      } else {
+        setError(data.error || "خطا در ریست رمز عبور");
+        toast.error(data.error || "خطا در ریست رمز عبور");
+      }
+    } catch (err) {
+      setError("خطا در ریست رمز عبور");
+      toast.error("خطا در ریست رمز عبور");
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
+
+  const getPasswordResetScopeLabel = () => {
+    switch (passwordResetScope) {
+      case "user":
+        const user = users.find((u) => u.id === passwordResetUserId);
+        return user ? `کاربر "${user.name}"` : "یک کاربر";
+      case "department":
+        const dept = departments.find((d) => d.id === passwordResetDepartmentId);
+        return dept ? `تمام کاربران بخش "${dept.name}"` : "یک بخش";
+      case "all":
+        return "تمام کاربران (به جز ادمین‌ها)";
+    }
+  };
+
   const handleMoveStatus = async (statusId: string, direction: "up" | "down") => {
     const status = userStatuses.find((s) => s.id === statusId);
     if (!status) return;
@@ -643,6 +706,17 @@ export default function UsersPage() {
                 }`}
               >
                 استتوس‌ها
+              </button>
+              <button
+                onClick={() => setActiveTab("passwordReset")}
+                className={`px-4 py-2 font-medium transition flex items-center gap-2 ${
+                  activeTab === "passwordReset"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                <KeyRound className="w-4 h-4" />
+                ریست رمز عبور
               </button>
             </div>
           </div>
@@ -1400,6 +1474,227 @@ export default function UsersPage() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Password Reset Tab Content */}
+        {activeTab === "passwordReset" && session?.user.role === "ADMIN" && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                  <KeyRound className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    ریست اجباری رمز عبور
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    با این قابلیت می‌توانید رمز عبور کاربران را ریست کنید. کاربران باید در اولین ورود رمز جدید انتخاب کنند.
+                  </p>
+                </div>
+              </div>
+
+              {/* Scope Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  محدوده ریست
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordResetScope("user")}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition ${
+                      passwordResetScope === "user"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <User className={`w-6 h-6 ${passwordResetScope === "user" ? "text-blue-600" : "text-gray-500"}`} />
+                    <div className="text-right">
+                      <div className={`font-medium ${passwordResetScope === "user" ? "text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-white"}`}>
+                        یک کاربر
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">ریست رمز یک کاربر خاص</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPasswordResetScope("department")}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition ${
+                      passwordResetScope === "department"
+                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <Building2 className={`w-6 h-6 ${passwordResetScope === "department" ? "text-blue-600" : "text-gray-500"}`} />
+                    <div className="text-right">
+                      <div className={`font-medium ${passwordResetScope === "department" ? "text-blue-700 dark:text-blue-300" : "text-gray-900 dark:text-white"}`}>
+                        یک بخش
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">ریست رمز همه کاربران یک بخش</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPasswordResetScope("all")}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition ${
+                      passwordResetScope === "all"
+                        ? "border-red-500 bg-red-50 dark:bg-red-900/30"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                    }`}
+                  >
+                    <Users className={`w-6 h-6 ${passwordResetScope === "all" ? "text-red-600" : "text-gray-500"}`} />
+                    <div className="text-right">
+                      <div className={`font-medium ${passwordResetScope === "all" ? "text-red-700 dark:text-red-300" : "text-gray-900 dark:text-white"}`}>
+                        همه کاربران
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">ریست رمز همه (جز ادمین‌ها)</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* User Selection (for "user" scope) */}
+              {passwordResetScope === "user" && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    انتخاب کاربر *
+                  </label>
+                  <select
+                    value={passwordResetUserId}
+                    onChange={(e) => setPasswordResetUserId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">انتخاب کنید...</option>
+                    {users.filter(u => u.role !== "ADMIN").map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({user.mobile}) - {user.department?.name || "بدون بخش"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Department Selection (for "department" scope) */}
+              {passwordResetScope === "department" && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    انتخاب بخش *
+                  </label>
+                  <select
+                    value={passwordResetDepartmentId}
+                    onChange={(e) => setPasswordResetDepartmentId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">انتخاب کنید...</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Warning for "all" scope */}
+              {passwordResetScope === "all" && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span className="font-medium">هشدار!</span>
+                  </div>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                    این عملیات رمز عبور تمام کاربران (به جز ادمین‌ها) را تغییر می‌دهد. همه آنها باید در ورود بعدی رمز جدید انتخاب کنند.
+                  </p>
+                </div>
+              )}
+
+              {/* New Password */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  رمز عبور جدید *
+                </label>
+                <input
+                  type="text"
+                  value={passwordResetNewPassword}
+                  onChange={(e) => setPasswordResetNewPassword(e.target.value)}
+                  placeholder="حداقل 6 کاراکتر"
+                  minLength={6}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  این رمز موقت است. کاربران باید در اولین ورود رمز جدید انتخاب کنند.
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={() => setShowPasswordResetConfirm(true)}
+                disabled={
+                  passwordResetNewPassword.length < 6 ||
+                  (passwordResetScope === "user" && !passwordResetUserId) ||
+                  (passwordResetScope === "department" && !passwordResetDepartmentId)
+                }
+                className="w-full md:w-auto px-6 py-3 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition flex items-center justify-center gap-2"
+              >
+                <KeyRound className="w-5 h-5" />
+                ریست رمز عبور
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Password Reset Confirmation Modal */}
+        {showPasswordResetConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  تأیید ریست رمز عبور
+                </h2>
+              </div>
+
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                آیا مطمئن هستید که می‌خواهید رمز عبور {getPasswordResetScopeLabel()} را ریست کنید؟
+              </p>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                کاربران مربوطه در ورود بعدی مجبور به تغییر رمز عبور خواهند بود.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleForcePasswordReset}
+                  disabled={passwordResetLoading}
+                  className="flex-1 bg-yellow-600 dark:bg-yellow-700 text-white py-2 rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {passwordResetLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      در حال انجام...
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-4 h-4" />
+                      تأیید و ریست
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowPasswordResetConfirm(false)}
+                  disabled={passwordResetLoading}
+                  className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50"
+                >
+                  انصراف
+                </button>
+              </div>
             </div>
           </div>
         )}

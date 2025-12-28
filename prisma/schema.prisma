@@ -236,6 +236,7 @@ model feedbacks {
   messages                             messages[]
   notifications                        notifications[]
   tasks                                tasks?
+  updates                              updates?
 
   // Indexes for common queries
   @@index([status])
@@ -479,6 +480,42 @@ model users {
   @@index([departmentId])
   @@index([role, isActive])
   @@index([departmentId, role])
+
+  // Relations
+  updates           updates[]
+  projects          projects[]
+  project_members   project_members[]
+  project_feedbacks project_feedbacks[]
+}
+
+model updates {
+  id          String         @id @default(uuid())
+  title       String
+  content     String         @db.Text
+  summary     String?        @db.Text
+  category    UpdateCategory
+  source      UpdateSource
+
+  feedbackId  String?        @unique
+  feedbacks   feedbacks?     @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+
+  isDraft     Boolean        @default(false)
+  isPublished Boolean        @default(true)
+  publishedAt DateTime?
+
+  tags        Json           @default("[]")
+  imageUrl    String?        // URL تصویر در Object Storage
+
+  createdById String
+  users       users          @relation(fields: [createdById], references: [id])
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@index([isDraft])
+  @@index([publishedAt])
+  @@index([createdById])
 }
 
 enum AssessmentType {
@@ -541,4 +578,94 @@ enum UserRole {
   ADMIN
   MANAGER
   EMPLOYEE
+}
+
+enum UpdateCategory {
+  FEATURE
+  BUG_FIX
+  IMPROVEMENT
+  NEWS
+  FEEDBACK_COMPLETED
+}
+
+enum UpdateSource {
+  AUTOMATIC
+  MANUAL
+  SYSTEM
+}
+
+enum ProjectMemberRole {
+  ADMIN
+  MEMBER
+}
+
+model projects {
+  id                      String              @id @default(uuid())
+  name                    String
+  description             String?             @db.Text
+  token                   String              @unique @default(uuid())
+
+  isPublic                Boolean             @default(true)
+  requireLogin            Boolean             @default(false)
+  allowAnonymous          Boolean             @default(true)
+  membersCanViewFeedbacks Boolean             @default(false)
+
+  isActive                Boolean             @default(true)
+
+  createdById             String
+  users                   users               @relation(fields: [createdById], references: [id])
+
+  project_members         project_members[]
+  project_feedbacks       project_feedbacks[]
+
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  @@index([token])
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model project_members {
+  id        String            @id @default(uuid())
+  projectId String
+  userId    String
+  role      ProjectMemberRole @default(MEMBER)
+
+  projects  projects          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  users     users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt  DateTime          @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model project_feedbacks {
+  id          String         @id @default(uuid())
+  projectId   String
+
+  title       String
+  content     String         @db.Text
+  type        String         @default("SUGGESTION")
+  image       String?        @db.Text
+
+  isAnonymous Boolean        @default(false)
+  senderName  String?
+  senderEmail String?
+  userId      String?
+
+  status      FeedbackStatus @default(PENDING)
+  adminNotes  String?        @db.Text
+
+  projects    projects       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  users       users?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([status])
 }

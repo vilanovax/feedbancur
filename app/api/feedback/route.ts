@@ -4,8 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+// توجه: آپلود محلی حذف شده - فقط از Object Storage استفاده می‌شود
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -332,41 +331,31 @@ export async function POST(request: NextRequest) {
 
             let imageUrl: string | undefined;
 
-            if (hasValidObjectStorage) {
-              // آپلود به لیارا
-              try {
-                imageUrl = await uploadToLiara(
-                  buffer,
-                  filename,
-                  imageFile.type,
-                  objectStorageSettings,
-                  "feedback"
-                );
-              } catch {
-                // اگر آپلود به Object Storage ناموفق بود، به آپلود محلی fallback می‌کنیم
-              }
+            // Object Storage باید فعال و تنظیم شده باشد
+            if (!hasValidObjectStorage) {
+              return NextResponse.json(
+                { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
+                { status: 400 }
+              );
             }
 
-            // اگر Object Storage غیرفعال است یا آپلود ناموفق بود، آپلود محلی
-            if (!imageUrl) {
-              try {
-                const uploadsDir = join(process.cwd(), "public", "uploads", "feedback");
-                await mkdir(uploadsDir, { recursive: true });
-
-                const filePath = join(uploadsDir, filename);
-                await writeFile(filePath, buffer);
-
-                imageUrl = `/uploads/feedback/${filename}`;
-              } catch (localUploadError: any) {
-                return NextResponse.json(
-                  { error: `خطا در آپلود تصویر: ${localUploadError.message || "خطای نامشخص"}` },
-                  { status: 500 }
-                );
-              }
-            }
-
-            if (imageUrl) {
+            // آپلود به لیارا Object Storage
+            try {
+              imageUrl = await uploadToLiara(
+                buffer,
+                filename,
+                imageFile.type,
+                objectStorageSettings,
+                "feedback"
+              );
+              console.log("Feedback image uploaded to Liara Object Storage:", imageUrl);
               imageUrls.push(imageUrl);
+            } catch (storageError: any) {
+              console.error("Error uploading feedback image to Liara Object Storage:", storageError);
+              return NextResponse.json(
+                { error: `خطا در آپلود تصویر به Object Storage: ${storageError.message || "خطای نامشخص"}` },
+                { status: 500 }
+              );
             }
           }
         }

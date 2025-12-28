@@ -11,6 +11,7 @@ import {
   Trophy,
   Users,
   ClipboardList,
+  Newspaper,
 } from "lucide-react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -179,6 +180,11 @@ export default function MobileLayout({
         name: "اعلانات",
         href: "/mobile/announcements",
         icon: Bell,
+      },
+      {
+        name: "اطلاع‌رسانی‌ها",
+        href: "/mobile/updates",
+        icon: Newspaper,
       },
       {
         name: "نظرسنجی‌ها",

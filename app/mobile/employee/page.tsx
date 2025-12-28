@@ -7,7 +7,7 @@ import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Image from "next/image";
-import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3, ClipboardList, ArrowLeft } from "lucide-react";
+import { MessageSquare, CheckSquare, Trophy, User, Bell, BarChart3, ClipboardList, ArrowLeft, Newspaper } from "lucide-react";
 import Link from "next/link";
 
 interface AssessmentResult {
@@ -286,6 +286,20 @@ export default function EmployeeMobilePage() {
                 {stats.newPolls} جدید
               </p>
             )}
+          </Link>
+
+          {/* اطلاع‌رسانی‌ها */}
+          <Link
+            href="/mobile/updates"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Newspaper className="w-8 h-8 text-blue-600" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">اطلاع‌رسانی‌ها</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              بهبودها و تغییرات
+            </p>
           </Link>
         </div>
 

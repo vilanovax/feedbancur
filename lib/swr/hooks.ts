@@ -160,3 +160,38 @@ export function useCreateFeedback() {
 export function useUpdateFeedbackStatus(id: string) {
   return useSWRMutation(`/api/feedback/${id}/status`, postFetcher);
 }
+
+// Updates (اطلاع‌رسانی) hooks
+export function useUpdates(params?: {
+  category?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  drafts?: boolean;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.set("category", params.category);
+  if (params?.page) searchParams.set("page", params.page.toString());
+  if (params?.limit) searchParams.set("limit", params.limit.toString());
+  if (params?.search) searchParams.set("search", params.search);
+  if (params?.drafts) searchParams.set("drafts", "true");
+
+  const url = `/api/updates${searchParams.toString() ? `?${searchParams}` : ""}`;
+
+  return useSWR(url, fetcher, {
+    ...defaultConfig,
+    refreshInterval: 120000, // 2 minutes
+    keepPreviousData: true,
+  });
+}
+
+export function useLatestUpdates(limit: number = 5) {
+  return useSWR(`/api/updates?limit=${limit}`, fetcher, {
+    ...defaultConfig,
+    refreshInterval: 60000, // 1 minute
+  });
+}
+
+export function useUpdate(id: string | null) {
+  return useSWR(id ? `/api/updates/${id}` : null, fetcher, defaultConfig);
+}

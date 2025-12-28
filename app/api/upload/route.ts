@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToLiara } from "@/lib/liara-storage";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+// توجه: آپلود محلی حذف شده - فقط از Object Storage استفاده می‌شود
 import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
@@ -202,50 +201,35 @@ export async function POST(request: NextRequest) {
       objectStorageSettings.endpoint &&
       objectStorageSettings.bucket;
 
-    if (hasValidObjectStorage) {
-      // آپلود به Object Storage (لیارا)
-      try {
-        const fileUrl = await uploadToLiara(
-          optimizedBuffer,
-          filename,
-          optimizedMimeType,
-          objectStorageSettings,
-          "logo"
-        );
-        console.log("Logo uploaded to Liara:", fileUrl);
-
-        return NextResponse.json({
-          success: true,
-          url: fileUrl,
-          message: "لوگو با موفقیت آپلود شد",
-        });
-      } catch (uploadError: any) {
-        console.error("Error uploading logo to Liara:", uploadError);
-        // اگر آپلود به Object Storage ناموفق بود، به آپلود محلی fallback می‌کنیم
-        console.log("Falling back to local upload...");
-      }
+    // Object Storage باید فعال و تنظیم شده باشد
+    if (!hasValidObjectStorage) {
+      console.error("Object Storage is not configured properly");
+      return NextResponse.json(
+        { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
+        { status: 400 }
+      );
     }
 
-    // آپلود محلی (fallback)
+    // آپلود به Object Storage (لیارا)
     try {
-      const uploadsDir = join(process.cwd(), "public", "uploads", "logo");
-      await mkdir(uploadsDir, { recursive: true });
-
-      const filePath = join(uploadsDir, filename);
-      await writeFile(filePath, optimizedBuffer);
-
-      const fileUrl = `/uploads/logo/${filename}`;
-      console.log("Logo uploaded locally:", fileUrl);
+      const fileUrl = await uploadToLiara(
+        optimizedBuffer,
+        filename,
+        optimizedMimeType,
+        objectStorageSettings,
+        "logo"
+      );
+      console.log("Logo uploaded to Liara Object Storage:", fileUrl);
 
       return NextResponse.json({
         success: true,
         url: fileUrl,
-        message: "لوگو با موفقیت آپلود شد (محلی)",
+        message: "لوگو با موفقیت آپلود شد",
       });
-    } catch (localUploadError: any) {
-      console.error("Error uploading logo locally:", localUploadError);
+    } catch (uploadError: any) {
+      console.error("Error uploading logo to Liara Object Storage:", uploadError);
       return NextResponse.json(
-        { error: `خطا در آپلود لوگو: ${localUploadError.message || "خطای نامشخص"}` },
+        { error: `خطا در آپلود لوگو به Object Storage: ${uploadError.message || "خطای نامشخص"}` },
         { status: 500 }
       );
     }

@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { randomUUID } from "crypto";
+import {
+  generateUpdateSummary,
+  generateUpdateTitle,
+  getCategoryFromFeedbackType,
+  OpenAISettings,
+} from "@/lib/openai";
 
 const statusUpdateSchema = z.object({
   status: z.enum(["PENDING", "REVIEWED", "ARCHIVED", "DEFERRED", "COMPLETED"]),
@@ -212,6 +219,81 @@ export async function PATCH(
           console.error("Error creating admin notifications:", error);
           // ادامه می‌دهیم حتی اگر خطا رخ دهد
         }
+      }
+
+      // ایجاد خودکار اطلاع‌رسانی (Update) از فیدبک تکمیل شده
+      try {
+        // بررسی اینکه قبلاً اطلاع‌رسانی ایجاد نشده باشد
+        const existingUpdate = await prisma.updates.findUnique({
+          where: { feedbackId: id },
+        });
+
+        if (!existingUpdate && data.userResponse && data.userResponse.trim()) {
+          // دریافت تنظیمات OpenAI
+          const settings = await prisma.settings.findFirst();
+          let openAISettings: OpenAISettings = {
+            enabled: false,
+            apiKey: "",
+            model: "gpt-3.5-turbo",
+          };
+
+          if (settings?.openAISettings) {
+            const parsed =
+              typeof settings.openAISettings === "string"
+                ? JSON.parse(settings.openAISettings)
+                : settings.openAISettings;
+            openAISettings = {
+              enabled: parsed.enabled || false,
+              apiKey: parsed.apiKey || "",
+              model: parsed.model || "gpt-3.5-turbo",
+            };
+          }
+
+          // تولید عنوان و خلاصه
+          const content = data.userResponse.trim();
+          let title = `رسیدگی به: ${feedback.title}`;
+          let summary = content.substring(0, 200);
+
+          if (openAISettings.enabled && openAISettings.apiKey) {
+            try {
+              [title, summary] = await Promise.all([
+                generateUpdateTitle(
+                  feedback.title,
+                  feedback.content,
+                  content,
+                  openAISettings
+                ),
+                generateUpdateSummary(feedback.title, content, openAISettings),
+              ]);
+            } catch (aiError) {
+              console.error("Error generating AI content for update:", aiError);
+              // ادامه با مقادیر پیش‌فرض
+            }
+          }
+
+          // ایجاد اطلاع‌رسانی
+          await prisma.updates.create({
+            data: {
+              id: randomUUID(),
+              title,
+              content,
+              summary,
+              category: getCategoryFromFeedbackType(feedback.type),
+              source: "AUTOMATIC",
+              feedbackId: id,
+              tags: feedback.keywords || [],
+              isDraft: false,
+              isPublished: true,
+              publishedAt: new Date(),
+              createdById: session.user.id,
+            },
+          });
+
+          console.log("Auto-created update from completed feedback:", id);
+        }
+      } catch (updateError) {
+        console.error("Error creating auto-update from feedback:", updateError);
+        // ادامه می‌دهیم حتی اگر خطا رخ دهد
       }
     }
 

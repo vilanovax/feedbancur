@@ -7,7 +7,7 @@ import MobileLayout from "@/components/MobileLayout";
 import MobileDashboardSkeleton from "@/components/MobileDashboardSkeleton";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Image from "next/image";
-import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList, ArrowLeft } from "lucide-react";
+import { MessageSquare, Trophy, Send, CheckSquare, User, Bell, BarChart3, ClipboardList, ArrowLeft, Newspaper } from "lucide-react";
 import Link from "next/link";
 
 interface AssessmentResult {
@@ -270,7 +270,7 @@ export default function ManagerMobilePage() {
           {/* نظرسنجی‌های فعال */}
           <Link
             href="/mobile/polls"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative col-span-2"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="relative">
@@ -291,6 +291,20 @@ export default function ManagerMobilePage() {
                 {stats.newPolls} نظرسنجی جدید
               </p>
             )}
+          </Link>
+
+          {/* اطلاع‌رسانی‌ها */}
+          <Link
+            href="/mobile/updates"
+            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <Newspaper className="w-8 h-8 text-blue-600" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">اطلاع‌رسانی‌ها</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              بهبودها و تغییرات
+            </p>
           </Link>
         </div>
 

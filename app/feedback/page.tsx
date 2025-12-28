@@ -763,7 +763,9 @@ function FeedbacksPageContent() {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages`);
       if (res.ok) {
-        const msgs = await res.json();
+        const result = await res.json();
+        // API برمی‌گرداند { data: [...], pagination: {...} }
+        const msgs = Array.isArray(result) ? result : (result.data || []);
         setMessages((prev) => ({ ...prev, [feedbackId]: msgs }));
         // به‌روزرسانی تعداد خوانده نشده
         fetchUnreadCount(feedbackId);

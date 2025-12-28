@@ -8,6 +8,7 @@ import Sidebar from "./Sidebar";
 import AppHeader from "./AdminHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
 import { useStats, useMyAssessmentResults } from "@/lib/swr";
+import { UpdatesWidget } from "@/components/UpdatesWidget";
 import {
   MessageSquare,
   BarChart3,
@@ -21,7 +22,8 @@ import {
   Clock,
   Archive,
   ClipboardList,
-  ArrowLeft
+  ArrowLeft,
+  Newspaper,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -248,6 +250,11 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* ویجت اطلاع‌رسانی‌ها */}
+        <div className="mb-8">
+          <UpdatesWidget />
+        </div>
+
         {/* نتایج آزمون‌ها */}
         {(assessmentResults?.length ?? 0) > 0 && (
           <div className="mb-8">
@@ -346,6 +353,25 @@ export default function Dashboard() {
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                   اعلانات و اطلاعیه‌ها
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            href="/updates"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center space-x-reverse">
+              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg flex-shrink-0">
+                <Newspaper className="text-blue-600 dark:text-blue-400" size={24} />
+              </div>
+              <div className="mr-[5px]">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                  اطلاع‌رسانی‌ها
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                  بهبودها و تغییرات
                 </p>
               </div>
             </div>

@@ -21,6 +21,8 @@ import {
   Settings,
   Brain,
   ClipboardList,
+  Newspaper,
+  FolderKanban,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
@@ -123,6 +125,12 @@ export default function Sidebar() {
         roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
       },
       {
+        name: "اطلاع‌رسانی‌ها",
+        href: "/updates",
+        icon: Newspaper,
+        roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
+      },
+      {
         name: "نظرسنجی‌ها",
         href: "/polls",
         icon: CheckSquare,
@@ -155,6 +163,12 @@ export default function Sidebar() {
             roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
           },
         ],
+      },
+      {
+        name: "پروژه‌ها",
+        href: "/projects",
+        icon: FolderKanban,
+        roles: ["ADMIN"],
       },
       {
         name: "وضعیت تیم",

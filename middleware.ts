@@ -12,6 +12,8 @@ const publicPaths = [
   "/manifest.json",
   "/manifest.webmanifest",
   "/icons",
+  "/p/",          // صفحات فیدبک عمومی پروژه
+  "/api/public/", // API های عمومی پروژه
 ];
 
 // صفحات مخصوص ادمین
@@ -21,6 +23,7 @@ const adminOnlyPaths = [
   "/settings",
   "/backup",
   "/team-status",
+  "/projects",
 ];
 
 // صفحات مخصوص ادمین و مدیر
