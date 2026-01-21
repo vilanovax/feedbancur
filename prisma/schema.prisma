@@ -382,6 +382,7 @@ model settings {
   workingHoursSettings  Json?
   openAISettings        Json?
   teamStatusSettings    Json?
+  fileShareSettings     Json?
 }
 
 model task_assignments {
@@ -486,6 +487,8 @@ model users {
   projects          projects[]
   project_members   project_members[]
   project_feedbacks project_feedbacks[]
+  shared_folders    shared_folders[]
+  shared_files      shared_files[]
 }
 
 model updates {
@@ -617,6 +620,8 @@ model projects {
 
   project_members         project_members[]
   project_feedbacks       project_feedbacks[]
+  shared_folders          shared_folders[]
+  shared_files            shared_files[]
 
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
@@ -668,4 +673,61 @@ model project_feedbacks {
   @@index([projectId])
   @@index([userId])
   @@index([status])
+}
+
+model shared_folders {
+  id          String   @id @default(uuid())
+  name        String
+  parentId    String?
+  projectId   String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users    users     @relation(fields: [createdById], references: [id])
+  projects projects? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  parent   shared_folders?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children shared_folders[] @relation("FolderHierarchy")
+  files    shared_files[]
+
+  @@index([parentId])
+  @@index([projectId])
+  @@index([createdById])
+  @@index([projectId, parentId])
+}
+
+model shared_files {
+  id             String   @id @default(uuid())
+  name           String
+  originalName   String
+  storagePath    String
+  url            String
+  size           Int
+  mimeType       String
+
+  folderId       String?
+  projectId      String?
+
+  uploadedById   String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  downloadCount  Int       @default(0)
+  lastAccessedAt DateTime?
+  deletedAt      DateTime?
+
+  tags           String?   @db.Text
+
+  users   users           @relation(fields: [uploadedById], references: [id])
+  projects projects?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folders shared_folders? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([folderId])
+  @@index([projectId])
+  @@index([uploadedById])
+  @@index([deletedAt])
+  @@index([projectId, folderId])
+  @@index([projectId, deletedAt])
 }
