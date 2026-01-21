@@ -10,6 +10,7 @@ import DashboardSkeleton from "./DashboardSkeleton";
 import { useStats, useMyAssessmentResults } from "@/lib/swr";
 import { UpdatesWidget } from "@/components/UpdatesWidget";
 import StatCardEnhanced from "@/components/dashboard/StatCardEnhanced";
+import FeedbackActivityChart from "@/components/dashboard/FeedbackActivityChart";
 import {
   MessageSquare,
   BarChart3,
@@ -152,6 +153,11 @@ export default function Dashboard() {
             color="purple"
             href="/departments"
           />
+        </div>
+
+        {/* نمودار فعالیت */}
+        <div className="mb-8">
+          <FeedbackActivityChart />
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}
