@@ -11,6 +11,9 @@ import { useStats, useMyAssessmentResults } from "@/lib/swr";
 import { UpdatesWidget } from "@/components/UpdatesWidget";
 import StatCardEnhanced from "@/components/dashboard/StatCardEnhanced";
 import FeedbackActivityChart from "@/components/dashboard/FeedbackActivityChart";
+import TopPerformersWidget from "@/components/dashboard/TopPerformersWidget";
+import RecentActivityFeed from "@/components/dashboard/RecentActivityFeed";
+import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import {
   MessageSquare,
   BarChart3,
@@ -158,6 +161,13 @@ export default function Dashboard() {
         {/* نمودار فعالیت */}
         <div className="mb-8">
           <FeedbackActivityChart />
+        </div>
+
+        {/* ویجت‌های جانبی - Top Performers, Status Pie Chart, Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <TopPerformersWidget />
+          <StatusPieChart stats={stats} />
+          <RecentActivityFeed />
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}
