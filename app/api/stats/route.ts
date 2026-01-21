@@ -161,6 +161,13 @@ export async function GET() {
       };
     }
 
+    // تاریخ 7 روز قبل برای trends
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
     const [
       totalFeedbacks,
       pendingFeedbacks,
@@ -176,6 +183,13 @@ export async function GET() {
       totalPolls,
       activePolls,
       newPolls,
+      // آمار هفته قبل برای trends
+      prevWeekTotal,
+      prevWeekPending,
+      prevWeekCompleted,
+      prevWeekDeferred,
+      // داده‌های 7 روز اخیر برای mini charts
+      last7DaysFeedbacks,
     ] = await Promise.all([
       prisma.feedbacks.count({ where: { deletedAt: null } }),
       prisma.feedbacks.count({ where: { status: "PENDING", deletedAt: null } }),
@@ -199,7 +213,128 @@ export async function GET() {
       prisma.polls.count({
         where: newPollWhere,
       }),
+      // آمار هفته قبل (14-7 روز قبل)
+      prisma.feedbacks.count({
+        where: {
+          deletedAt: null,
+          createdAt: {
+            gte: fourteenDaysAgo,
+            lt: sevenDaysAgo,
+          },
+        },
+      }),
+      prisma.feedbacks.count({
+        where: {
+          status: "PENDING",
+          deletedAt: null,
+          createdAt: {
+            gte: fourteenDaysAgo,
+            lt: sevenDaysAgo,
+          },
+        },
+      }),
+      prisma.feedbacks.count({
+        where: {
+          status: "COMPLETED",
+          deletedAt: null,
+          createdAt: {
+            gte: fourteenDaysAgo,
+            lt: sevenDaysAgo,
+          },
+        },
+      }),
+      prisma.feedbacks.count({
+        where: {
+          status: "DEFERRED",
+          deletedAt: null,
+          createdAt: {
+            gte: fourteenDaysAgo,
+            lt: sevenDaysAgo,
+          },
+        },
+      }),
+      // فیدبک‌های 7 روز اخیر به تفکیک روز
+      prisma.feedbacks.groupBy({
+        by: ["createdAt"],
+        where: {
+          deletedAt: null,
+          createdAt: {
+            gte: sevenDaysAgo,
+          },
+        },
+        _count: true,
+      }),
     ]);
+
+    // محاسبه trends
+    const thisWeekTotal = await prisma.feedbacks.count({
+      where: {
+        deletedAt: null,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    });
+
+    const thisWeekPending = await prisma.feedbacks.count({
+      where: {
+        status: "PENDING",
+        deletedAt: null,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    });
+
+    const thisWeekCompleted = await prisma.feedbacks.count({
+      where: {
+        status: "COMPLETED",
+        deletedAt: null,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    });
+
+    const thisWeekDeferred = await prisma.feedbacks.count({
+      where: {
+        status: "DEFERRED",
+        deletedAt: null,
+        createdAt: { gte: sevenDaysAgo },
+      },
+    });
+
+    // محاسبه درصد تغییرات
+    const calculateTrend = (current: number, previous: number) => {
+      if (previous === 0) {
+        return current > 0 ? 100 : 0;
+      }
+      return ((current - previous) / previous) * 100;
+    };
+
+    const getTrendDirection = (value: number): "up" | "down" | "neutral" => {
+      if (value > 0) return "up";
+      if (value < 0) return "down";
+      return "neutral";
+    };
+
+    // آماده کردن داده‌های mini chart (7 روز اخیر)
+    const prepareMiniChartData = () => {
+      const chartData: number[] = [];
+      const today = new Date();
+
+      for (let i = 6; i >= 0; i--) {
+        const targetDate = new Date(today);
+        targetDate.setDate(targetDate.getDate() - i);
+        targetDate.setHours(0, 0, 0, 0);
+
+        const count = last7DaysFeedbacks.filter((f) => {
+          const feedbackDate = new Date(f.createdAt);
+          feedbackDate.setHours(0, 0, 0, 0);
+          return feedbackDate.getTime() === targetDate.getTime();
+        }).length;
+
+        chartData.push(count);
+      }
+
+      return chartData;
+    };
+
+    const miniChartData = prepareMiniChartData();
 
     const statsData = {
       totalFeedbacks,
@@ -216,6 +351,27 @@ export async function GET() {
       totalPolls,
       activePolls,
       newPolls,
+      // trends برای نمایش تغییرات درصدی
+      trends: {
+        totalFeedbacks: {
+          value: calculateTrend(thisWeekTotal, prevWeekTotal),
+          direction: getTrendDirection(calculateTrend(thisWeekTotal, prevWeekTotal)),
+        },
+        pendingFeedbacks: {
+          value: calculateTrend(thisWeekPending, prevWeekPending),
+          direction: getTrendDirection(calculateTrend(thisWeekPending, prevWeekPending)),
+        },
+        completedFeedbacks: {
+          value: calculateTrend(thisWeekCompleted, prevWeekCompleted),
+          direction: getTrendDirection(calculateTrend(thisWeekCompleted, prevWeekCompleted)),
+        },
+        deferredFeedbacks: {
+          value: calculateTrend(thisWeekDeferred, prevWeekDeferred),
+          direction: getTrendDirection(calculateTrend(thisWeekDeferred, prevWeekDeferred)),
+        },
+      },
+      // داده‌های mini chart برای 7 روز اخیر
+      miniChartData,
     };
 
     // ذخیره در cache

@@ -9,6 +9,7 @@ import AppHeader from "./AdminHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
 import { useStats, useMyAssessmentResults } from "@/lib/swr";
 import { UpdatesWidget } from "@/components/UpdatesWidget";
+import StatCardEnhanced from "@/components/dashboard/StatCardEnhanced";
 import {
   MessageSquare,
   BarChart3,
@@ -91,78 +92,66 @@ export default function Dashboard() {
       <AppHeader />
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
-          <Link href="/feedback" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">کل فیدبک‌ها</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.totalFeedbacks ?? 0}
-                </p>
-              </div>
-              <MessageSquare className="text-blue-500" size={40} />
-            </div>
-          </Link>
+        {/* Stat Cards با Mini Charts و Trends */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCardEnhanced
+            title="کل فیدبک‌ها"
+            value={stats?.totalFeedbacks ?? 0}
+            icon={MessageSquare}
+            color="blue"
+            trend={stats?.trends?.totalFeedbacks}
+            miniChartData={stats?.miniChartData}
+            href="/feedback"
+          />
 
-          <Link href="/feedback?status=PENDING" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های در انتظار</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.pendingFeedbacks ?? 0}
-                </p>
-              </div>
-              <BarChart3 className="text-yellow-500" size={40} />
-            </div>
-          </Link>
+          <StatCardEnhanced
+            title="فیدبک‌های در انتظار"
+            value={stats?.pendingFeedbacks ?? 0}
+            icon={BarChart3}
+            color="yellow"
+            trend={stats?.trends?.pendingFeedbacks}
+            miniChartData={stats?.miniChartData}
+            href="/feedback?status=PENDING"
+          />
 
-          <Link href="/feedback?status=COMPLETED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های انجام شده</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.completedFeedbacks ?? 0}
-                </p>
-              </div>
-              <CheckCircle className="text-green-500" size={40} />
-            </div>
-          </Link>
+          <StatCardEnhanced
+            title="فیدبک‌های تکمیل شده"
+            value={stats?.completedFeedbacks ?? 0}
+            icon={CheckCircle}
+            color="green"
+            trend={stats?.trends?.completedFeedbacks}
+            miniChartData={stats?.miniChartData}
+            href="/feedback?status=COMPLETED"
+          />
 
-          <Link href="/feedback?status=DEFERRED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های برای آینده</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.deferredFeedbacks ?? 0}
-                </p>
-              </div>
-              <Clock className="text-orange-500" size={40} />
-            </div>
-          </Link>
+          <StatCardEnhanced
+            title="فیدبک‌های موکول شده"
+            value={stats?.deferredFeedbacks ?? 0}
+            icon={Clock}
+            color="orange"
+            trend={stats?.trends?.deferredFeedbacks}
+            miniChartData={stats?.miniChartData}
+            href="/feedback?status=DEFERRED"
+          />
+        </div>
 
-          <Link href="/feedback?status=ARCHIVED" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">فیدبک‌های آرشیو شده</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.archivedFeedbacks ?? 0}
-                </p>
-              </div>
-              <Archive className="text-gray-500" size={40} />
-            </div>
-          </Link>
+        {/* Stat Cards اضافی */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <StatCardEnhanced
+            title="فیدبک‌های آرشیو شده"
+            value={stats?.archivedFeedbacks ?? 0}
+            icon={Archive}
+            color="gray"
+            href="/feedback?status=ARCHIVED"
+          />
 
-          <Link href="/departments" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">بخش‌ها</p>
-                <p className="text-3xl font-bold text-gray-800 dark:text-white mt-2">
-                  {stats?.departments ?? 0}
-                </p>
-              </div>
-              <Building2 className="text-purple-500" size={40} />
-            </div>
-          </Link>
+          <StatCardEnhanced
+            title="بخش‌ها"
+            value={stats?.departments ?? 0}
+            icon={Building2}
+            color="purple"
+            href="/departments"
+          />
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}
