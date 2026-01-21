@@ -163,12 +163,12 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <FolderKanban className="w-8 h-8 text-blue-500" />
+          <FolderKanban className="w-7 h-7 sm:w-8 sm:h-8 text-blue-500" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               پروژه‌ها
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
               مدیریت پروژه‌ها و دریافت فیدبک عمومی
             </p>
           </div>
@@ -176,10 +176,10 @@ export default function ProjectsPage() {
 
         <Link
           href="/projects/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors touch-manipulation"
         >
           <Plus className="w-5 h-5" />
-          پروژه جدید
+          <span className="text-sm sm:text-base">پروژه جدید</span>
         </Link>
       </div>
 
@@ -200,13 +200,13 @@ export default function ProjectsPage() {
 
       {/* Search */}
       <div className="relative mb-6">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="جستجوی پروژه..."
-          className="w-full pr-10 pl-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pr-10 pl-4 py-2.5 sm:py-2 text-sm sm:text-base rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -333,17 +333,17 @@ export default function ProjectsPage() {
               {/* Copy link */}
               <button
                 onClick={() => copyLink(project.token)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 sm:py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 transition-colors touch-manipulation"
               >
                 {copiedToken === project.token ? (
                   <>
                     <Check className="w-4 h-4 text-green-500" />
-                    کپی شد!
+                    <span>کپی شد!</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    کپی لینک اشتراک
+                    <span>کپی لینک اشتراک</span>
                   </>
                 )}
               </button>

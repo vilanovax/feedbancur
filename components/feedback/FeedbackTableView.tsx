@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { MoreVertical, Star, Clock, User, Building2, Calendar } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import PriorityBadge from "./PriorityBadge";
+import MobileFeedbackCard from "./MobileFeedbackCard";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
 
 interface FeedbackTableViewProps {
@@ -24,9 +25,50 @@ export default function FeedbackTableView({
   const someSelected = selectedFeedbacks.length > 0 && !allSelected;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
+    <>
+      {/* Mobile View - Card List */}
+      <div className="block md:hidden">
+        {feedbacks.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+            <p className="text-gray-500 dark:text-gray-400">
+              هیچ فیدبکی یافت نشد
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Select All for Mobile */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 mb-3 flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onChange={onSelectAll}
+                className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {allSelected ? "لغو انتخاب همه" : "انتخاب همه"}
+                {selectedFeedbacks.length > 0 && ` (${selectedFeedbacks.length})`}
+              </span>
+            </div>
+            {feedbacks.map((feedback) => (
+              <MobileFeedbackCard
+                key={feedback.id}
+                feedback={feedback}
+                isSelected={selectedFeedbacks.includes(feedback.id)}
+                onSelect={() => onSelectFeedback(feedback.id)}
+                onOpenActions={() => onOpenActions(feedback)}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Desktop View - Table */}
+      <div className="hidden md:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th className="w-12 px-4 py-3">
@@ -181,5 +223,6 @@ export default function FeedbackTableView({
         </table>
       </div>
     </div>
+    </>
   );
 }
