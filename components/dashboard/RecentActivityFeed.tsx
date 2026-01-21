@@ -11,7 +11,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { fa } from "date-fns/locale";
+import { faIR } from "date-fns/locale";
 import Link from "next/link";
 
 interface ActivityItem {
@@ -96,7 +96,7 @@ export default function RecentActivityFeed() {
     try {
       return formatDistanceToNow(new Date(timestamp), {
         addSuffix: true,
-        locale: fa,
+        locale: faIR,
       });
     } catch {
       return "نامشخص";

@@ -5,7 +5,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Calendar, X } from "lucide-react";
 import { format } from "date-fns";
-import { fa } from "date-fns/locale";
+import { faIR } from "date-fns/locale";
 
 interface DateRange {
   startDate: Date | null;
@@ -56,7 +56,7 @@ export default function DateRangePicker({
 
   const formatDateRange = () => {
     if (dateRange.startDate && dateRange.endDate) {
-      return `${format(dateRange.startDate, "dd MMM yyyy", { locale: fa })} - ${format(dateRange.endDate, "dd MMM yyyy", { locale: fa })}`;
+      return `${format(dateRange.startDate, "dd MMM yyyy", { locale: faIR })} - ${format(dateRange.endDate, "dd MMM yyyy", { locale: faIR })}`;
     }
     return "انتخاب بازه زمانی";
   };
