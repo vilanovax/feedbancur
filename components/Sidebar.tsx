@@ -23,6 +23,7 @@ import {
   ClipboardList,
   Newspaper,
   FolderKanban,
+  Files,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
@@ -168,6 +169,12 @@ export default function Sidebar() {
         name: "پروژه‌ها",
         href: "/projects",
         icon: FolderKanban,
+        roles: ["ADMIN"],
+      },
+      {
+        name: "فایل‌ها",
+        href: "/files",
+        icon: Files,
         roles: ["ADMIN"],
       },
       {

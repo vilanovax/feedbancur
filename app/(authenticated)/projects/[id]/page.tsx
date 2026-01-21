@@ -21,6 +21,7 @@ import {
   Clock,
   User,
   AlertCircle,
+  Files,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -74,6 +75,7 @@ const tabs = [
   { id: "settings", label: "تنظیمات", icon: Settings },
   { id: "members", label: "اعضا", icon: Users },
   { id: "feedbacks", label: "فیدبک‌ها", icon: MessageSquare },
+  { id: "files", label: "فایل‌ها", icon: Files },
 ];
 
 const feedbackTypes: Record<string, { label: string; color: string }> = {
@@ -708,6 +710,39 @@ export default function ProjectDetailPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Files Tab */}
+      {activeTab === "files" && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              فایل‌های پروژه
+            </h3>
+            <button
+              onClick={() => router.push(`/files/project/${projectId}`)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <ExternalLink size={18} />
+              <span>مشاهده همه فایل‌ها</span>
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            برای مدیریت کامل فایل‌های پروژه، روی دکمه "مشاهده همه فایل‌ها" کلیک کنید.
+          </p>
+          <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+              قابلیت‌ها:
+            </h4>
+            <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+              <li>آپلود و مدیریت فایل‌های پروژه</li>
+              <li>سازماندهی با پوشه‌ها و تگ‌ها</li>
+              <li>جستجو و فیلتر پیشرفته</li>
+              <li>پیش‌نمایش فایل‌ها (تصاویر، PDF، ویدیو، صوت)</li>
+              <li>کنترل دسترسی بر اساس نقش</li>
+            </ul>
+          </div>
         </div>
       )}
     </div>
