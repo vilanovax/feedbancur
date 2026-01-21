@@ -15,6 +15,7 @@ import TopPerformersWidget from "@/components/dashboard/TopPerformersWidget";
 import RecentActivityFeed from "@/components/dashboard/RecentActivityFeed";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import DepartmentComparisonChart from "@/components/dashboard/DepartmentComparisonChart";
+import ExportButton from "@/components/dashboard/ExportButton";
 import {
   MessageSquare,
   BarChart3,
@@ -97,6 +98,19 @@ export default function Dashboard() {
       <AppHeader />
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+        {/* Header با Export Button */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              داشبورد
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              نمای کلی آمار و فعالیت‌ها
+            </p>
+          </div>
+          <ExportButton stats={stats} />
+        </div>
+
         {/* Stat Cards با Mini Charts و Trends */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCardEnhanced
