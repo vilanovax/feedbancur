@@ -19,6 +19,7 @@ import AdvancedFilters from "@/components/feedback/AdvancedFilters";
 import QuickFilterChips from "@/components/feedback/QuickFilterChips";
 import FeedbackTableView from "@/components/feedback/FeedbackTableView";
 import BulkActionsBar from "@/components/feedback/BulkActionsBar";
+import BulkForwardModal from "@/components/feedback/BulkForwardModal";
 import StatusBadge from "@/components/feedback/StatusBadge";
 import PriorityBadge from "@/components/feedback/PriorityBadge";
 
@@ -125,6 +126,7 @@ function FeedbacksPageContent() {
   const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
+  const [showBulkForwardModal, setShowBulkForwardModal] = useState(false);
   const [bulkOperationLoading, setBulkOperationLoading] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [selectedFeedbackForChat, setSelectedFeedbackForChat] = useState<string | null>(null);
@@ -653,6 +655,112 @@ function FeedbacksPageContent() {
     } catch (error) {
       console.error("Error bulk archiving feedbacks:", error);
       toast.error("خطا در آرشیو گروهی فیدبک‌ها");
+    } finally {
+      setBulkOperationLoading(false);
+    }
+  };
+
+  // Bulk complete handler
+  const handleBulkComplete = async () => {
+    if (selectedFeedbackIds.size === 0) return;
+    setBulkOperationLoading(true);
+
+    try {
+      const res = await fetch("/api/feedback/bulk-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedFeedbackIds) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count} فیدبک با موفقیت تکمیل شد`);
+        clearSelection();
+        // پاک کردن cache
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در تکمیل گروهی فیدبک‌ها");
+      }
+    } catch (error) {
+      console.error("Error bulk completing feedbacks:", error);
+      toast.error("خطا در تکمیل گروهی فیدبک‌ها");
+    } finally {
+      setBulkOperationLoading(false);
+    }
+  };
+
+  // Bulk deferred handler
+  const handleBulkDeferred = async () => {
+    if (selectedFeedbackIds.size === 0) return;
+    setBulkOperationLoading(true);
+
+    try {
+      const res = await fetch("/api/feedback/bulk-deferred", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedFeedbackIds) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count} فیدبک با موفقیت موکول شد`);
+        clearSelection();
+        // پاک کردن cache
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در موکول گروهی فیدبک‌ها");
+      }
+    } catch (error) {
+      console.error("Error bulk deferring feedbacks:", error);
+      toast.error("خطا در موکول گروهی فیدبک‌ها");
+    } finally {
+      setBulkOperationLoading(false);
+    }
+  };
+
+  // Bulk forward handler
+  const handleBulkForward = async (managerId: string) => {
+    if (selectedFeedbackIds.size === 0 || !managerId) return;
+    setBulkOperationLoading(true);
+
+    try {
+      const res = await fetch("/api/feedback/bulk-forward", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedFeedbackIds),
+          managerId
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`${data.count} فیدبک با موفقیت ارجاع شد`);
+        setShowBulkForwardModal(false);
+        clearSelection();
+        // پاک کردن cache
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("feedbacks_cache");
+          localStorage.removeItem("feedbacks_cache_time");
+        }
+        fetchFeedbacks();
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در ارجاع گروهی فیدبک‌ها");
+      }
+    } catch (error) {
+      console.error("Error bulk forwarding feedbacks:", error);
+      toast.error("خطا در ارجاع گروهی فیدبک‌ها");
     } finally {
       setBulkOperationLoading(false);
     }
@@ -1985,24 +2093,25 @@ function FeedbacksPageContent() {
         )}
         </div>
 
+        {/* Bulk Forward Modal */}
+        <BulkForwardModal
+          isOpen={showBulkForwardModal}
+          onClose={() => setShowBulkForwardModal(false)}
+          onConfirm={handleBulkForward}
+          managers={managers}
+          selectedCount={selectedFeedbackIds.size}
+          loading={bulkOperationLoading}
+        />
+
         {/* New BulkActionsBar Component */}
         <BulkActionsBar
           selectedCount={selectedFeedbackIds.size}
           onClearSelection={clearSelection}
-          onForward={() => {
-            /* Forward functionality - could open modal */
-            toast.info("قابلیت ارجاع دسته‌جمعی در حال توسعه است");
-          }}
+          onForward={() => setShowBulkForwardModal(true)}
           onArchive={() => setShowBulkArchiveModal(true)}
           onDelete={() => setShowBulkDeleteModal(true)}
-          onMarkComplete={() => {
-            /* Mark complete functionality */
-            toast.info("قابلیت تکمیل دسته‌جمعی در حال توسعه است");
-          }}
-          onMarkDeferred={() => {
-            /* Mark deferred functionality */
-            toast.info("قابلیت موکول دسته‌جمعی در حال توسعه است");
-          }}
+          onMarkComplete={handleBulkComplete}
+          onMarkDeferred={handleBulkDeferred}
         />
       </main>
     </div>
