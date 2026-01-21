@@ -317,7 +317,6 @@ export default function TrashPage() {
             )}
           </div>
         </div>
-      </div>
 
       {/* Preview Modal */}
       <FilePreviewModal

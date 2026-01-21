@@ -537,7 +537,6 @@ export default function ProjectFilesPage() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Modals */}
       {canEdit() && (

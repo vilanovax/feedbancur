@@ -474,7 +474,6 @@ export default function FilesPage() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Modals */}
       <UploadModal
