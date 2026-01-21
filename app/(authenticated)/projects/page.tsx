@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 import {
   Plus,
   Search,
@@ -59,8 +61,9 @@ export default function ProjectsPage() {
 
       const res = await fetch(`/api/projects?${params}`);
       if (res.ok) {
-        const data = await res.json();
-        setProjects(data.projects);
+        const result = await res.json();
+        // API برمی‌گرداند { data: [...], pagination: {...} }
+        setProjects(result.data || []);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -97,14 +100,24 @@ export default function ProjectsPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+        <Sidebar />
+        <AppHeader />
+        <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
+      <Sidebar />
+      <AppHeader />
+      <main className="flex-1 lg:mr-64 mt-16 bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-4rem)]">
+        <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -282,13 +295,15 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Click outside to close menu */}
-      {openMenu && (
-        <div
-          className="fixed inset-0 z-0"
-          onClick={() => setOpenMenu(null)}
-        />
-      )}
+          {/* Click outside to close menu */}
+          {openMenu && (
+            <div
+              className="fixed inset-0 z-0"
+              onClick={() => setOpenMenu(null)}
+            />
+          )}
+        </div>
+      </main>
     </div>
   );
 }

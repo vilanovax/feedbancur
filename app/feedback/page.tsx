@@ -132,10 +132,13 @@ function FeedbacksPageContent() {
     }
   }, [status, router]);
 
+  // بارگذاری موازی داده‌های اولیه برای سرعت بیشتر
   useEffect(() => {
-    fetchDepartments();
-    fetchManagers();
-    fetchWorkingHoursSettings();
+    Promise.all([
+      fetchDepartments(),
+      fetchManagers(),
+      fetchWorkingHoursSettings()
+    ]);
   }, []);
 
   const fetchWorkingHoursSettings = async () => {
@@ -159,31 +162,17 @@ function FeedbacksPageContent() {
     }
   }, [quickFilter, session?.user.role]);
 
-  // دریافت تعداد پیام‌های خوانده نشده برای همه فیدبک‌ها
+  // دریافت تعداد پیام‌های خوانده نشده به صورت bulk (یک query به جای N query)
   useEffect(() => {
-    if (feedbacks.length > 0) {
-      feedbacks.forEach((feedback) => {
-        if (feedback.forwardedToId) {
-          fetchUnreadCount(feedback.id);
-        }
-      });
+    const forwardedFeedbacks = feedbacks.filter((f) => f.forwardedToId);
+    if (forwardedFeedbacks.length > 0) {
+      fetchAllUnreadCounts(forwardedFeedbacks.map((f) => f.id));
     }
   }, [feedbacks]);
 
   useEffect(() => {
     fetchFeedbacks();
   }, [selectedDepartment, selectedStatus, quickFilter]);
-
-  // دریافت تعداد پیام‌های خوانده نشده برای همه فیدبک‌ها
-  useEffect(() => {
-    if (feedbacks.length > 0) {
-      feedbacks.forEach((feedback) => {
-        if (feedback.forwardedToId) {
-          fetchUnreadCount(feedback.id);
-        }
-      });
-    }
-  }, [feedbacks]);
 
   const fetchDepartments = async () => {
     // اگر cache معتبر وجود دارد، از آن استفاده کن
@@ -747,6 +736,22 @@ function FeedbacksPageContent() {
 
 
   // توابع مدیریت چت
+  // دریافت تعداد پیام‌های خوانده نشده به صورت bulk (بهینه‌تر)
+  const fetchAllUnreadCounts = async (feedbackIds: string[]) => {
+    if (feedbackIds.length === 0) return;
+    try {
+      const res = await fetch(`/api/feedback/messages/unread-count?feedbackIds=${feedbackIds.join(",")}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.counts) {
+          setUnreadCounts((prev) => ({ ...prev, ...data.counts }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching bulk unread counts:", error);
+    }
+  };
+
   const fetchUnreadCount = async (feedbackId: string) => {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages/unread`);
