@@ -23,6 +23,9 @@ import {
   EyeOff,
 } from "lucide-react";
 import Link from "next/link";
+import ProjectsStatsCards from "@/components/projects/ProjectsStatsCards";
+import ProjectStatusFilter from "@/components/projects/ProjectStatusFilter";
+import ProjectsSkeleton from "@/components/projects/ProjectsSkeleton";
 
 interface Project {
   id: string;
@@ -48,35 +51,62 @@ export default function ProjectsPage() {
   const router = useRouter();
 
   const [projects, setProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const fetchProjects = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (search) params.set("search", search);
-      params.set("limit", "50");
+      params.set("limit", "100");
 
       const res = await fetch(`/api/projects?${params}`);
       if (res.ok) {
         const result = await res.json();
         // API برمی‌گرداند { data: [...], pagination: {...} }
-        setProjects(result.data || []);
+        const fetchedProjects = result.data || [];
+        setAllProjects(fetchedProjects);
+        setProjects(fetchedProjects);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     if (status === "authenticated") {
       fetchProjects();
     }
   }, [status, fetchProjects]);
+
+  // Apply filters
+  useEffect(() => {
+    let filtered = [...allProjects];
+
+    // Status filter
+    if (statusFilter === "active") {
+      filtered = filtered.filter((p) => p.isActive);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter((p) => !p.isActive);
+    }
+
+    // Search filter
+    if (search) {
+      const query = search.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.description?.toLowerCase().includes(query)
+      );
+    }
+
+    setProjects(filtered);
+  }, [allProjects, statusFilter, search]);
 
   const copyLink = async (token: string) => {
     const link = `${window.location.origin}/p/${token}`;
@@ -98,15 +128,27 @@ export default function ProjectsPage() {
     }
   };
 
+  // Calculate stats
+  const stats = {
+    totalProjects: allProjects.length,
+    activeProjects: allProjects.filter((p) => p.isActive).length,
+    totalMembers: allProjects.reduce((sum, p) => sum + p.membersCount, 0),
+    totalFeedbacks: allProjects.reduce((sum, p) => sum + p.feedbacksCount, 0),
+  };
+
+  const counts = {
+    all: allProjects.length,
+    active: allProjects.filter((p) => p.isActive).length,
+    inactive: allProjects.filter((p) => !p.isActive).length,
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex" dir="rtl">
         <Sidebar />
         <AppHeader />
         <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
+          <ProjectsSkeleton />
         </main>
       </div>
     );
@@ -140,6 +182,21 @@ export default function ProjectsPage() {
           پروژه جدید
         </Link>
       </div>
+
+      {/* Stats Cards */}
+      <ProjectsStatsCards
+        totalProjects={stats.totalProjects}
+        activeProjects={stats.activeProjects}
+        totalMembers={stats.totalMembers}
+        totalFeedbacks={stats.totalFeedbacks}
+      />
+
+      {/* Status Filter */}
+      <ProjectStatusFilter
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+        counts={counts}
+      />
 
       {/* Search */}
       <div className="relative mb-6">
