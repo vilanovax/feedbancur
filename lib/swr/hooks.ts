@@ -201,3 +201,21 @@ export function useLatestUpdates(limit: number = 5) {
 export function useUpdate(id: string | null) {
   return useSWR(id ? `/api/updates/${id}` : null, fetcher, defaultConfig);
 }
+
+// Notifications hooks
+export function useNotifications(params?: { unreadOnly?: boolean }) {
+  const searchParams = new URLSearchParams();
+  if (params?.unreadOnly) searchParams.set("unreadOnly", "true");
+
+  const url = `/api/notifications${searchParams.toString() ? `?${searchParams}` : ""}`;
+
+  return useSWR(url, fetcher, {
+    ...defaultConfig,
+    refreshInterval: 30000, // Refresh every 30 seconds for real-time feel
+    revalidateOnFocus: true,
+  });
+}
+
+export function useNotification(id: string | null) {
+  return useSWR(id ? `/api/notifications/${id}` : null, fetcher, defaultConfig);
+}
