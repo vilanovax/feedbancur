@@ -13,8 +13,14 @@ const defaultConfig = {
 };
 
 // Stats hook
-export function useStats() {
-  return useSWR("/api/stats", fetcher, {
+export function useStats(params?: { dateFrom?: string; dateTo?: string }) {
+  const searchParams = new URLSearchParams();
+  if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+  if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+
+  const url = `/api/stats${searchParams.toString() ? `?${searchParams}` : ""}`;
+
+  return useSWR(url, fetcher, {
     ...defaultConfig,
     refreshInterval: 60000, // Refresh every minute
   });

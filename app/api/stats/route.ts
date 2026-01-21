@@ -8,15 +8,20 @@ const statsCache: Map<string, { data: any; timestamp: number }> = new Map();
 
 const CACHE_DURATION = 30 * 1000; // 30 seconds
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // کلید cache بر اساس userId و departmentId
-    const cacheKey = `${session.user.id}-${session.user.departmentId || 'no-dept'}`;
+    // استخراج query parameters برای date range
+    const { searchParams } = new URL(req.url);
+    const dateFrom = searchParams.get("dateFrom");
+    const dateTo = searchParams.get("dateTo");
+
+    // کلید cache بر اساس userId، departmentId و date range
+    const cacheKey = `${session.user.id}-${session.user.departmentId || 'no-dept'}-${dateFrom || 'all'}-${dateTo || 'all'}`;
 
     // بررسی cache
     const now = Date.now();
@@ -27,6 +32,17 @@ export async function GET() {
           'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       });
+    }
+
+    // تنظیم date range
+    let dateRangeFilter: any = {};
+    if (dateFrom && dateTo) {
+      dateRangeFilter = {
+        createdAt: {
+          gte: new Date(dateFrom),
+          lte: new Date(dateTo),
+        },
+      };
     }
 
     // تاریخ 24 ساعت قبل برای تشخیص موارد جدید
@@ -191,12 +207,12 @@ export async function GET() {
       // داده‌های 7 روز اخیر برای mini charts
       last7DaysFeedbacks,
     ] = await Promise.all([
-      prisma.feedbacks.count({ where: { deletedAt: null } }),
-      prisma.feedbacks.count({ where: { status: "PENDING", deletedAt: null } }),
+      prisma.feedbacks.count({ where: { deletedAt: null, ...dateRangeFilter } }),
+      prisma.feedbacks.count({ where: { status: "PENDING", deletedAt: null, ...dateRangeFilter } }),
       prisma.departments.count(),
-      prisma.feedbacks.count({ where: { status: "COMPLETED", deletedAt: null } }),
-      prisma.feedbacks.count({ where: { status: "DEFERRED", deletedAt: null } }),
-      prisma.feedbacks.count({ where: { status: "ARCHIVED", deletedAt: null } }),
+      prisma.feedbacks.count({ where: { status: "COMPLETED", deletedAt: null, ...dateRangeFilter } }),
+      prisma.feedbacks.count({ where: { status: "DEFERRED", deletedAt: null, ...dateRangeFilter } }),
+      prisma.feedbacks.count({ where: { status: "ARCHIVED", deletedAt: null, ...dateRangeFilter } }),
       // اعلانات
       prisma.announcements.count(),
       prisma.announcements.count({

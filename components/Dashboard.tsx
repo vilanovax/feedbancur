@@ -78,7 +78,10 @@ export default function Dashboard() {
   }, [dateRange]);
 
   // Use SWR for data fetching with caching
-  const { data: stats, isLoading: statsLoading } = useStats();
+  const { data: stats, isLoading: statsLoading } = useStats({
+    dateFrom: dateRange.from.toISOString(),
+    dateTo: dateRange.to.toISOString(),
+  });
   const { data: assessmentResults, isLoading: resultsLoading } = useMyAssessmentResults();
 
   // Fetch upcoming tasks
