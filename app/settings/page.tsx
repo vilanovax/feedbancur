@@ -44,7 +44,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai" | "teamStatus">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "feedback" | "notifications" | "chat" | "storage" | "database" | "workingHours" | "openai" | "teamStatus" | "fileShare">("general");
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
 
   // State های بکاپ و ریستور انتخابی
@@ -545,6 +545,16 @@ export default function SettingsPage() {
                 }`}
               >
                 هوش مصنوعی (OpenAI)
+              </button>
+              <button
+                onClick={() => setActiveTab("fileShare")}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "fileShare"
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                اشتراک‌گذاری فایل
               </button>
             </nav>
           </div>
@@ -2462,6 +2472,224 @@ export default function SettingsPage() {
                         <li>برای سرورهای production، از ابزارهای خودکار پشتیبان‌گیری استفاده کنید</li>
                       </ul>
                     </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* محتوای تب اشتراک‌گذاری فایل */}
+            {activeTab === "fileShare" && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                  <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                    <Upload className="text-blue-500" size={24} />
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                      تنظیمات اشتراک‌گذاری فایل
+                    </h2>
+                  </div>
+
+                  {/* محدودیت حجم */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      حداکثر حجم فایل (مگابایت)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={settings.fileShareSettings?.maxFileSize || 50}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            maxFileSize: parseInt(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      حداکثر حجم مجاز برای هر فایل (1 تا 100 مگابایت)
+                    </p>
+                  </div>
+
+                  {/* سهمیه ذخیره‌سازی کاربر */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      سهمیه ذخیره‌سازی هر کاربر (مگابایت)
+                    </label>
+                    <input
+                      type="number"
+                      min="100"
+                      max="10000"
+                      step="100"
+                      value={settings.fileShareSettings?.maxTotalStoragePerUser || 1000}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            maxTotalStoragePerUser: parseInt(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      حداکثر فضای ذخیره‌سازی برای هر کاربر (100 تا 10000 مگابایت)
+                    </p>
+                  </div>
+
+                  {/* سهمیه ذخیره‌سازی پروژه */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      سهمیه ذخیره‌سازی هر پروژه (مگابایت)
+                    </label>
+                    <input
+                      type="number"
+                      min="500"
+                      max="50000"
+                      step="500"
+                      value={settings.fileShareSettings?.maxTotalStoragePerProject || 5000}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            maxTotalStoragePerProject: parseInt(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      حداکثر فضای ذخیره‌سازی برای هر پروژه (500 تا 50000 مگابایت)
+                    </p>
+                  </div>
+
+                  {/* پسوندهای مجاز */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      پسوندهای مجاز
+                    </label>
+                    <textarea
+                      value={(settings.fileShareSettings?.allowedExtensions || []).join(", ")}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            allowedExtensions: e.target.value
+                              .split(",")
+                              .map((ext) => ext.trim())
+                              .filter((ext) => ext),
+                          },
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder=".pdf, .doc, .docx, .xls, .xlsx, .jpg, .png"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      پسوندهای فایل را با ویرگول جدا کنید (مثال: .pdf, .doc, .jpg)
+                    </p>
+                  </div>
+
+                  {/* نوع‌های MIME مجاز */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      انواع MIME مجاز
+                    </label>
+                    <textarea
+                      value={(settings.fileShareSettings?.allowedFileTypes || []).join(", ")}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            allowedFileTypes: e.target.value
+                              .split(",")
+                              .map((type) => type.trim())
+                              .filter((type) => type),
+                          },
+                        })
+                      }
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="application/pdf, image/jpeg, image/png"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      انواع MIME را با ویرگول جدا کنید
+                    </p>
+                  </div>
+
+                  {/* تگ‌های پیشنهادی */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      تگ‌های پیشنهادی
+                    </label>
+                    <textarea
+                      value={(settings.fileShareSettings?.suggestedTags || []).join(", ")}
+                      onChange={(e) =>
+                        setSettings({
+                          ...settings,
+                          fileShareSettings: {
+                            ...(settings.fileShareSettings || {}),
+                            suggestedTags: e.target.value
+                              .split(",")
+                              .map((tag) => tag.trim())
+                              .filter((tag) => tag),
+                          },
+                        })
+                      }
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="مهم, فوری, مالی, قراردادها"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      تگ‌های پیشنهادی برای فایل‌ها را با ویرگول جدا کنید
+                    </p>
+                  </div>
+
+                  {/* اشتراک‌گذاری عمومی */}
+                  <div className="mb-6">
+                    <label className="flex items-center space-x-2 space-x-reverse cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.fileShareSettings?.enablePublicSharing ?? true}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            fileShareSettings: {
+                              ...(settings.fileShareSettings || {}),
+                              enablePublicSharing: e.target.checked,
+                            },
+                          })
+                        }
+                        className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        فعال‌سازی اشتراک‌گذاری عمومی فایل‌ها
+                      </span>
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-7">
+                      امکان اشتراک‌گذاری فایل‌ها از طریق لینک عمومی
+                    </p>
+                  </div>
+
+                  {/* توضیحات */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                      💡 نکات مهم:
+                    </h4>
+                    <ul className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                      <li>تنظیمات فوق بر روی تمام فایل‌های جدید اعمال می‌شود</li>
+                      <li>محدودیت حجم به منظور بهینه‌سازی فضای ذخیره‌سازی تعیین شده است</li>
+                      <li>فایل‌های با فرمت‌های غیرمجاز رد می‌شوند</li>
+                      <li>تگ‌های پیشنهادی به کاربران هنگام آپلود فایل نمایش داده می‌شود</li>
+                      <li>سهمیه ذخیره‌سازی برای هر کاربر و پروژه به صورت جداگانه محاسبه می‌شود</li>
+                    </ul>
                   </div>
                 </div>
               </>
