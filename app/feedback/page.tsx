@@ -14,6 +14,13 @@ import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 import { getCompletionTime, WorkingHoursSettings } from "@/lib/working-hours-utils";
 import Image from "next/image";
 import { useToast } from "@/contexts/ToastContext";
+import ViewToggle from "@/components/feedback/ViewToggle";
+import AdvancedFilters from "@/components/feedback/AdvancedFilters";
+import QuickFilterChips from "@/components/feedback/QuickFilterChips";
+import FeedbackTableView from "@/components/feedback/FeedbackTableView";
+import BulkActionsBar from "@/components/feedback/BulkActionsBar";
+import StatusBadge from "@/components/feedback/StatusBadge";
+import PriorityBadge from "@/components/feedback/PriorityBadge";
 
 function FeedbacksPageContent() {
   const toast = useToast();
@@ -89,7 +96,15 @@ function FeedbacksPageContent() {
   const { getStatusTextLocal } = useStatusTexts();
   const [sortBy, setSortBy] = useState<"date" | "rating" | "status">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "table">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("feedback_view_mode");
+      if (saved === "table" || saved === "list" || saved === "grid") {
+        return saved;
+      }
+    }
+    return "grid";
+  });
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState<any>(null);
   const [managers, setManagers] = useState<any[]>([]);
@@ -125,6 +140,12 @@ function FeedbacksPageContent() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [workingHoursSettings, setWorkingHoursSettings] = useState<WorkingHoursSettings | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Save viewMode to localStorage
+  useEffect(() => {
+    localStorage.setItem("feedback_view_mode", viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -367,6 +388,28 @@ function FeedbacksPageContent() {
   const forwardedCount = allFeedbacks.filter(
     (f: any) => f.forwardedToId && f.status !== "ARCHIVED"
   ).length;
+
+  // Counts for QuickFilterChips
+  const counts = {
+    all: allFeedbacks.length,
+    pending: allFeedbacks.filter((f: any) => f.status === "PENDING" || f.status === "REVIEWED").length,
+    completed: allFeedbacks.filter((f: any) => f.status === "COMPLETED").length,
+    deferred: allFeedbacks.filter((f: any) => f.status === "DEFERRED").length,
+    archived: allFeedbacks.filter((f: any) => f.status === "ARCHIVED").length,
+  };
+
+  // Apply search filter
+  const applySearchFilter = (feedbacksToFilter: any[]) => {
+    if (!searchQuery) return feedbacksToFilter;
+
+    const query = searchQuery.toLowerCase();
+    return feedbacksToFilter.filter((feedback) => {
+      const matchesTitle = feedback.title?.toLowerCase().includes(query);
+      const matchesDescription = feedback.description?.toLowerCase().includes(query);
+      const matchesUser = feedback.users?.name?.toLowerCase().includes(query);
+      return matchesTitle || matchesDescription || matchesUser;
+    });
+  };
 
   const sortFeedbacks = (feedbacksToSort: any[]) => {
     const sorted = [...feedbacksToSort].sort((a, b) => {
@@ -907,122 +950,47 @@ function FeedbacksPageContent() {
       <AppHeader />
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-            فیدبک‌ها
-          </h1>
-          <Link
-            href="/feedback/new"
-            className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            <Plus size={20} />
-            <span>فیدبک جدید</span>
-          </Link>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              فیدبک‌ها
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              مدیریت و پیگیری فیدبک‌های دریافتی
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchFeedbacks}
+              disabled={loading}
+              className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              title="بروزرسانی"
+            >
+              <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+            </button>
+
+            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+
+            <Link
+              href="/feedback/new"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Plus size={18} />
+              <span className="hidden sm:inline">فیدبک جدید</span>
+            </Link>
+          </div>
         </div>
 
-        {/* Quick Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Filter size={20} className="text-gray-600 dark:text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">فیلتر سریع</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setQuickFilter("all");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "all"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <Filter size={16} />
-              همه
-            </button>
-            <button
-              onClick={() => {
-                setQuickFilter("active");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "active"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <CheckCircle size={16} />
-              فعال
-              {activeCount > 0 && (
-                <span className="bg-white/20 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs font-bold">
-                  {activeCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setQuickFilter("forwarded");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "forwarded"
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <SendIcon size={16} />
-              ارجاع شده
-              {forwardedCount > 0 && (
-                <span className="bg-white/20 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs font-bold">
-                  {forwardedCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setQuickFilter("deferred");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "deferred"
-                  ? "bg-orange-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <Clock size={16} />
-              رسیدگی آینده
-            </button>
-            <button
-              onClick={() => {
-                setQuickFilter("completed");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "completed"
-                  ? "bg-green-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <CheckCircle size={16} />
-              انجام شد
-            </button>
-            <button
-              onClick={() => {
-                setQuickFilter("archived");
-                setSelectedStatus("");
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                quickFilter === "archived"
-                  ? "bg-gray-600 text-white"
-                  : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-              }`}
-            >
-              <FolderArchive size={16} />
-              آرشیو
-            </button>
-          </div>
-        </div>
+        {/* Quick Filter Chips */}
+        <QuickFilterChips
+          activeFilter={quickFilter}
+          onFilterChange={(filter) => {
+            setQuickFilter(filter);
+            setSelectedStatus("");
+          }}
+          counts={counts}
+        />
 
         {/* Bulk Actions Bar - فقط برای ADMIN */}
         {session?.user?.role === "ADMIN" && (
@@ -1079,85 +1047,30 @@ function FeedbacksPageContent() {
           </div>
         )}
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                فیلتر بر اساس بخش
-              </label>
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">همه بخش‌ها</option>
-                {departments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                فیلتر بر اساس وضعیت
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  setQuickFilter("all");
-                }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">همه وضعیت‌ها</option>
-                <option value="PENDING">{getStatusTextLocal("PENDING")}</option>
-                <option value="REVIEWED">{getStatusTextLocal("REVIEWED")}</option>
-                <option value="DEFERRED">{getStatusTextLocal("DEFERRED")}</option>
-                <option value="COMPLETED">{getStatusTextLocal("COMPLETED")}</option>
-                <option value="ARCHIVED">{getStatusTextLocal("ARCHIVED")}</option>
-              </select>
-            </div>
-          </div>
+        {/* Advanced Filters */}
+        <AdvancedFilters
+          departments={departments}
+          selectedDepartment={selectedDepartment}
+          onDepartmentChange={setSelectedDepartment}
+          selectedStatus={selectedStatus}
+          onStatusChange={(status) => {
+            setSelectedStatus(status);
+            setQuickFilter("all");
+          }}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onClearFilters={() => {
+            setSelectedDepartment("");
+            setSelectedStatus("");
+            setSearchQuery("");
+            setQuickFilter("all");
+          }}
+        />
 
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">مرتب‌سازی:</span>
-              <button
-                onClick={() => toggleSort("date")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                  sortBy === "date"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                }`}
-              >
-                تاریخ
-                {sortBy === "date" && <ArrowUpDown size={14} />}
-              </button>
-              <button
-                onClick={() => toggleSort("rating")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                  sortBy === "rating"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                }`}
-              >
-                امتیاز
-                {sortBy === "rating" && <ArrowUpDown size={14} />}
-              </button>
-              <button
-                onClick={() => toggleSort("status")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm ${
-                  sortBy === "status"
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                }`}
-              >
-                وضعیت
-                {sortBy === "status" && <ArrowUpDown size={14} />}
-              </button>
-            </div>
-          </div>
+        {/* Results Count */}
+        <div className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          نمایش <span className="font-semibold">{applySearchFilter(feedbacks).length}</span> از{" "}
+          <span className="font-semibold">{feedbacks.length}</span> فیدبک
         </div>
 
         {loading && feedbacks.length === 0 ? (
@@ -1192,9 +1105,17 @@ function FeedbacksPageContent() {
               فیدبکی یافت نشد
             </p>
           </div>
+        ) : viewMode === "table" ? (
+          <FeedbackTableView
+            feedbacks={sortFeedbacks(applySearchFilter(feedbacks))}
+            selectedFeedbacks={Array.from(selectedFeedbackIds)}
+            onSelectFeedback={(id) => toggleFeedbackSelection(id)}
+            onSelectAll={toggleSelectAll}
+            onOpenActions={(feedback) => setSelectedFeedback(feedback)}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortFeedbacks(feedbacks).map((feedback) => (
+            {sortFeedbacks(applySearchFilter(feedbacks)).map((feedback) => (
               <div
                 key={feedback.id}
                 className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex flex-col relative ${
@@ -2063,6 +1984,26 @@ function FeedbacksPageContent() {
           </div>
         )}
         </div>
+
+        {/* New BulkActionsBar Component */}
+        <BulkActionsBar
+          selectedCount={selectedFeedbackIds.size}
+          onClearSelection={clearSelection}
+          onForward={() => {
+            /* Forward functionality - could open modal */
+            toast.info("قابلیت ارجاع دسته‌جمعی در حال توسعه است");
+          }}
+          onArchive={() => setShowBulkArchiveModal(true)}
+          onDelete={() => setShowBulkDeleteModal(true)}
+          onMarkComplete={() => {
+            /* Mark complete functionality */
+            toast.info("قابلیت تکمیل دسته‌جمعی در حال توسعه است");
+          }}
+          onMarkDeferred={() => {
+            /* Mark deferred functionality */
+            toast.info("قابلیت موکول دسته‌جمعی در حال توسعه است");
+          }}
+        />
       </main>
     </div>
   );
