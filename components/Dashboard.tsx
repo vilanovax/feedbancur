@@ -14,6 +14,7 @@ import FeedbackActivityChart from "@/components/dashboard/FeedbackActivityChart"
 import TopPerformersWidget from "@/components/dashboard/TopPerformersWidget";
 import RecentActivityFeed from "@/components/dashboard/RecentActivityFeed";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
+import DepartmentComparisonChart from "@/components/dashboard/DepartmentComparisonChart";
 import {
   MessageSquare,
   BarChart3,
@@ -168,6 +169,11 @@ export default function Dashboard() {
           <TopPerformersWidget />
           <StatusPieChart stats={stats} />
           <RecentActivityFeed />
+        </div>
+
+        {/* نمودار مقایسه عملکرد بخش‌ها */}
+        <div className="mb-8">
+          <DepartmentComparisonChart />
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}
