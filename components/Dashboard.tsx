@@ -2,8 +2,10 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { subDays } from "date-fns";
+import useSWR from "swr";
 import Sidebar from "./Sidebar";
 import AppHeader from "./AdminHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
@@ -16,6 +18,9 @@ import RecentActivityFeed from "@/components/dashboard/RecentActivityFeed";
 import StatusPieChart from "@/components/dashboard/StatusPieChart";
 import DepartmentComparisonChart from "@/components/dashboard/DepartmentComparisonChart";
 import ExportButton from "@/components/dashboard/ExportButton";
+import DateRangePicker from "@/components/dashboard/DateRangePicker";
+import QuickStatsSummaryCard from "@/components/dashboard/QuickStatsSummaryCard";
+import UpcomingTasksWidget from "@/components/dashboard/UpcomingTasksWidget";
 import {
   MessageSquare,
   BarChart3,
@@ -31,15 +36,58 @@ import {
   ClipboardList,
   ArrowLeft,
   Newspaper,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // Date Range State
+  const [dateRange, setDateRange] = useState(() => {
+    // Load from localStorage or default to 30 days
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("dashboard_date_range");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          return {
+            from: new Date(parsed.from),
+            to: new Date(parsed.to),
+          };
+        } catch (e) {
+          // Invalid JSON, use default
+        }
+      }
+    }
+    return {
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    };
+  });
+
+  // Save date range to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dashboard_date_range", JSON.stringify({
+        from: dateRange.from.toISOString(),
+        to: dateRange.to.toISOString(),
+      }));
+    }
+  }, [dateRange]);
+
   // Use SWR for data fetching with caching
   const { data: stats, isLoading: statsLoading } = useStats();
   const { data: assessmentResults, isLoading: resultsLoading } = useMyAssessmentResults();
+
+  // Fetch upcoming tasks
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+  const { data: upcomingTasks = [], isLoading: tasksLoading } = useSWR(
+    "/api/dashboard/upcoming-tasks",
+    fetcher,
+    { refreshInterval: 60000 }  // Refresh every minute
+  );
 
   const loading = statsLoading || resultsLoading;
 
@@ -98,8 +146,8 @@ export default function Dashboard() {
       <AppHeader />
 
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        {/* Header با Export Button */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Header با DateRangePicker و Export Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               داشبورد
@@ -108,11 +156,48 @@ export default function Dashboard() {
               نمای کلی آمار و فعالیت‌ها
             </p>
           </div>
-          <ExportButton stats={stats} />
+          <div className="flex items-center gap-3">
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <ExportButton stats={stats} />
+          </div>
         </div>
 
-        {/* Stat Cards با Mini Charts و Trends */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Quick Stats Summary Card */}
+        <QuickStatsSummaryCard
+          stats={[
+            {
+              label: "فیدبک‌های فعال",
+              value: (stats?.pendingFeedbacks ?? 0) + (stats?.deferredFeedbacks ?? 0),
+              icon: Zap,
+              color: "yellow",
+              trend: stats?.trends?.pendingFeedbacks,
+            },
+            {
+              label: "نرخ تکمیل",
+              value: stats?.totalFeedbacks
+                ? `${Math.round(((stats?.completedFeedbacks ?? 0) / stats.totalFeedbacks) * 100)}%`
+                : "0%",
+              icon: TrendingUp,
+              color: "green",
+            },
+            {
+              label: "تعداد بخش‌ها",
+              value: stats?.departments ?? 0,
+              icon: Building2,
+              color: "purple",
+            },
+            {
+              label: "کل فیدبک‌ها",
+              value: stats?.totalFeedbacks ?? 0,
+              icon: MessageSquare,
+              color: "blue",
+              trend: stats?.trends?.totalFeedbacks,
+            },
+          ]}
+        />
+
+        {/* Stat Cards با Mini Charts و Trends - بهبود Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <StatCardEnhanced
             title="کل فیدبک‌ها"
             value={stats?.totalFeedbacks ?? 0}
@@ -154,8 +239,8 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Stat Cards اضافی */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Stat Cards اضافی - بهبود Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           <StatCardEnhanced
             title="فیدبک‌های آرشیو شده"
             value={stats?.archivedFeedbacks ?? 0}
@@ -179,15 +264,20 @@ export default function Dashboard() {
         </div>
 
         {/* ویجت‌های جانبی - Top Performers, Status Pie Chart, Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
           <TopPerformersWidget />
           <StatusPieChart stats={stats} />
           <RecentActivityFeed />
         </div>
 
-        {/* نمودار مقایسه عملکرد بخش‌ها */}
-        <div className="mb-8">
-          <DepartmentComparisonChart />
+        {/* نمودار مقایسه عملکرد بخش‌ها و Upcoming Tasks */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <DepartmentComparisonChart />
+          </div>
+          <div>
+            <UpcomingTasksWidget tasks={upcomingTasks} loading={tasksLoading} />
+          </div>
         </div>
 
         {/* باکس‌های آماری اعلانات و نظرسنجی‌ها */}

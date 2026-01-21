@@ -1,249 +1,179 @@
 "use client";
 
-import { useState } from "react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { Calendar, X } from "lucide-react";
-import { format } from "date-fns";
+import { useState, useRef, useEffect } from "react";
+import { Calendar, ChevronDown } from "lucide-react";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { faIR } from "date-fns/locale";
 
 interface DateRange {
-  startDate: Date | null;
-  endDate: Date | null;
+  from: Date;
+  to: Date;
 }
 
 interface DateRangePickerProps {
-  onDateRangeChange: (startDate: Date | null, endDate: Date | null) => void;
-  initialStartDate?: Date | null;
-  initialEndDate?: Date | null;
+  value: DateRange;
+  onChange: (range: DateRange) => void;
 }
 
-export default function DateRangePicker({
-  onDateRangeChange,
-  initialStartDate = null,
-  initialEndDate = null,
-}: DateRangePickerProps) {
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: initialStartDate,
-    endDate: initialEndDate,
-  });
-  const [showPicker, setShowPicker] = useState(false);
+const PRESET_RANGES = [
+  {
+    label: "امروز",
+    getValue: () => ({
+      from: new Date(),
+      to: new Date(),
+    }),
+  },
+  {
+    label: "7 روز اخیر",
+    getValue: () => ({
+      from: subDays(new Date(), 6),
+      to: new Date(),
+    }),
+  },
+  {
+    label: "30 روز اخیر",
+    getValue: () => ({
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    }),
+  },
+  {
+    label: "ماه جاری",
+    getValue: () => ({
+      from: startOfMonth(new Date()),
+      to: endOfMonth(new Date()),
+    }),
+  },
+  {
+    label: "سال جاری",
+    getValue: () => ({
+      from: startOfYear(new Date()),
+      to: endOfYear(new Date()),
+    }),
+  },
+];
 
-  const handleDateChange = (dates: [Date | null, Date | null]) => {
-    const [start, end] = dates;
-    setDateRange({ startDate: start, endDate: end });
+export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // اگر هر دو تاریخ انتخاب شدند، فیلتر را اعمال کن
-    if (start && end) {
-      onDateRangeChange(start, end);
-      setShowPicker(false);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handlePresetClick = (preset: typeof PRESET_RANGES[0]) => {
+    const range = preset.getValue();
+    onChange(range);
+    setIsOpen(false);
   };
 
-  const clearDateRange = () => {
-    setDateRange({ startDate: null, endDate: null });
-    onDateRangeChange(null, null);
+  const handleClear = () => {
+    onChange({
+      from: subDays(new Date(), 29),
+      to: new Date(),
+    });
   };
 
-  const setPresetRange = (days: number) => {
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - days);
-    setDateRange({ startDate: start, endDate: end });
-    onDateRangeChange(start, end);
-    setShowPicker(false);
-  };
+  const formatDateRange = (range: DateRange) => {
+    const fromStr = format(range.from, "yyyy/MM/dd", { locale: faIR });
+    const toStr = format(range.to, "yyyy/MM/dd", { locale: faIR });
 
-  const formatDateRange = () => {
-    if (dateRange.startDate && dateRange.endDate) {
-      return `${format(dateRange.startDate, "dd MMM yyyy", { locale: faIR })} - ${format(dateRange.endDate, "dd MMM yyyy", { locale: faIR })}`;
+    if (fromStr === toStr) {
+      return fromStr;
     }
-    return "انتخاب بازه زمانی";
+
+    return `${fromStr} - ${toStr}`;
   };
+
+  const getActivePreset = () => {
+    return PRESET_RANGES.find(preset => {
+      const presetRange = preset.getValue();
+      return (
+        format(presetRange.from, "yyyy-MM-dd") === format(value.from, "yyyy-MM-dd") &&
+        format(presetRange.to, "yyyy-MM-dd") === format(value.to, "yyyy-MM-dd")
+      );
+    });
+  };
+
+  const activePreset = getActivePreset();
 
   return (
-    <div className="relative">
-      {/* Trigger Button */}
+    <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setShowPicker(!showPicker)}
-        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
       >
-        <Calendar size={18} className="text-gray-600 dark:text-gray-400" />
-        <span className="text-sm text-gray-700 dark:text-gray-300">
-          {formatDateRange()}
+        <Calendar size={16} className="text-gray-600 dark:text-gray-400" />
+        <span className="text-gray-700 dark:text-gray-300 font-medium">
+          {activePreset ? activePreset.label : formatDateRange(value)}
         </span>
-        {dateRange.startDate && dateRange.endDate && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              clearDateRange();
-            }}
-            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
-          >
-            <X size={14} className="text-gray-500 dark:text-gray-400" />
-          </button>
-        )}
+        <ChevronDown
+          size={16}
+          className={`text-gray-600 dark:text-gray-400 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
-      {/* Dropdown */}
-      {showPicker && (
-        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
-          {/* Preset Buttons */}
-          <div className="mb-4 flex flex-wrap gap-2">
+      {isOpen && (
+        <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+            <span className="text-sm font-semibold text-gray-800 dark:text-white">
+              انتخاب بازه زمانی
+            </span>
             <button
-              onClick={() => setPresetRange(0)}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              onClick={handleClear}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
             >
-              امروز
-            </button>
-            <button
-              onClick={() => setPresetRange(1)}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              دیروز
-            </button>
-            <button
-              onClick={() => setPresetRange(7)}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              7 روز
-            </button>
-            <button
-              onClick={() => setPresetRange(30)}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              30 روز
-            </button>
-            <button
-              onClick={() => {
-                const end = new Date();
-                const start = new Date(end.getFullYear(), end.getMonth(), 1);
-                setDateRange({ startDate: start, endDate: end });
-                onDateRangeChange(start, end);
-                setShowPicker(false);
-              }}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              ماه جاری
-            </button>
-            <button
-              onClick={() => {
-                const end = new Date();
-                end.setMonth(end.getMonth() - 1);
-                end.setDate(0); // آخرین روز ماه قبل
-                const start = new Date(end.getFullYear(), end.getMonth(), 1);
-                setDateRange({ startDate: start, endDate: end });
-                onDateRangeChange(start, end);
-                setShowPicker(false);
-              }}
-              className="px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              ماه گذشته
+              پیش‌فرض
             </button>
           </div>
 
-          {/* Date Picker */}
-          <div className="datepicker-wrapper">
-            <DatePicker
-              selected={dateRange.startDate}
-              onChange={handleDateChange}
-              startDate={dateRange.startDate}
-              endDate={dateRange.endDate}
-              selectsRange
-              inline
-              monthsShown={2}
-              maxDate={new Date()}
-              dateFormat="yyyy/MM/dd"
-              className="dark:bg-gray-800 dark:text-white"
-            />
+          <div className="p-2">
+            {PRESET_RANGES.map((preset, index) => {
+              const presetRange = preset.getValue();
+              const isActive =
+                format(presetRange.from, "yyyy-MM-dd") === format(value.from, "yyyy-MM-dd") &&
+                format(presetRange.to, "yyyy-MM-dd") === format(value.to, "yyyy-MM-dd");
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handlePresetClick(preset)}
+                  className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-4 flex gap-2 justify-end">
-            <button
-              onClick={() => setShowPicker(false)}
-              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              بستن
-            </button>
-            <button
-              onClick={clearDateRange}
-              className="px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            >
-              پاک کردن
-            </button>
+          <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+              بازه انتخاب شده:
+            </div>
+            <div className="text-sm font-medium text-gray-800 dark:text-white">
+              {formatDateRange(value)}
+            </div>
           </div>
         </div>
       )}
-
-      {/* Custom Styles for DatePicker */}
-      <style jsx global>{`
-        .react-datepicker {
-          font-family: inherit;
-          border: none;
-          background-color: transparent;
-        }
-
-        .react-datepicker__header {
-          background-color: transparent;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .dark .react-datepicker__header {
-          border-bottom-color: #374151;
-        }
-
-        .react-datepicker__current-month,
-        .react-datepicker__day-name {
-          color: #111827;
-        }
-
-        .dark .react-datepicker__current-month,
-        .dark .react-datepicker__day-name {
-          color: #f3f4f6;
-        }
-
-        .react-datepicker__day {
-          color: #374151;
-        }
-
-        .dark .react-datepicker__day {
-          color: #d1d5db;
-        }
-
-        .react-datepicker__day:hover {
-          background-color: #e5e7eb;
-        }
-
-        .dark .react-datepicker__day:hover {
-          background-color: #374151;
-        }
-
-        .react-datepicker__day--selected,
-        .react-datepicker__day--in-range,
-        .react-datepicker__day--in-selecting-range {
-          background-color: #3b82f6 !important;
-          color: white !important;
-        }
-
-        .react-datepicker__day--keyboard-selected {
-          background-color: #93c5fd;
-          color: #1e3a8a;
-        }
-
-        .dark .react-datepicker__day--keyboard-selected {
-          background-color: #1e40af;
-          color: #dbeafe;
-        }
-
-        .react-datepicker__day--disabled {
-          color: #9ca3af !important;
-        }
-
-        .react-datepicker__navigation {
-          top: 8px;
-        }
-      `}</style>
     </div>
   );
 }
