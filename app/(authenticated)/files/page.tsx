@@ -305,19 +305,18 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-[1600px] mx-auto p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                مدیریت فایل‌ها
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                فایل‌های سازمانی
-              </p>
-            </div>
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              مدیریت فایل‌ها
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              فایل‌های سازمانی
+            </p>
+          </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
