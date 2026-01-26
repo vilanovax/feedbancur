@@ -406,12 +406,14 @@ export async function POST(
           if (feedback.forwardedToId) {
             await prisma.notifications.create({
               data: {
+                id: crypto.randomUUID(),
                 userId: feedback.forwardedToId,
                 feedbackId: resolvedParams.id,
                 title: "پیام جدید از مدیریت",
                 content: `${senderName}: ${messagePreview}`,
                 type: "INFO",
                 redirectUrl: `/mobile/manager/forwarded?openChat=${resolvedParams.id}`,
+                updatedAt: new Date(),
               },
             });
           }
@@ -426,12 +428,14 @@ export async function POST(
             admins.map((admin) =>
               prisma.notifications.create({
                 data: {
+                  id: crypto.randomUUID(),
                   userId: admin.id,
                   feedbackId: resolvedParams.id,
                   title: "پیام جدید در چت فیدبک",
                   content: `${senderName}: ${messagePreview}`,
                   type: "INFO",
                   redirectUrl: `/feedback/with-chat?openChat=${resolvedParams.id}`,
+                  updatedAt: new Date(),
                 },
               })
             )

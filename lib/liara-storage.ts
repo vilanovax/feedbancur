@@ -59,7 +59,13 @@ export async function uploadToLiara(
   });
 
   try {
-    await s3Client.send(command);
+    // اضافه کردن timeout 5 ثانیه به آپلود
+    await Promise.race([
+      s3Client.send(command),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Upload timeout after 5 seconds")), 5000)
+      ),
+    ]);
   } catch (uploadError: any) {
     throw new Error(`خطا در آپلود فایل به لیارا: ${uploadError.message || "خطای نامشخص"}`);
   }
