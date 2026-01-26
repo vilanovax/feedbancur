@@ -194,45 +194,70 @@ export async function POST(request: NextRequest) {
     const filename = `logo-${timestamp}.${extension}`;
 
     // بررسی کامل بودن تنظیمات Object Storage
-    const hasValidObjectStorage = 
+    const hasValidObjectStorage =
       objectStorageSettings.enabled &&
       objectStorageSettings.accessKeyId &&
       objectStorageSettings.secretAccessKey &&
       objectStorageSettings.endpoint &&
       objectStorageSettings.bucket;
 
-    // Object Storage باید فعال و تنظیم شده باشد
-    if (!hasValidObjectStorage) {
-      console.error("Object Storage is not configured properly");
-      return NextResponse.json(
-        { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
-        { status: 400 }
-      );
+    let fileUrl: string;
+
+    if (hasValidObjectStorage) {
+      // آپلود به Object Storage (لیارا / MinIO)
+      try {
+        fileUrl = await uploadToLiara(
+          optimizedBuffer,
+          filename,
+          optimizedMimeType,
+          objectStorageSettings,
+          "logo"
+        );
+        console.log("✅ Logo uploaded to Object Storage:", fileUrl);
+      } catch (uploadError: any) {
+        console.error("❌ Error uploading logo to Object Storage:", uploadError);
+        return NextResponse.json(
+          { error: `خطا در آپلود لوگو به Object Storage: ${uploadError.message || "خطای نامشخص"}` },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Fallback: ذخیره لوکال در صورت عدم تنظیم Object Storage
+      console.warn("⚠️  Object Storage not configured, saving logo locally");
+
+      const fs = await import("fs/promises");
+      const path = await import("path");
+
+      // مسیر ذخیره‌سازی لوکال
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "logo");
+
+      // ایجاد پوشه اگر وجود ندارد
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+      } catch (mkdirError) {
+        console.error("Error creating upload directory:", mkdirError);
+      }
+
+      // ذخیره فایل
+      const filePath = path.join(uploadDir, filename);
+      try {
+        await fs.writeFile(filePath, optimizedBuffer);
+        fileUrl = `/uploads/logo/${filename}`;
+        console.log("✅ Logo saved locally:", fileUrl);
+      } catch (writeError: any) {
+        console.error("❌ Error saving logo locally:", writeError);
+        return NextResponse.json(
+          { error: `خطا در ذخیره لوگو: ${writeError.message || "خطای نامشخص"}` },
+          { status: 500 }
+        );
+      }
     }
 
-    // آپلود به Object Storage (لیارا)
-    try {
-      const fileUrl = await uploadToLiara(
-        optimizedBuffer,
-        filename,
-        optimizedMimeType,
-        objectStorageSettings,
-        "logo"
-      );
-      console.log("Logo uploaded to Liara Object Storage:", fileUrl);
-
-      return NextResponse.json({
-        success: true,
-        url: fileUrl,
-        message: "لوگو با موفقیت آپلود شد",
-      });
-    } catch (uploadError: any) {
-      console.error("Error uploading logo to Liara Object Storage:", uploadError);
-      return NextResponse.json(
-        { error: `خطا در آپلود لوگو به Object Storage: ${uploadError.message || "خطای نامشخص"}` },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      success: true,
+      url: fileUrl,
+      message: "لوگو با موفقیت آپلود شد",
+    });
   } catch (error: any) {
     console.error("Error uploading file:", error);
     const errorMessage = error?.message || "خطای نامشخص در آپلود فایل";

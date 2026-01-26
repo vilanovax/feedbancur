@@ -10,10 +10,24 @@ interface HeaderLogoProps {
 }
 
 function HeaderLogo({ logoUrl, onLogoError }: HeaderLogoProps) {
+  // بررسی اینکه آیا لوگو فایل لوکال است یا URL خارجی
+  const isLocalFile = logoUrl && logoUrl.startsWith("/") && !logoUrl.startsWith("http");
+  const shouldShowLogo = logoUrl && logoUrl !== "/logo.png";
+
   return (
     <Link href="/" className="flex items-center space-x-2 space-x-reverse">
       <div className="relative w-10 h-10 flex items-center justify-center bg-blue-600 rounded-lg">
-        {logoUrl && logoUrl !== "/logo.png" && logoUrl.startsWith("/") ? (
+        {shouldShowLogo && isLocalFile ? (
+          <Image
+            src={logoUrl}
+            alt="لوگو"
+            fill
+            sizes="40px"
+            className="object-contain p-1"
+            onError={onLogoError}
+            unoptimized={logoUrl.includes("/uploads/")}
+          />
+        ) : shouldShowLogo ? (
           <Image
             src={logoUrl}
             alt="لوگو"

@@ -215,6 +215,8 @@ model feedbacks {
   isAnonymous                          Boolean           @default(false)
   departmentId                         String
   userId                               String
+  assignedTo                           String?
+  assignedAt                           DateTime?
   forwardedToId                        String?
   forwardedAt                          DateTime?
   completedById                        String?
@@ -229,6 +231,7 @@ model feedbacks {
   type                                 String            @default("SUGGESTION")
   keywords                             String[]
   checklist_items                      checklist_items[]
+  users_feedbacks_assignedToTousers    users?            @relation("feedbacks_assignedToTousers", fields: [assignedTo], references: [id])
   users_feedbacks_completedByIdTousers users?            @relation("feedbacks_completedByIdTousers", fields: [completedById], references: [id])
   departments                          departments       @relation(fields: [departmentId], references: [id])
   users_feedbacks_forwardedToIdTousers users?            @relation("feedbacks_forwardedToIdTousers", fields: [forwardedToId], references: [id])
@@ -242,10 +245,12 @@ model feedbacks {
   @@index([status])
   @@index([departmentId])
   @@index([userId])
+  @@index([assignedTo])
   @@index([forwardedToId])
   @@index([createdAt])
   @@index([deletedAt])
   @@index([status, departmentId])
+  @@index([status, assignedTo])
   @@index([status, forwardedToId])
 }
 
@@ -463,6 +468,7 @@ model users {
   assessment_progress                      assessment_progress[]
   assessment_results                       assessment_results[]
   assessments                              assessments[]
+  feedbacks_feedbacks_assignedToTousers    feedbacks[]             @relation("feedbacks_assignedToTousers")
   feedbacks_feedbacks_completedByIdTousers feedbacks[]             @relation("feedbacks_completedByIdTousers")
   feedbacks_feedbacks_forwardedToIdTousers feedbacks[]             @relation("feedbacks_forwardedToIdTousers")
   feedbacks_feedbacks_userIdTousers        feedbacks[]             @relation("feedbacks_userIdTousers")

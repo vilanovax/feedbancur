@@ -32,7 +32,6 @@ export async function GET() {
         id: true,
         title: true,
         createdAt: true,
-        priority: true,
       },
     });
 
@@ -47,7 +46,6 @@ export async function GET() {
           title: feedback.title,
           type: "feedback",
           dueDate,
-          priority: feedback.priority,
           url: `/feedback`,
         });
       }
@@ -68,7 +66,7 @@ export async function GET() {
       },
       select: {
         id: true,
-        question: true,
+        title: true,
         closedAt: true,
       },
     });
@@ -77,7 +75,7 @@ export async function GET() {
       if (poll.closedAt) {
         tasks.push({
           id: `poll-${poll.id}`,
-          title: poll.question,
+          title: poll.title,
           type: "poll",
           dueDate: poll.closedAt,
           url: `/polls`,

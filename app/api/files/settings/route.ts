@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
 
     if (!settings || !settings.fileShareSettings) {
       // اگر تنظیمات وجود ندارد، مقادیر پیش‌فرض را برگردان
-      return NextResponse.json(DEFAULT_FILE_SHARE_SETTINGS);
+      return NextResponse.json({ settings: DEFAULT_FILE_SHARE_SETTINGS });
     }
 
-    return NextResponse.json(settings.fileShareSettings);
+    return NextResponse.json({ settings: settings.fileShareSettings });
   } catch (error) {
     console.error("Error fetching file share settings:", error);
     return NextResponse.json(

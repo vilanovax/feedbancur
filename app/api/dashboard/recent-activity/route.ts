@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         status: true,
         createdAt: true,
         updatedAt: true,
-        users: {
+        users_feedbacks_userIdTousers: {
           select: {
             id: true,
             name: true,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             avatar: true,
           },
         },
-        assignedToUser: {
+        users_feedbacks_assignedToTousers: {
           select: {
             id: true,
             name: true,
@@ -91,9 +91,9 @@ export async function GET(request: NextRequest) {
           id: `feedback-created-${feedback.id}`,
           type: "feedback_created",
           user: {
-            id: feedback.users.id,
-            name: feedback.users.name || feedback.users.email,
-            avatar: feedback.users.avatar,
+            id: feedback.users_feedbacks_userIdTousers.id,
+            name: feedback.users_feedbacks_userIdTousers.name || feedback.users_feedbacks_userIdTousers.email,
+            avatar: feedback.users_feedbacks_userIdTousers.avatar,
           },
           message: `فیدبک جدید "${feedback.title}" ثبت کرد`,
           timestamp: feedback.createdAt,
@@ -102,15 +102,15 @@ export async function GET(request: NextRequest) {
         });
       }
       // فیدبک تکمیل شد
-      else if (feedback.status === "COMPLETED" && feedback.assignedToUser) {
+      else if (feedback.status === "COMPLETED" && feedback.users_feedbacks_assignedToTousers) {
         activities.push({
           id: `feedback-completed-${feedback.id}`,
           type: "feedback_completed",
           user: {
-            id: feedback.assignedToUser.id,
+            id: feedback.users_feedbacks_assignedToTousers.id,
             name:
-              feedback.assignedToUser.name || feedback.assignedToUser.email,
-            avatar: feedback.assignedToUser.avatar,
+              feedback.users_feedbacks_assignedToTousers.name || feedback.users_feedbacks_assignedToTousers.email,
+            avatar: feedback.users_feedbacks_assignedToTousers.avatar,
           },
           message: `فیدبک "${feedback.title}" را تکمیل کرد`,
           timestamp: feedback.updatedAt,
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
       }
       // فیدبک به‌روزرسانی شد
       else if (feedback.updatedAt > feedback.createdAt) {
-        const user = feedback.assignedToUser || feedback.users;
+        const user = feedback.users_feedbacks_assignedToTousers || feedback.users_feedbacks_userIdTousers;
         activities.push({
           id: `feedback-updated-${feedback.id}`,
           type: "feedback_updated",
