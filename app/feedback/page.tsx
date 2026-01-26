@@ -1792,6 +1792,9 @@ function FeedbacksPageContent() {
                                 }
                                 alt="ضمیمه"
                                 className="max-w-full h-auto rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
                               />
                             </div>
                           )}
@@ -1900,6 +1903,9 @@ function FeedbacksPageContent() {
                 }
                 alt="تصویر چت"
                 className="max-w-full max-h-[90vh] rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f0f0f0' width='400' height='300'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-size='18'%3Eتصویر در دسترس نیست%3C/text%3E%3C/svg%3E";
+                }}
               />
             </div>
           </div>
@@ -1974,10 +1980,10 @@ function FeedbacksPageContent() {
                     unoptimized
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
                     onError={(e) => {
-                      // Fallback به URL مستقیم در صورت خطا
+                      // نمایش placeholder در صورت عدم دسترسی به تصویر
                       const img = e.target as HTMLImageElement;
-                      if (img.src.includes("/api/image-proxy")) {
-                        img.src = selectedImages[currentImageIndex];
+                      if (!img.src.includes("data:image/svg")) {
+                        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f0f0f0' width='400' height='300'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-family='Arial' font-size='18'%3Eتصویر در دسترس نیست%3C/text%3E%3C/svg%3E";
                       }
                     }}
                   />
