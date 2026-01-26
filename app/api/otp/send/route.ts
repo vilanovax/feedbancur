@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     // ایجاد OTP جدید
     const otp = await prisma.otps.create({
       data: {
+        id: crypto.randomUUID(),
         mobile,
         code,
         expiresAt,
