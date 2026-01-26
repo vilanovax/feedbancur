@@ -83,6 +83,12 @@ export async function GET(request: NextRequest) {
           name: true,
           allowDirectFeedback: true,
           managerId: true,
+          manager: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
       users_feedbacks_forwardedToIdTousers: {

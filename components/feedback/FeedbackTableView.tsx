@@ -153,7 +153,10 @@ export default function FeedbackTableView({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                       <Building2 size={14} />
-                      <span>{feedback.departments?.name || "نامشخص"}</span>
+                      <span>
+                        {feedback.departments?.name || "نامشخص"}
+                        {feedback.departments?.manager && ` (${feedback.departments.manager.name})`}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3">

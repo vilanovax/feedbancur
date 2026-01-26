@@ -193,6 +193,7 @@ model departments {
   polls                          polls[]
   tasks                          tasks[]
   users                          users[]
+  manager                        users?                   @relation("department_manager", fields: [managerId], references: [id])
 }
 
 model employees {
@@ -489,12 +490,13 @@ model users {
   @@index([departmentId, role])
 
   // Relations
-  updates           updates[]
-  projects          projects[]
-  project_members   project_members[]
-  project_feedbacks project_feedbacks[]
-  shared_folders    shared_folders[]
-  shared_files      shared_files[]
+  updates            updates[]
+  projects           projects[]
+  project_members    project_members[]
+  project_feedbacks  project_feedbacks[]
+  shared_folders     shared_folders[]
+  shared_files       shared_files[]
+  departments_managed departments[] @relation("department_manager")
 }
 
 model updates {

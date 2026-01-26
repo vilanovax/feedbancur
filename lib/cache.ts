@@ -31,6 +31,12 @@ export const getCachedDepartments = unstable_cache(
             users: true,
           },
         },
+        manager: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         name: "asc",

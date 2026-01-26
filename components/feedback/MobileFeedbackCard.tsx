@@ -68,7 +68,10 @@ const MobileFeedbackCard = memo(function MobileFeedbackCard({
         {feedback.departments && (
           <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
             <Building2 className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{feedback.departments.name}</span>
+            <span className="truncate">
+              {feedback.departments.name}
+              {feedback.departments.manager && ` (${feedback.departments.manager.name})`}
+            </span>
           </div>
         )}
 

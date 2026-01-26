@@ -38,6 +38,12 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             name: true,
+            manager: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         task_assignments: {

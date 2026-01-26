@@ -31,6 +31,12 @@ export async function GET(req: NextRequest) {
             name: true,
             allowDirectFeedback: true,
             managerId: true,
+            manager: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         users_feedbacks_userIdTousers: true,

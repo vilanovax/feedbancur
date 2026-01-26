@@ -57,6 +57,12 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
+              manager: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },

@@ -367,6 +367,11 @@ export default function DepartmentsPage() {
                         ({dept._count?.users || 0})
                       </button>
                     </div>
+                    {dept.manager && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        مدیر بخش: <span className="font-medium">{dept.manager.name}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
