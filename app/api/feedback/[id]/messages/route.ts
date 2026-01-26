@@ -239,38 +239,52 @@ export async function POST(
         const fileName = `message-${timestamp}-${randomString}.${fileExtension}`;
         
         // بررسی کامل بودن تنظیمات Object Storage
-        const hasValidObjectStorage = 
+        const hasValidObjectStorage =
           objectStorageSettings.enabled &&
           objectStorageSettings.accessKeyId &&
           objectStorageSettings.secretAccessKey &&
           objectStorageSettings.endpoint &&
           objectStorageSettings.bucket;
 
-        // Object Storage باید فعال و تنظیم شده باشد
-        if (!hasValidObjectStorage) {
-          console.error("Object Storage is not configured properly");
-          return NextResponse.json(
-            { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
-            { status: 400 }
-          );
-        }
+        if (hasValidObjectStorage) {
+          // آپلود به Object Storage (لیارا / MinIO)
+          try {
+            imageUrl = await uploadToLiara(
+              buffer,
+              fileName,
+              imageFile.type,
+              objectStorageSettings,
+              "messages"
+            );
+            console.log("✅ Image uploaded to Object Storage:", imageUrl);
+          } catch (storageError: any) {
+            console.warn("⚠️  Object Storage upload failed, falling back to local storage:", storageError.message);
+            // Fallback: ذخیره لوکال
+            const fs = await import("fs/promises");
+            const path = await import("path");
 
-        // آپلود به لیارا Object Storage
-        try {
-          imageUrl = await uploadToLiara(
-            buffer,
-            fileName,
-            imageFile.type,
-            objectStorageSettings,
-            "messages"
-          );
-          console.log("Image uploaded to Liara Object Storage:", imageUrl);
-        } catch (storageError: any) {
-          console.error("Error uploading to Liara Object Storage:", storageError);
-          return NextResponse.json(
-            { error: `خطا در آپلود تصویر به Object Storage: ${storageError.message || "خطای نامشخص"}` },
-            { status: 500 }
-          );
+            const uploadDir = path.join(process.cwd(), "public", "uploads", "messages");
+            await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+            const filePath = path.join(uploadDir, fileName);
+            await fs.writeFile(filePath, buffer);
+            imageUrl = `/uploads/messages/${fileName}`;
+            console.log("✅ Image saved locally:", imageUrl);
+          }
+        } else {
+          // Fallback: ذخیره لوکال در صورت عدم تنظیم Object Storage
+          console.warn("⚠️  Object Storage not configured, saving locally");
+
+          const fs = await import("fs/promises");
+          const path = await import("path");
+
+          const uploadDir = path.join(process.cwd(), "public", "uploads", "messages");
+          await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
+
+          const filePath = path.join(uploadDir, fileName);
+          await fs.writeFile(filePath, buffer);
+          imageUrl = `/uploads/messages/${fileName}`;
+          console.log("✅ Image saved locally:", imageUrl);
         }
       }
       

@@ -65,11 +65,14 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch (fetchError: any) {
-      console.error("Error fetching image:", fetchError);
-      return NextResponse.json(
-        { error: `Failed to fetch image: ${fetchError.message}` },
-        { status: 500 }
-      );
+      // شبکه در دسترس نیست یا دامنه وجود ندارد
+      console.warn(`Failed to fetch image from ${imageUrl}:`, fetchError.message);
+      return new NextResponse(null, {
+        status: 404,
+        headers: {
+          "Cache-Control": "public, max-age=300",
+        },
+      });
     }
   } catch (error) {
     console.error("Error in image proxy:", error);
