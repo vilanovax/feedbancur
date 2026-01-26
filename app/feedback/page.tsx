@@ -921,7 +921,7 @@ function FeedbacksPageContent() {
       if (res.ok) {
         const result = await res.json();
         // API برمی‌گرداند { data: [...], pagination: {...} }
-        const msgs = Array.isArray(result) ? result : (result.data || []);
+        const msgs = Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
         setMessages((prev) => ({ ...prev, [feedbackId]: msgs }));
         // به‌روزرسانی تعداد خوانده نشده
         fetchUnreadCount(feedbackId);
@@ -977,10 +977,13 @@ function FeedbacksPageContent() {
 
       if (res.ok) {
         const newMessage = await res.json();
-        setMessages((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newMessage],
-        }));
+        setMessages((prev) => {
+          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: [...existingMessages, newMessage],
+          };
+        });
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
         setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
         setChatImagePreviews((prev) => {
