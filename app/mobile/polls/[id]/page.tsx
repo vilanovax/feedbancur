@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/MobileLayout";
 import PollVotingInterface from "@/components/PollVotingInterface";
 import PollResults from "@/components/PollResults";
@@ -15,6 +16,7 @@ interface PageProps {
 
 export default function MobilePollDetailPage({ params }: PageProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const resolvedParams = use(params);
   const pollId = resolvedParams.id;
   const toast = useToast();
