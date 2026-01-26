@@ -199,8 +199,9 @@ export default function ManagerForwardedFeedbacksPage() {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages`);
       if (res.ok) {
-        const data = await res.json();
-        setMessages((prev) => ({ ...prev, [feedbackId]: data }));
+        const response = await res.json();
+        const messagesData = response.data || response;
+        setMessages((prev) => ({ ...prev, [feedbackId]: messagesData }));
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -230,7 +231,10 @@ export default function ManagerForwardedFeedbacksPage() {
       if (res.ok) {
         const newMessage = await res.json();
         setMessages((prev) => {
-          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          const current: any = prev[feedbackId];
+          const existingMessages = Array.isArray(current)
+            ? current
+            : (Array.isArray(current?.data) ? current.data : []);
           return {
             ...prev,
             [feedbackId]: [...existingMessages, newMessage],

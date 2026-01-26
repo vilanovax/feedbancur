@@ -144,8 +144,9 @@ export default function ForwardedFeedbacksPage() {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages`);
       if (res.ok) {
-        const msgs = await res.json();
-        setMessages((prev) => ({ ...prev, [feedbackId]: msgs }));
+        const response = await res.json();
+        const messagesData = response.data || response;
+        setMessages((prev) => ({ ...prev, [feedbackId]: messagesData }));
         // به‌روزرسانی تعداد خوانده نشده
         fetchUnreadCount(feedbackId);
       }
@@ -191,10 +192,16 @@ export default function ForwardedFeedbacksPage() {
 
       if (res.ok) {
         const newMessage = await res.json();
-        setMessages((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newMessage],
-        }));
+        setMessages((prev) => {
+          const current: any = prev[feedbackId];
+          const existingMessages = Array.isArray(current)
+            ? current
+            : (Array.isArray(current?.data) ? current.data : []);
+          return {
+            ...prev,
+            [feedbackId]: [...existingMessages, newMessage],
+          };
+        });
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
         // اسکرول به پایین
         setTimeout(() => {

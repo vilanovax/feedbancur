@@ -978,7 +978,10 @@ function FeedbacksPageContent() {
       if (res.ok) {
         const newMessage = await res.json();
         setMessages((prev) => {
-          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          const current: any = prev[feedbackId];
+          const existingMessages = Array.isArray(current)
+            ? current
+            : (Array.isArray(current?.data) ? current.data : []);
           return {
             ...prev,
             [feedbackId]: [...existingMessages, newMessage],

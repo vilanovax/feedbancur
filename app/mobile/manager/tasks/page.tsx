@@ -591,8 +591,9 @@ export default function ManagerTasksPage() {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages`);
       if (res.ok) {
-        const msgs = await res.json();
-        setMessages((prev) => ({ ...prev, [feedbackId]: msgs }));
+        const response = await res.json();
+        const messagesData = response.data || response;
+        setMessages((prev) => ({ ...prev, [feedbackId]: messagesData }));
         // به‌روزرسانی تعداد خوانده نشده
         fetchUnreadCount(feedbackId);
       }
@@ -648,7 +649,10 @@ export default function ManagerTasksPage() {
       if (res.ok) {
         const newMessage = await res.json();
         setMessages((prev) => {
-          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          const current: any = prev[feedbackId];
+          const existingMessages = Array.isArray(current)
+            ? current
+            : (Array.isArray(current?.data) ? current.data : []);
           return {
             ...prev,
             [feedbackId]: [...existingMessages, newMessage],

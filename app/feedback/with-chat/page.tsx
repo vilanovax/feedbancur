@@ -75,8 +75,9 @@ export default function FeedbacksWithChatPage() {
     try {
       const res = await fetch(`/api/feedback/${feedbackId}/messages`);
       if (res.ok) {
-        const msgs = await res.json();
-        setMessages((prev) => ({ ...prev, [feedbackId]: msgs }));
+        const response = await res.json();
+        const messagesData = response.data || response;
+        setMessages((prev) => ({ ...prev, [feedbackId]: messagesData }));
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -128,10 +129,16 @@ export default function FeedbacksWithChatPage() {
 
       if (res.ok) {
         const newMessage = await res.json();
-        setMessages((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newMessage],
-        }));
+        setMessages((prev) => {
+          const current: any = prev[feedbackId];
+          const existingMessages = Array.isArray(current)
+            ? current
+            : (Array.isArray(current?.data) ? current.data : []);
+          return {
+            ...prev,
+            [feedbackId]: [...existingMessages, newMessage],
+          };
+        });
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
         setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
         setImagePreviews((prev) => {

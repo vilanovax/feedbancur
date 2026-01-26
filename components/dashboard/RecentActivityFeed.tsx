@@ -121,7 +121,7 @@ export default function RecentActivityFeed() {
       </div>
 
       {/* Activity List */}
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[400px] overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>

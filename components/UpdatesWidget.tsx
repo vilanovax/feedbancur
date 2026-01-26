@@ -88,7 +88,7 @@ function UpdatesWidgetComponent() {
             <p>هنوز اطلاع‌رسانی‌ای وجود ندارد</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-[500px] overflow-y-auto">
             {updates.map((update) => (
               <UpdateCard
                 key={update.id}
