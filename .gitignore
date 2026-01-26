@@ -27,9 +27,18 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.bak
+.env.liara.backup
 
 # vercel
 .vercel
+
+# docker & database
+docker-compose.yml
+DATABASE_SETUP.md
+liara_backup.dump
+*.dump
+*.dump.tar.gz
 
 # typescript
 *.tsbuildinfo

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
@@ -68,7 +69,7 @@ const colorClasses = {
   },
 };
 
-export default function StatCardEnhanced({
+const StatCardEnhanced = memo(function StatCardEnhanced({
   title,
   value,
   icon: Icon,
@@ -174,4 +175,6 @@ export default function StatCardEnhanced({
   }
 
   return content;
-}
+});
+
+export default StatCardEnhanced;
