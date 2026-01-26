@@ -49,7 +49,7 @@ export async function GET(
     }
 
     // بررسی اینکه آیا کاربر در نظرسنجی شرکت کرده
-    const userResponse = await prisma.pollResponse.findFirst({
+    const userResponse = await prisma.poll_responses.findFirst({
       where: {
         pollId: id,
         userId: session.user.id,
@@ -111,7 +111,7 @@ export async function GET(
     });
 
     // دریافت همه پاسخ‌ها
-    const responses = await prisma.pollResponse.findMany({
+    const responses = await prisma.poll_responses.findMany({
       where: {
         pollId: id,
       },
