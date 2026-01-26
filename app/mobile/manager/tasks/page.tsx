@@ -387,10 +387,13 @@ export default function ManagerTasksPage() {
       createdAt: new Date(),
     };
 
-    setChecklists((prev) => ({
-      ...prev,
-      [feedbackId]: [...(prev[feedbackId] || []), optimisticItem],
-    }));
+    setChecklists((prev) => {
+      const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+      return {
+        ...prev,
+        [feedbackId]: [...existingChecklists, optimisticItem],
+      };
+    });
     setNewItemTexts((prev) => ({ ...prev, [feedbackId]: "" }));
 
     // Focus را به input برگردان
@@ -408,18 +411,24 @@ export default function ManagerTasksPage() {
       if (res.ok) {
         const newItem = await res.json();
         // جایگزین کردن آیتم موقت با آیتم واقعی
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
-            item.id === tempId ? newItem : item
-          ),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.map((item: any) =>
+              item.id === tempId ? newItem : item
+            ),
+          };
+        });
       } else {
         // در صورت خطا، آیتم موقت را حذف کن
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== tempId),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.filter((item: any) => item.id !== tempId),
+          };
+        });
         // متن را برگردان
         setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
         toast.error("خطا در اضافه کردن آیتم");
@@ -427,10 +436,13 @@ export default function ManagerTasksPage() {
     } catch (error) {
       console.error("Error adding checklist item:", error);
       // در صورت خطا، آیتم موقت را حذف کن
-      setChecklists((prev) => ({
-        ...prev,
-        [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== tempId),
-      }));
+      setChecklists((prev) => {
+        const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+        return {
+          ...prev,
+          [feedbackId]: existingChecklists.filter((item: any) => item.id !== tempId),
+        };
+      });
       // متن را برگردان
       setNewItemTexts((prev) => ({ ...prev, [feedbackId]: text }));
       toast.error("خطا در اضافه کردن آیتم");
@@ -488,10 +500,13 @@ export default function ManagerTasksPage() {
       });
 
       if (res.ok) {
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== itemId),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.filter((item: any) => item.id !== itemId),
+          };
+        });
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
@@ -516,12 +531,15 @@ export default function ManagerTasksPage() {
     }
 
     // Optimistic update
-    setChecklists((prev) => ({
-      ...prev,
-      [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
-        item.id === itemId ? { ...item, title: newTitle } : item
-      ),
-    }));
+    setChecklists((prev) => {
+      const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+      return {
+        ...prev,
+        [feedbackId]: existingChecklists.map((item: any) =>
+          item.id === itemId ? { ...item, title: newTitle } : item
+        ),
+      };
+    });
     setEditingItemId(null);
     setEditingTexts({});
 
@@ -534,12 +552,15 @@ export default function ManagerTasksPage() {
 
       if (res.ok) {
         const updatedItem = await res.json();
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
-            item.id === itemId ? updatedItem : item
-          ),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.map((item: any) =>
+              item.id === itemId ? updatedItem : item
+            ),
+          };
+        });
       } else {
         // در صورت خطا، تغییرات را برگردان
         fetchChecklist(feedbackId);
@@ -626,10 +647,13 @@ export default function ManagerTasksPage() {
 
       if (res.ok) {
         const newMessage = await res.json();
-        setMessages((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newMessage],
-        }));
+        setMessages((prev) => {
+          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: [...existingMessages, newMessage],
+          };
+        });
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
         setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
         setImagePreviews((prev) => {
