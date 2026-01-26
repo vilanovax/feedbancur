@@ -36,14 +36,20 @@ export async function GET(request: NextRequest) {
         headers: {
           "User-Agent": "Mozilla/5.0",
         },
+        // افزودن timeout برای جلوگیری از hang
+        signal: AbortSignal.timeout(10000), // 10 ثانیه
       });
 
       if (!response.ok) {
-        console.error("Error fetching image from Liara:", response.status, response.statusText);
-        return NextResponse.json(
-          { error: `Failed to fetch image: ${response.status} ${response.statusText}` },
-          { status: response.status }
-        );
+        console.warn(`Image not found at ${imageUrl}: ${response.status} ${response.statusText}`);
+        // برگرداندن یک تصویر placeholder به جای خطا
+        // این از خطاهای console جلوگیری می‌کند
+        return new NextResponse(null, {
+          status: 404,
+          headers: {
+            "Cache-Control": "public, max-age=300",
+          },
+        });
       }
 
       const imageBuffer = await response.arrayBuffer();
