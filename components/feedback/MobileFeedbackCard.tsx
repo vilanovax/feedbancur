@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Link from "next/link";
 import { Star, MoreVertical, User, Calendar, Building2 } from "lucide-react";
 import StatusBadge from "./StatusBadge";
@@ -11,7 +12,7 @@ interface MobileFeedbackCardProps {
   onOpenActions: () => void;
 }
 
-export default function MobileFeedbackCard({
+const MobileFeedbackCard = memo(function MobileFeedbackCard({
   feedback,
   isSelected,
   onSelect,
@@ -102,4 +103,6 @@ export default function MobileFeedbackCard({
       </div>
     </div>
   );
-}
+});
+
+export default MobileFeedbackCard;

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import { PerformanceTimer, logApiPerformance } from "@/lib/performance";
 
 const createUserSchema = z.object({
   mobile: z.string().regex(/^09\d{9}$/, "شماره موبایل معتبر نیست"),
@@ -19,6 +20,8 @@ const createUserSchema = z.object({
 
 // GET - لیست کاربران
 export async function GET(req: NextRequest) {
+  const timer = new PerformanceTimer('GET /api/users');
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -157,6 +160,9 @@ export async function GET(req: NextRequest) {
       ...user,
       isActive: user.isActive ?? true,
     }));
+
+    const duration = timer.end(false);
+    logApiPerformance('/api/users', duration, 'GET');
 
     // پاسخ با pagination یا بدون آن (برای سازگاری با frontend قدیمی)
     if (usePagination) {

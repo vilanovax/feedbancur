@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -38,7 +38,7 @@ interface NotificationCardProps {
   showActions?: boolean;
 }
 
-export default function NotificationCard({
+const NotificationCard = memo(function NotificationCard({
   notification,
   onMarkAsRead,
   onDelete,
@@ -225,4 +225,6 @@ export default function NotificationCard({
   }
 
   return <CardContent />;
-}
+});
+
+export default NotificationCard;

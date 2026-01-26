@@ -4,8 +4,11 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCachedAnalytics, getCachedSettings } from "@/lib/cache";
 import type { WorkingHoursSettings } from "@/lib/working-hours-utils";
+import { PerformanceTimer, logApiPerformance } from "@/lib/performance";
 
 export async function GET() {
+  const timer = new PerformanceTimer('GET /api/analytics');
+
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -26,6 +29,9 @@ export async function GET() {
 
     // استفاده از کش برای داده‌های آنالیز
     const analyticsData = await getCachedAnalytics(workingHoursSettings);
+
+    const duration = timer.end(false);
+    logApiPerformance('/api/analytics', duration, 'GET');
 
     return NextResponse.json(analyticsData);
   } catch (error) {
