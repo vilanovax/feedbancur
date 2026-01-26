@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface QuickStat {
@@ -40,7 +41,7 @@ const colorClasses = {
   },
 };
 
-export default function QuickStatsSummaryCard({ stats }: QuickStatsSummaryCardProps) {
+const QuickStatsSummaryCard = memo(function QuickStatsSummaryCard({ stats }: QuickStatsSummaryCardProps) {
   return (
     <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8">
       <h2 className="text-white text-lg font-bold mb-6">خلاصه آمار کلی</h2>
@@ -91,4 +92,6 @@ export default function QuickStatsSummaryCard({ stats }: QuickStatsSummaryCardPr
       </div>
     </div>
   );
-}
+});
+
+export default QuickStatsSummaryCard;

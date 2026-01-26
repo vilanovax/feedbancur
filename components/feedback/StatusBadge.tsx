@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CheckCircle, Clock, Archive, XCircle, Eye } from "lucide-react";
 
 interface StatusBadgeProps {
@@ -39,7 +40,7 @@ const sizeClasses = {
   lg: "px-4 py-1.5 text-base gap-2",
 };
 
-export default function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
+const StatusBadge = memo(function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
   const config = statusConfig[status as keyof typeof statusConfig] || {
     label: status,
     icon: XCircle,
@@ -57,4 +58,6 @@ export default function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
       {config.label}
     </span>
   );
-}
+});
+
+export default StatusBadge;

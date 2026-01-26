@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { FolderKanban, CheckCircle, Users, MessageSquare } from "lucide-react";
 
 interface ProjectsStatsCardsProps {
@@ -9,7 +10,7 @@ interface ProjectsStatsCardsProps {
   totalFeedbacks: number;
 }
 
-export default function ProjectsStatsCards({
+const ProjectsStatsCards = memo(function ProjectsStatsCards({
   totalProjects,
   activeProjects,
   totalMembers,
@@ -77,4 +78,6 @@ export default function ProjectsStatsCards({
       ))}
     </div>
   );
-}
+});
+
+export default ProjectsStatsCards;

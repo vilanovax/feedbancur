@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AlertTriangle, Circle } from "lucide-react";
 
 interface PriorityBadgeProps {
@@ -24,7 +25,7 @@ const priorityConfig = {
   },
 };
 
-export default function PriorityBadge({ priority, size = "sm" }: PriorityBadgeProps) {
+const PriorityBadge = memo(function PriorityBadge({ priority, size = "sm" }: PriorityBadgeProps) {
   if (!priority) return null;
 
   const config = priorityConfig[priority];
@@ -44,4 +45,6 @@ export default function PriorityBadge({ priority, size = "sm" }: PriorityBadgePr
       {config.label}
     </span>
   );
-}
+});
+
+export default PriorityBadge;

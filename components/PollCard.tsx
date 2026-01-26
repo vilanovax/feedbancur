@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { CheckCircle, Users, Calendar } from 'lucide-react';
 import { TypeBadge, VisibilityBadge, StatusBadge } from './PollBadges';
 
@@ -30,7 +31,7 @@ interface PollCardProps {
   onClick?: () => void;
 }
 
-export default function PollCard({ poll, hasVoted, onClick }: PollCardProps) {
+const PollCard = memo(function PollCard({ poll, hasVoted, onClick }: PollCardProps) {
   const isClosed = poll.closedAt && new Date(poll.closedAt) < new Date();
   const isScheduled = poll.scheduledAt && new Date(poll.scheduledAt) > new Date();
 
@@ -107,4 +108,6 @@ export default function PollCard({ poll, hasVoted, onClick }: PollCardProps) {
       )}
     </div>
   );
-}
+});
+
+export default PollCard;
