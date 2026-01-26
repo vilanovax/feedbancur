@@ -1479,7 +1479,7 @@ function FeedbacksPageContent() {
                   <option value="">یک مدیر را انتخاب کنید</option>
                   {managers.map((manager) => (
                     <option key={manager.id} value={manager.id}>
-                      {manager.name} - {manager.department?.name || "بدون بخش"}
+                      {manager.name} - {manager.departments?.name || "بدون بخش"}
                     </option>
                   ))}
                 </select>
