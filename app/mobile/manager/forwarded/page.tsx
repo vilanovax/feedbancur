@@ -229,10 +229,13 @@ export default function ManagerForwardedFeedbacksPage() {
 
       if (res.ok) {
         const newMessage = await res.json();
-        setMessages((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newMessage],
-        }));
+        setMessages((prev) => {
+          const existingMessages = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: [...existingMessages, newMessage],
+          };
+        });
         setNewMessageTexts((prev) => ({ ...prev, [feedbackId]: "" }));
         setMessageImages((prev) => ({ ...prev, [feedbackId]: null }));
         setImagePreviews((prev) => {
@@ -311,10 +314,13 @@ export default function ManagerForwardedFeedbacksPage() {
 
       if (res.ok) {
         const newItem = await res.json();
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: [...(prev[feedbackId] || []), newItem],
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: [...existingChecklists, newItem],
+          };
+        });
         setNewItemTexts((prev) => ({ ...prev, [feedbackId]: "" }));
       }
     } catch (error) {
@@ -332,12 +338,15 @@ export default function ManagerForwardedFeedbacksPage() {
 
       if (res.ok) {
         const updatedItem = await res.json();
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).map((item: any) =>
-            item.id === itemId ? updatedItem : item
-          ),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.map((item: any) =>
+              item.id === itemId ? updatedItem : item
+            ),
+          };
+        });
       }
     } catch (error) {
       console.error("Error toggling checklist item:", error);
@@ -351,10 +360,13 @@ export default function ManagerForwardedFeedbacksPage() {
       });
 
       if (res.ok) {
-        setChecklists((prev) => ({
-          ...prev,
-          [feedbackId]: (prev[feedbackId] || []).filter((item: any) => item.id !== itemId),
-        }));
+        setChecklists((prev) => {
+          const existingChecklists = Array.isArray(prev[feedbackId]) ? prev[feedbackId] : [];
+          return {
+            ...prev,
+            [feedbackId]: existingChecklists.filter((item: any) => item.id !== itemId),
+          };
+        });
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
