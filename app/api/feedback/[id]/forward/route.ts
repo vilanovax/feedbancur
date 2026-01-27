@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 
 const forwardSchema = z.object({
   managerId: z.string().min(1, "مدیر مقصد الزامی است"),
@@ -132,6 +133,7 @@ export async function POST(
     try {
       task = await prisma.tasks.create({
         data: {
+          id: randomUUID(),
           title: `ارجاع: ${feedback.title}`,
           description: taskDescription,
           // status از default استفاده می‌کند (PENDING)
@@ -169,31 +171,45 @@ export async function POST(
     }
 
     // تخصیص تسک به مدیر
-    try {
-      await prisma.task_assignments.create({
-        data: {
-          taskId: task.id,
-          userId: data.managerId,
-        },
-      });
-      console.log("Task assignment created successfully");
-    } catch (assignmentError: any) {
-      console.error("Error creating task assignment:", assignmentError);
-      console.error("Assignment error message:", assignmentError.message);
-      console.error("Assignment error code:", assignmentError.code);
-      // حذف task در صورت خطا
+    // بررسی اینکه آیا قبلا برای این تسک assignment ایجاد شده است
+    const existingAssignment = await prisma.task_assignments.findFirst({
+      where: {
+        taskId: task.id,
+        userId: data.managerId,
+      },
+    });
+
+    if (!existingAssignment) {
       try {
-        await prisma.tasks.delete({ where: { id: task.id } });
-      } catch (deleteError) {
-        console.error("Error deleting task:", deleteError);
+        await prisma.task_assignments.create({
+          data: {
+            id: randomUUID(),
+            taskId: task.id,
+            userId: data.managerId,
+          },
+        });
+        console.log("Task assignment created successfully");
+      } catch (assignmentError: any) {
+        console.error("Error creating task assignment:", assignmentError);
+        console.error("Assignment error message:", assignmentError.message);
+        console.error("Assignment error code:", assignmentError.code);
+        console.error("Assignment error meta:", assignmentError.meta);
+        // حذف task در صورت خطا
+        try {
+          await prisma.tasks.delete({ where: { id: task.id } });
+        } catch (deleteError) {
+          console.error("Error deleting task:", deleteError);
+        }
+        return NextResponse.json(
+          { 
+            error: "خطا در اختصاص تسک به مدیر",
+            details: process.env.NODE_ENV === 'development' ? assignmentError.message : undefined
+          },
+          { status: 500 }
+        );
       }
-      return NextResponse.json(
-        { 
-          error: "خطا در اختصاص تسک به مدیر",
-          details: process.env.NODE_ENV === 'development' ? assignmentError.message : undefined
-        },
-        { status: 500 }
-      );
+    } else {
+      console.log("Task assignment already exists, skipping creation");
     }
 
     // خواندن task با assignedTo
