@@ -42,13 +42,13 @@ export default function ManagerTasksPage() {
   const [loading, setLoading] = useState(true);
   const [quickFilter, setQuickFilter] = useState<"all" | "forwarded" | "completed">(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("managerTasksQuickFilter") as "all" | "forwarded" | "completed";
+      const saved = localStorage.getItem("managerTasksQuickFilter");
       // Migrate old "active" to "forwarded" for backward compatibility
       if (saved === "active") {
         return "forwarded";
       }
       if (saved && ["all", "forwarded", "completed"].includes(saved)) {
-        return saved;
+        return saved as "all" | "forwarded" | "completed";
       }
     }
     return "all";
@@ -244,16 +244,23 @@ export default function ManagerTasksPage() {
       filtered = filtered.filter((f) => f.status === "COMPLETED");
     }
     
-    const sorted = filtered.sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       switch (sortOption) {
         case "date-desc":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          // برای تسک‌های ارجاع شده، از forwardedAt استفاده کن
+          const dateA = a.forwardedAt || a.createdAt;
+          const dateB = b.forwardedAt || b.createdAt;
+          return new Date(dateB).getTime() - new Date(dateA).getTime();
         case "date-asc":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          const dateAsc = a.forwardedAt || a.createdAt;
+          const dateBsc = b.forwardedAt || b.createdAt;
+          return new Date(dateAsc).getTime() - new Date(dateBsc).getTime();
         case "priority":
           const priorityDiff = getPriorityValue(b.type) - getPriorityValue(a.type);
           if (priorityDiff !== 0) return priorityDiff;
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          const datePrioB = b.forwardedAt || b.createdAt;
+          const datePrioA = a.forwardedAt || a.createdAt;
+          return new Date(datePrioB).getTime() - new Date(datePrioA).getTime();
         case "status":
           const statusOrder = {
             PENDING: 0,
@@ -962,7 +969,10 @@ export default function ManagerTasksPage() {
                 {feedback.forwardedToId && (
                   <div className="mb-3 flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">
                     <Send size={12} />
-                    <span>ارجاع شده از ادمین</span>
+                    <span>
+                      ارجاع شده از ادمین
+                      {feedback.forwardedAt && ` - ${getTimeAgo(feedback.forwardedAt)} پیش`}
+                    </span>
                   </div>
                 )}
 
@@ -996,14 +1006,6 @@ export default function ManagerTasksPage() {
                       {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
-                  {feedback.forwardedAt && (
-                    <div className="flex items-center gap-2">
-                      <Send size={14} className="text-purple-600 dark:text-purple-400" />
-                      <span className="font-semibold text-purple-700 dark:text-purple-300">
-                        ارجاع شده: {getTimeAgo(feedback.forwardedAt)} پیش
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-3 mb-4">
@@ -1090,7 +1092,10 @@ export default function ManagerTasksPage() {
                 {feedback.forwardedToId && (
                   <div className="mb-2 flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded">
                     <Send size={10} />
-                    <span>ارجاع شده</span>
+                    <span>
+                      ارجاع شده
+                      {feedback.forwardedAt && ` - ${getTimeAgo(feedback.forwardedAt)} پیش`}
+                    </span>
                   </div>
                 )}
 
@@ -1124,14 +1129,6 @@ export default function ManagerTasksPage() {
                       {formatPersianDate(feedback.createdAt)} ({getTimeAgo(feedback.createdAt)})
                     </span>
                   </div>
-                  {feedback.forwardedAt && (
-                    <div className="flex items-center gap-1">
-                      <Send size={12} className="text-purple-600 dark:text-purple-400" />
-                      <span className="font-semibold text-purple-700 dark:text-purple-300 text-xs">
-                        ارجاع: {getTimeAgo(feedback.forwardedAt)} پیش
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <p className="text-gray-700 dark:text-gray-300 text-xs line-clamp-2 mb-3 flex-grow">
