@@ -141,6 +141,7 @@ export async function POST(
           feedbackId: feedback.id,
           departmentId: taskDepartmentId,
           createdById: session.user.id,
+          updatedAt: new Date(),
         },
         include: {
           departments: true,
