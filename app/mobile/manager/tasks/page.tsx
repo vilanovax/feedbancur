@@ -1030,7 +1030,7 @@ export default function ManagerTasksPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {sortedFeedbacks.map((feedback) => (
               <div
                 key={feedback.id}
