@@ -21,6 +21,7 @@ import ExportButton from "@/components/dashboard/ExportButton";
 import DateRangePicker from "@/components/dashboard/DateRangePicker";
 import QuickStatsSummaryCard from "@/components/dashboard/QuickStatsSummaryCard";
 import UpcomingTasksWidget from "@/components/dashboard/UpcomingTasksWidget";
+import UsageStatsWidget from "@/components/dashboard/UsageStatsWidget";
 import {
   MessageSquare,
   BarChart3,
@@ -271,6 +272,11 @@ export default function Dashboard() {
           <TopPerformersWidget />
           <StatusPieChart stats={stats} />
           <RecentActivityFeed />
+        </div>
+
+        {/* Usage Stats Widget */}
+        <div className="mb-8">
+          <UsageStatsWidget />
         </div>
 
         {/* نمودار مقایسه عملکرد بخش‌ها و Upcoming Tasks */}
