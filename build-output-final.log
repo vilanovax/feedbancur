@@ -1,0 +1,254 @@
+
+> feedbancur@1.0.0 build
+> prisma generate && next build
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v6.19.0) to ./node_modules/@prisma/client in 196ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+⚠ `eslint` configuration in next.config.js is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+⚠ Invalid next.config.js options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of /Users/rum24/package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * /Users/rum24/Documents/FeedbanCur/package-lock.json
+
+▲ Next.js 16.1.0 (Turbopack)
+- Environments: .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✓ Compiled successfully in 17.2s
+  Skipping validation of types
+  Collecting page data using 7 workers ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+  Generating static pages using 7 workers (0/122) ...
+  Generating static pages using 7 workers (30/122) 
+ReferenceError: location is not defined
+    at l (.next/server/chunks/ssr/Documents_FeedbanCur_7e53f3a8._.js:7:9859)
+  Generating static pages using 7 workers (60/122) 
+  Generating static pages using 7 workers (91/122) 
+✓ Generating static pages using 7 workers (122/122) in 934.9ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /admins
+├ ○ /analytics
+├ ○ /analytics-keywords
+├ ○ /analytics-keywords/reports
+├ ○ /announcements
+├ ƒ /announcements/[id]
+├ ƒ /announcements/[id]/edit
+├ ○ /announcements/create
+├ ○ /announcements/manage
+├ ƒ /api/analytics
+├ ƒ /api/analytics-keywords
+├ ƒ /api/analytics-keywords/[id]
+├ ƒ /api/analytics-keywords/report
+├ ƒ /api/analytics-keywords/seed
+├ ƒ /api/announcements
+├ ƒ /api/announcements/[id]
+├ ƒ /api/announcements/[id]/messages
+├ ƒ /api/announcements/[id]/view
+├ ƒ /api/announcements/[id]/viewers
+├ ƒ /api/announcements/bulk-deactivate
+├ ƒ /api/announcements/bulk-delete
+├ ƒ /api/assessment-results/[id]
+├ ƒ /api/assessments
+├ ƒ /api/assessments/[id]
+├ ƒ /api/assessments/[id]/assign
+├ ƒ /api/assessments/[id]/assignments
+├ ƒ /api/assessments/[id]/progress
+├ ƒ /api/assessments/[id]/questions
+├ ƒ /api/assessments/[id]/questions/[qid]
+├ ƒ /api/assessments/[id]/questions/reorder
+├ ƒ /api/assessments/[id]/result
+├ ƒ /api/assessments/[id]/results
+├ ƒ /api/assessments/[id]/start
+├ ƒ /api/assessments/[id]/submit
+├ ƒ /api/assessments/available
+├ ƒ /api/assessments/my-results
+├ ƒ /api/assessments/seed/mbti
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/backup
+├ ƒ /api/dashboard/activity-timeline
+├ ƒ /api/dashboard/recent-activity
+├ ƒ /api/dashboard/top-performers
+├ ƒ /api/dashboard/upcoming-tasks
+├ ƒ /api/departments
+├ ƒ /api/departments/[id]
+├ ƒ /api/departments/[id]/users
+├ ƒ /api/download
+├ ƒ /api/employees
+├ ƒ /api/employees/[id]
+├ ƒ /api/feedback
+├ ƒ /api/feedback/[id]/archive
+├ ƒ /api/feedback/[id]/cancel-forward
+├ ƒ /api/feedback/[id]/checklist
+├ ƒ /api/feedback/[id]/delete
+├ ƒ /api/feedback/[id]/extract-keywords
+├ ƒ /api/feedback/[id]/forward
+├ ƒ /api/feedback/[id]/messages
+├ ƒ /api/feedback/[id]/messages/unread
+├ ƒ /api/feedback/[id]/notes
+├ ƒ /api/feedback/[id]/permanent-delete
+├ ƒ /api/feedback/[id]/restore
+├ ƒ /api/feedback/[id]/status
+├ ƒ /api/feedback/bulk-archive
+├ ƒ /api/feedback/bulk-complete
+├ ƒ /api/feedback/bulk-deferred
+├ ƒ /api/feedback/bulk-delete
+├ ƒ /api/feedback/bulk-forward
+├ ƒ /api/feedback/checklist/[itemId]
+├ ƒ /api/feedback/completed
+├ ƒ /api/feedback/messages/unread-count
+├ ƒ /api/feedback/trash
+├ ƒ /api/feedback/trash/count
+├ ƒ /api/feedback/with-chat
+├ ƒ /api/files/[id]
+├ ƒ /api/files/[id]/replace
+├ ƒ /api/files/[id]/tags
+├ ƒ /api/files/folders
+├ ƒ /api/files/folders/[id]
+├ ƒ /api/files/list
+├ ƒ /api/files/settings
+├ ƒ /api/files/tags
+├ ƒ /api/files/trash
+├ ƒ /api/files/trash/[id]/permanent
+├ ƒ /api/files/trash/[id]/restore
+├ ƒ /api/files/upload
+├ ƒ /api/image-proxy
+├ ƒ /api/notifications
+├ ƒ /api/notifications/[id]/read
+├ ƒ /api/notifications/all/read
+├ ƒ /api/otp/send
+├ ƒ /api/otp/verify
+├ ƒ /api/polls
+├ ƒ /api/polls/[id]
+├ ƒ /api/polls/[id]/copy
+├ ƒ /api/polls/[id]/results
+├ ƒ /api/polls/[id]/vote
+├ ƒ /api/projects
+├ ƒ /api/projects/[id]
+├ ƒ /api/projects/[id]/feedbacks
+├ ƒ /api/projects/[id]/feedbacks/[feedbackId]
+├ ƒ /api/projects/[id]/members
+├ ƒ /api/projects/[id]/regenerate-token
+├ ƒ /api/public-board
+├ ƒ /api/public/projects/[token]
+├ ƒ /api/public/projects/[token]/feedback
+├ ƒ /api/settings
+├ ƒ /api/stats
+├ ƒ /api/tasks
+├ ƒ /api/tasks/[id]
+├ ƒ /api/team-status
+├ ƒ /api/updates
+├ ƒ /api/updates/[id]
+├ ƒ /api/updates/[id]/publish
+├ ƒ /api/updates/from-feedback
+├ ƒ /api/updates/generate-summary
+├ ƒ /api/updates/upload-image
+├ ƒ /api/upload
+├ ƒ /api/user-statuses
+├ ƒ /api/users
+├ ƒ /api/users/[id]
+├ ƒ /api/users/change-password
+├ ƒ /api/users/force-password-reset
+├ ƒ /api/users/heartbeat
+├ ƒ /api/users/me
+├ ○ /apple-icon.png
+├ ○ /archive
+├ ○ /assessments
+├ ƒ /assessments/[id]/assign
+├ ƒ /assessments/[id]/edit
+├ ƒ /assessments/[id]/result
+├ ƒ /assessments/[id]/results
+├ ƒ /assessments/[id]/take
+├ ○ /assessments/new
+├ ○ /change-password
+├ ○ /departments
+├ ○ /employees
+├ ○ /feedback
+├ ○ /feedback-demo
+├ ○ /feedback/new
+├ ○ /feedback/with-chat
+├ ○ /files
+├ ƒ /files/project/[projectId]
+├ ○ /files/trash
+├ ○ /forwarded-feedbacks
+├ ○ /icon.png
+├ ○ /login
+├ ○ /manifest.webmanifest
+├ ○ /mobile/announcements
+├ ○ /mobile/change-password
+├ ○ /mobile/employee
+├ ○ /mobile/employee/assessments
+├ ƒ /mobile/employee/assessments/[id]
+├ ○ /mobile/employee/team-status
+├ ○ /mobile/feedback
+├ ○ /mobile/feedback/new
+├ ○ /mobile/manager
+├ ○ /mobile/manager/announcements/create
+├ ○ /mobile/manager/assessments
+├ ƒ /mobile/manager/assessments/[id]
+├ ○ /mobile/manager/forwarded
+├ ○ /mobile/manager/tasks
+├ ○ /mobile/manager/team-status
+├ ○ /mobile/polls
+├ ƒ /mobile/polls/[id]
+├ ○ /mobile/polls/create
+├ ○ /mobile/profile/edit
+├ ○ /mobile/public-board
+├ ○ /mobile/settings
+├ ○ /mobile/team-status
+├ ○ /mobile/updates
+├ ○ /my-assessments
+├ ○ /notifications
+├ ƒ /p/[token]
+├ ○ /polls
+├ ƒ /polls/[id]
+├ ƒ /polls/[id]/edit
+├ ƒ /polls/[id]/results
+├ ○ /polls/create
+├ ○ /polls/manage
+├ ○ /projects
+├ ƒ /projects/[id]
+├ ○ /projects/new
+├ ○ /public-board
+├ ○ /settings
+├ ○ /tasks
+├ ○ /team-status
+├ ○ /trash
+├ ○ /updates
+├ ○ /updates/manage
+└ ○ /users
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

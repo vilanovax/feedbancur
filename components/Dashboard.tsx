@@ -275,10 +275,12 @@ export default function Dashboard() {
           <RecentActivityFeed />
         </div>
 
-        {/* Usage Stats Widget */}
-        <div className="mb-8">
-          <UsageStatsWidget />
-        </div>
+        {/* Usage Stats Widget - فقط برای ادمین */}
+        {session?.user?.role === "ADMIN" && (
+          <div className="mb-8">
+            <UsageStatsWidget />
+          </div>
+        )}
 
         {/* نمودار مقایسه عملکرد بخش‌ها و Upcoming Tasks */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
@@ -387,7 +389,7 @@ export default function Dashboard() {
               نتایج آزمون‌های شما
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {assessmentResults?.map((result) => (
+              {assessmentResults?.map((result: any) => (
                 <Link
                   key={result.id}
                   href={`/assessments/${result.assessmentId}/result`}

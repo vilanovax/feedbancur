@@ -60,6 +60,8 @@ export default function UsageStatsWidget() {
       if (res.ok) {
         const data = await res.json();
         setStats(data);
+      } else {
+        console.error("Failed to fetch usage stats:", res.status, res.statusText);
       }
     } catch (error) {
       console.error("Error fetching usage stats:", error);
@@ -85,7 +87,19 @@ export default function UsageStatsWidget() {
   }
 
   if (!stats) {
-    return null;
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+            آمار استفاده از منابع
+          </h3>
+        </div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          خطا در دریافت اطلاعات. لطفاً صفحه را رفرش کنید.
+        </div>
+      </div>
+    );
   }
 
   const maxDeptFeedbacks = Math.max(...stats.departments.map((d) => d.feedbackCount), 1);
