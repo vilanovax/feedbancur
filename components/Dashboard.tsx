@@ -11,6 +11,7 @@ import AppHeader from "./AdminHeader";
 import DashboardSkeleton from "./DashboardSkeleton";
 import { useStats, useMyAssessmentResults } from "@/lib/swr";
 import { UpdatesWidget } from "@/components/UpdatesWidget";
+import { formatJalali, JalaliFormats } from "@/lib/jalali-utils";
 import StatCardEnhanced from "@/components/dashboard/StatCardEnhanced";
 import FeedbackActivityChart from "@/components/dashboard/FeedbackActivityChart";
 import TopPerformersWidget from "@/components/dashboard/TopPerformersWidget";
@@ -414,7 +415,7 @@ export default function Dashboard() {
                     </div>
                     {result.completedAt && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(result.completedAt).toLocaleDateString("fa-IR")}
+                        {formatJalali(result.completedAt, JalaliFormats.SHORT)}
                       </p>
                     )}
                   </div>

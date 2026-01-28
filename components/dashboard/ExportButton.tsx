@@ -5,6 +5,7 @@ import { Download, FileText, Table } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { formatJalali, JalaliFormats } from "@/lib/jalali-utils";
 
 interface ExportButtonProps {
   stats: any;
@@ -34,7 +35,7 @@ export default function ExportButton({ stats }: ExportButtonProps) {
       // تاریخ
       doc.setFontSize(10);
       doc.text(
-        `Generated: ${new Date().toLocaleDateString("en-US")}`,
+        `Generated: ${formatJalali(new Date(), JalaliFormats.LONG)}`,
         105,
         30,
         { align: "center" }

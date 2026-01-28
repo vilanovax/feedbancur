@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Calendar, ChevronDown } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
-import { faIR } from "date-fns/locale";
+import DatePicker, { DateObject } from "react-multi-date-picker";
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
 
 interface DateRange {
   from: Date;
@@ -13,6 +14,49 @@ interface DateRange {
 interface DateRangePickerProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
+}
+
+// تبدیل Date به DateObject شمسی
+function toJalali(date: Date): DateObject {
+  return new DateObject({ date, calendar: persian, locale: persian_fa });
+}
+
+// تبدیل DateObject به Date
+function toGregorian(dateObj: DateObject): Date {
+  return dateObj.toDate();
+}
+
+// محاسبه اول ماه شمسی جاری
+function startOfPersianMonth(): Date {
+  const now = new DateObject({ calendar: persian, locale: persian_fa });
+  const monthNum = now.month.number;
+  return new DateObject({ year: now.year, month: monthNum, day: 1, calendar: persian }).toDate();
+}
+
+// محاسبه آخر ماه شمسی جاری
+function endOfPersianMonth(): Date {
+  const now = new DateObject({ calendar: persian, locale: persian_fa });
+  const monthNum = now.month.number;
+  const lastDay = now.month.length;
+  return new DateObject({ year: now.year, month: monthNum, day: lastDay, calendar: persian }).toDate();
+}
+
+// محاسبه اول سال شمسی جاری
+function startOfPersianYear(): Date {
+  const now = new DateObject({ calendar: persian, locale: persian_fa });
+  return new DateObject({ year: now.year, month: 1, day: 1, calendar: persian }).toDate();
+}
+
+// محاسبه آخر سال شمسی جاری
+function endOfPersianYear(): Date {
+  const now = new DateObject({ calendar: persian, locale: persian_fa });
+  return new DateObject({ year: now.year, month: 12, day: 29, calendar: persian }).toDate();
+}
+
+function subDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() - days);
+  return result;
 }
 
 const PRESET_RANGES = [
@@ -40,38 +84,40 @@ const PRESET_RANGES = [
   {
     label: "ماه جاری",
     getValue: () => ({
-      from: startOfMonth(new Date()),
-      to: endOfMonth(new Date()),
+      from: startOfPersianMonth(),
+      to: endOfPersianMonth(),
     }),
   },
   {
     label: "سال جاری",
     getValue: () => ({
-      from: startOfYear(new Date()),
-      to: endOfYear(new Date()),
+      from: startOfPersianYear(),
+      to: endOfPersianYear(),
     }),
   },
 ];
 
 export default function DateRangePicker({ value, onChange }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setShowCalendar(false);
       }
     };
 
-    if (isOpen) {
+    if (isOpen || showCalendar) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, showCalendar]);
 
   const handlePresetClick = (preset: typeof PRESET_RANGES[0]) => {
     const range = preset.getValue();
@@ -86,9 +132,23 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
     });
   };
 
+  const handleDateChange = (dates: DateObject[]) => {
+    if (dates && dates.length === 2) {
+      onChange({
+        from: toGregorian(dates[0]),
+        to: toGregorian(dates[1]),
+      });
+      setShowCalendar(false);
+      setIsOpen(false);
+    }
+  };
+
   const formatDateRange = (range: DateRange) => {
-    const fromStr = format(range.from, "yyyy/MM/dd", { locale: faIR });
-    const toStr = format(range.to, "yyyy/MM/dd", { locale: faIR });
+    const fromJalali = toJalali(range.from);
+    const toJalaliDate = toJalali(range.to);
+
+    const fromStr = fromJalali.format("YYYY/MM/DD");
+    const toStr = toJalaliDate.format("YYYY/MM/DD");
 
     if (fromStr === toStr) {
       return fromStr;
@@ -100,10 +160,9 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
   const getActivePreset = () => {
     return PRESET_RANGES.find(preset => {
       const presetRange = preset.getValue();
-      return (
-        format(presetRange.from, "yyyy-MM-dd") === format(value.from, "yyyy-MM-dd") &&
-        format(presetRange.to, "yyyy-MM-dd") === format(value.to, "yyyy-MM-dd")
-      );
+      const fromMatch = Math.abs(presetRange.from.getTime() - value.from.getTime()) < 1000;
+      const toMatch = Math.abs(presetRange.to.getTime() - value.to.getTime()) < 1000;
+      return fromMatch && toMatch;
     });
   };
 
@@ -144,9 +203,9 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
           <div className="p-2">
             {PRESET_RANGES.map((preset, index) => {
               const presetRange = preset.getValue();
-              const isActive =
-                format(presetRange.from, "yyyy-MM-dd") === format(value.from, "yyyy-MM-dd") &&
-                format(presetRange.to, "yyyy-MM-dd") === format(value.to, "yyyy-MM-dd");
+              const fromMatch = Math.abs(presetRange.from.getTime() - value.from.getTime()) < 1000;
+              const toMatch = Math.abs(presetRange.to.getTime() - value.to.getTime()) < 1000;
+              const isActive = fromMatch && toMatch;
 
               return (
                 <button
@@ -162,6 +221,16 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
                 </button>
               );
             })}
+
+            <button
+              onClick={() => {
+                setShowCalendar(true);
+                setIsOpen(false);
+              }}
+              className="w-full text-right px-3 py-2 rounded-lg text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 mt-2 border-t border-gray-200 dark:border-gray-700 pt-3"
+            >
+              انتخاب دستی...
+            </button>
           </div>
 
           <div className="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
@@ -171,6 +240,29 @@ export default function DateRangePicker({ value, onChange }: DateRangePickerProp
             <div className="text-sm font-medium text-gray-800 dark:text-white">
               {formatDateRange(value)}
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCalendar && (
+        <div className="absolute left-0 mt-2 z-50">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2">
+            <DatePicker
+              range
+              calendar={persian}
+              locale={persian_fa}
+              value={[toJalali(value.from), toJalali(value.to)]}
+              onChange={handleDateChange}
+              className="blue"
+              containerClassName="w-full"
+              calendarPosition="bottom-right"
+              style={{
+                width: "100%",
+                padding: "8px",
+                fontSize: "14px",
+              }}
+              inputClass="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            />
           </div>
         </div>
       )}

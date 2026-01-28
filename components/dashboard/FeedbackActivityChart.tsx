@@ -11,8 +11,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 import { Calendar } from "lucide-react";
+import { formatJalali, JalaliFormats } from "@/lib/jalali-utils";
 
 interface Dataset {
   name: string;
@@ -66,13 +66,13 @@ export default function FeedbackActivityChart() {
     try {
       const date = new Date(dateStr);
       if (period === "7d") {
-        return format(date, "dd MMM");
+        return formatJalali(date, JalaliFormats.DAY_MONTH);
       } else if (period === "30d") {
-        return format(date, "dd MMM");
+        return formatJalali(date, JalaliFormats.DAY_MONTH);
       } else if (period === "3m") {
-        return format(date, "MMM");
+        return formatJalali(date, JalaliFormats.MONTH_SHORT);
       } else {
-        return format(date, "MMM yy");
+        return formatJalali(date, JalaliFormats.MONTH_SHORT_YEAR);
       }
     } catch {
       return dateStr;
@@ -85,7 +85,7 @@ export default function FeedbackActivityChart() {
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
           <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-            {format(new Date(label), "dd MMMM yyyy")}
+            {formatJalali(new Date(label), JalaliFormats.LONG)}
           </p>
           {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center gap-2 text-sm">
