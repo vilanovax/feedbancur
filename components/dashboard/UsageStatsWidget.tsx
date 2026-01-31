@@ -14,7 +14,7 @@ import {
 interface UsageStats {
   messages: {
     total: number;
-    totalFileSize: number;
+    withImages: number;
   };
   departments: Array<{
     id: string;
@@ -171,7 +171,7 @@ export default function UsageStatsWidget() {
                 {stats.summary.totalMessages.toLocaleString()}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formatBytes(stats.messages.totalFileSize)} فایل
+                {stats.messages.withImages.toLocaleString()} پیام با تصویر
               </div>
             </div>
 

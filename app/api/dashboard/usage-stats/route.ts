@@ -14,10 +14,12 @@ export async function GET() {
     // دریافت آمار پیام‌ها
     const totalMessages = await prisma.messages.count();
 
-    // دریافت حجم کل فایل‌های پیام‌ها
-    const messageFiles = await prisma.messages.aggregate({
-      _sum: {
-        fileSize: true,
+    // تعداد پیام‌هایی که تصویر دارند
+    const messagesWithImages = await prisma.messages.count({
+      where: {
+        image: {
+          not: null,
+        },
       },
     });
 
@@ -117,7 +119,7 @@ export async function GET() {
     return NextResponse.json({
       messages: {
         total: totalMessages,
-        totalFileSize: messageFiles._sum.fileSize || 0,
+        withImages: messagesWithImages,
       },
       departments: departmentStats,
       projects: projectFileSizes.slice(0, 10), // فقط 10 پروژه برتر
