@@ -29,9 +29,6 @@ export async function GET() {
       _count: {
         id: true,
       },
-      _sum: {
-        // اگر فیلد حجم محتوا دارید
-      },
     });
 
     // دریافت آمار فایل‌های بخش‌ها (از جدول shared_files)
