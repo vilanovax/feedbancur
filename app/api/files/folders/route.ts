@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(folders);
+    return NextResponse.json({ folders });
   } catch (error) {
     console.error("Error fetching folders:", error);
     return NextResponse.json(
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(folder);
+    return NextResponse.json({ folder });
   } catch (error) {
     console.error("Error creating folder:", error);
     return NextResponse.json(

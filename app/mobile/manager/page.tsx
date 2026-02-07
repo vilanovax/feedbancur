@@ -162,11 +162,11 @@ export default function ManagerMobilePage() {
       <ErrorBoundary>
       <div className="space-y-4">
         {/* Welcome Card */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 rounded-lg p-4 text-white">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
-              <h2 className="text-2xl font-bold mb-2">سلام {session?.user?.name}!</h2>
-              <p className="text-purple-100">به پنل مدیر خوش آمدید</p>
+              <h2 className="text-lg font-bold mb-1">سلام {session?.user?.name}!</h2>
+              <p className="text-purple-100 text-sm">به پنل مدیر خوش آمدید</p>
             </div>
             <div className="flex-shrink-0">
               {(session?.user as any)?.avatar ? (
@@ -190,78 +190,78 @@ export default function ManagerMobilePage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <MessageSquare className="w-8 h-8 text-blue-600" />
+          <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-2 rounded-lg bg-info-100 dark:bg-info-900/30 w-fit mb-2">
+              <MessageSquare className="w-5 h-5 text-info-600 dark:text-info-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.myFeedbacks}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">فیدبک‌ها</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">فیدبک‌ها</p>
           </div>
 
           <Link
             href="/mobile/manager/forwarded"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-2">
-              <Send className="w-8 h-8 text-purple-600" />
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 w-fit mb-2">
+              <Send className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.forwardedFeedbacks}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">
               ارجاع شده به من
             </p>
           </Link>
 
           <Link
             href="/mobile/manager/tasks"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-2">
-              <CheckSquare className="w-8 h-8 text-green-600" />
+            <div className="p-2 rounded-lg bg-success-100 dark:bg-success-900/30 w-fit mb-2">
+              <CheckSquare className="w-5 h-5 text-success-600 dark:text-success-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.myTasks}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">تسک‌های من</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">تسک‌های من</p>
           </Link>
 
           <Link
             href="/mobile/manager/assessments"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-2">
-              <ClipboardList className="w-8 h-8 text-indigo-600" />
+            <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 w-fit mb-2">
+              <ClipboardList className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.assessments}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">آزمون‌ها</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">آزمون‌ها</p>
           </Link>
 
           {/* اعلانات فعال */}
           <Link
             href="/mobile/announcements"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="relative">
-                <Bell className="w-8 h-8 text-yellow-600" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-warning-100 dark:bg-warning-900/30 relative">
+                <Bell className="w-5 h-5 text-warning-600 dark:text-warning-400" />
                 {stats.newAnnouncements > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 bg-error-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {stats.newAnnouncements}
                   </span>
                 )}
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.activeAnnouncements}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">اعلانات فعال</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">اعلانات فعال</p>
             {stats.newAnnouncements > 0 && (
-              <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+              <p className="text-xs text-warning-600 dark:text-warning-400 mt-1">
                 {stats.newAnnouncements} جدید
               </p>
             )}
@@ -270,24 +270,24 @@ export default function ManagerMobilePage() {
           {/* نظرسنجی‌های فعال */}
           <Link
             href="/mobile/polls"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="relative">
-                <BarChart3 className="w-8 h-8 text-indigo-600" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 relative">
+                <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                 {stats.newPolls > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 bg-error-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {stats.newPolls}
                   </span>
                 )}
               </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">
+            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
               {stats.activePolls}
             </p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">نظرسنجی‌های فعال</p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">نظرسنجی‌های فعال</p>
             {stats.newPolls > 0 && (
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+              <p className="text-xs text-primary-600 dark:text-primary-400 mt-1">
                 {stats.newPolls} نظرسنجی جدید
               </p>
             )}
@@ -296,126 +296,158 @@ export default function ManagerMobilePage() {
           {/* اطلاع‌رسانی‌ها */}
           <Link
             href="/mobile/updates"
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
           >
-            <div className="flex items-center justify-between mb-2">
-              <Newspaper className="w-8 h-8 text-blue-600" />
+            <div className="p-2 rounded-lg bg-info-100 dark:bg-info-900/30 w-fit mb-3">
+              <Newspaper className="w-5 h-5 text-info-600 dark:text-info-400" />
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">اطلاع‌رسانی‌ها</p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">اطلاع‌رسانی‌ها</p>
+            <p className="text-xs text-secondary-500 dark:text-secondary-500 mt-1">
               بهبودها و تغییرات
             </p>
           </Link>
         </div>
 
         {/* Assessment Results */}
-        {assessmentResults.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-              {session?.user.role === "MANAGER" ? "نتایج آزمون‌های بخش" : "نتایج آزمون‌های شما"}
-            </h3>
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-white">
+            {session?.user.role === "MANAGER" ? "نتایج آزمون‌های بخش" : "نتایج آزمون‌های شما"}
+          </h3>
+          {assessmentResults.length > 0 ? (
             <div className="grid grid-cols-1 gap-3">
               {assessmentResults.map((result) => (
                 <Link
                   key={result.id}
                   href={`/assessments/${result.assessmentId}/result${result.user ? `?userId=${result.user.id}` : ''}`}
-                  className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-indigo-600 dark:border-indigo-500"
+                  className="bg-gradient-to-r from-purple-50 to-primary-50 dark:from-purple-900/20 dark:to-primary-900/20 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-purple-500 dark:border-purple-500"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <ClipboardList className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                        <h4 className="font-semibold text-gray-800 dark:text-white">
+                        <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <h4 className="font-semibold text-secondary-900 dark:text-white">
                           {result.assessment.title}
                         </h4>
                       </div>
                       {result.user && session?.user.role === "MANAGER" && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-2">
                           {result.user.name}
                         </p>
                       )}
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                           {getResultDisplay(result)}
                         </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-secondary-600 dark:text-secondary-400">
                           ({getTypeLabel(result.assessment.type)})
                         </span>
                       </div>
+                      {result.score !== null && (
+                        <div className="h-2 bg-secondary-200 dark:bg-secondary-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-300"
+                            style={{ width: `${result.score}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    <ArrowLeft className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                    <ArrowLeft className="w-5 h-5 text-secondary-400 dark:text-secondary-500" />
                   </div>
                 </Link>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="bg-white dark:bg-secondary-800 rounded-xl p-8 text-center shadow-sm">
+              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ClipboardList className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h4 className="font-semibold text-secondary-900 dark:text-white mb-2">
+                هنوز آزمونی تکمیل نشده است
+              </h4>
+              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
+                آزمون‌های شخصیت‌سنجی خود را تکمیل کنید
+              </p>
+              <Link
+                href="/mobile/manager/assessments"
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                <ClipboardList className="w-4 h-4" />
+                مشاهده آزمون‌ها
+              </Link>
+            </div>
+          )}
+        </div>
 
         {/* Quick Actions */}
         <div className="space-y-3">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          <h3 className="text-lg font-semibold text-secondary-900 dark:text-white">
             دسترسی سریع
           </h3>
 
           <Link
             href="/mobile/manager/forwarded"
-            className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-purple-600"
+            className="flex items-center gap-4 bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-purple-500"
           >
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
               <Send className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-800 dark:text-white">
+              <h4 className="font-semibold text-secondary-900 dark:text-white">
                 فیدبک‌های ارجاع شده
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-secondary-600 dark:text-secondary-400">
                 فیدبک‌هایی که ادمین برای شما ارجاع داده است
               </p>
             </div>
-            {stats.forwardedFeedbacks > 0 && (
+            {stats.forwardedFeedbacks > 0 ? (
               <div className="bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                 {stats.forwardedFeedbacks}
               </div>
+            ) : (
+              <ArrowLeft className="w-5 h-5 text-secondary-400 dark:text-secondary-500" />
             )}
           </Link>
 
           <Link
             href="/mobile/manager/assessments"
-            className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-indigo-600"
+            className="flex items-center gap-4 bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-primary-500"
           >
-            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-              <ClipboardList className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+              <ClipboardList className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-800 dark:text-white">
+              <h4 className="font-semibold text-secondary-900 dark:text-white">
                 آزمون‌های شخصیت‌سنجی
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-secondary-600 dark:text-secondary-400">
                 مدیریت و مشاهده آزمون‌های بخش
               </p>
             </div>
-            {stats.assessments > 0 && (
-              <div className="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+            {stats.assessments > 0 ? (
+              <div className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                 {stats.assessments}
               </div>
+            ) : (
+              <ArrowLeft className="w-5 h-5 text-secondary-400 dark:text-secondary-500" />
             )}
           </Link>
 
           <Link
             href="/mobile/public-board"
-            className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+            className="flex items-center gap-4 bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border-r-4 border-amber-500"
           >
-            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
               <Trophy className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-gray-800 dark:text-white">
+              <h4 className="font-semibold text-secondary-900 dark:text-white">
                 بورد افتخارات
               </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-secondary-600 dark:text-secondary-400">
                 تسک‌های تکمیل شده
               </p>
             </div>
+            <ArrowLeft className="w-5 h-5 text-secondary-400 dark:text-secondary-500" />
           </Link>
         </div>
       </div>

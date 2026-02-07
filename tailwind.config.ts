@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { designTokens } from "@/lib/design-tokens";
 
 const config: Config = {
   content: [
@@ -6,15 +7,34 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // اضافه کردن رنگ‌های Design Tokens
+        primary: designTokens.colors.primary,
+        secondary: designTokens.colors.secondary,
+        success: designTokens.colors.success,
+        warning: designTokens.colors.warning,
+        error: designTokens.colors.error,
+        info: designTokens.colors.info,
+        purple: designTokens.colors.purple,
+        amber: designTokens.colors.amber,
       },
       fontFamily: {
-        sans: ["var(--font-vazirmatn)", "Tahoma", "Iranian Sans", "sans-serif"],
+        sans: [designTokens.typography.fontFamily.primary],
+        mono: [designTokens.typography.fontFamily.mono],
       },
+      fontSize: designTokens.typography.fontSize,
+      fontWeight: designTokens.typography.fontWeight,
+      lineHeight: designTokens.typography.lineHeight,
+      spacing: designTokens.spacing,
+      borderRadius: designTokens.borderRadius,
+      boxShadow: designTokens.shadows,
+      zIndex: designTokens.zIndex,
+      transitionDuration: designTokens.transitions,
       animation: {
         fadeIn: "fadeIn 0.2s ease-out",
         slideUp: "slideUp 0.3s ease-out",

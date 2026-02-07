@@ -19,6 +19,8 @@ import UploadModal from "@/components/files/UploadModal";
 import CreateFolderModal from "@/components/files/CreateFolderModal";
 import FilePreviewModal from "@/components/files/FilePreviewModal";
 import TagFilter from "@/components/files/TagFilter";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 
 /**
  * صفحه مرورگر فایل - پروژه (مدیر و ادمین)
@@ -84,12 +86,12 @@ export default function ProjectFilesPage() {
       }
 
       const data = await res.json();
-      setProject(data.project);
+      setProject(data);
 
       // بررسی دسترسی: ادمین یا عضو پروژه
       const isAdmin = session?.user?.role === "ADMIN";
-      const isMember = data.project.members?.some(
-        (m: any) => m.userId === session?.user?.id
+      const isMember = data.members?.some(
+        (m: any) => m.user.id === session?.user?.id
       );
 
       if (isAdmin || isMember) {
@@ -214,7 +216,7 @@ export default function ProjectFilesPage() {
     if (session?.user?.role === "ADMIN") return true;
 
     const member = project?.members?.find(
-      (m: any) => m.userId === session?.user?.id
+      (m: any) => m.user.id === session?.user?.id
     );
     return member?.role === "MANAGER";
   };
@@ -363,7 +365,12 @@ export default function ProjectFilesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 pt-16">
+          <div className="p-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -566,6 +573,9 @@ export default function ProjectFilesPage() {
         file={previewFile}
         onDownload={handleDownload}
       />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

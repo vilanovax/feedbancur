@@ -1,14 +1,20 @@
 import * as React from "react";
+import { inputVariants } from "@/lib/design-tokens";
 
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends React.InputHTMLAttributes<HTMLInputElement> {
+  error?: boolean;
+}
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, error, ...props }, ref) => {
+    const baseClasses = "flex h-10 w-full px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
+    const variantClasses = error ? inputVariants.error : inputVariants.default;
+
     return (
       <input
         type={type}
-        className={`flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white ring-offset-white placeholder:text-gray-500 dark:placeholder:text-gray-400 file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className || ""}`}
+        className={`${baseClasses} ${variantClasses} ${className || ""}`}
         ref={ref}
         {...props}
       />

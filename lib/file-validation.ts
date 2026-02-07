@@ -37,6 +37,7 @@ export const DEFAULT_FILE_SHARE_SETTINGS: FileShareSettings = {
     "image/png",
     "image/gif",
     "image/webp",
+    "image/avif",
     "image/svg+xml",
     // Archives
     "application/zip",
@@ -62,6 +63,7 @@ export const DEFAULT_FILE_SHARE_SETTINGS: FileShareSettings = {
     ".png",
     ".gif",
     ".webp",
+    ".avif",
     ".svg",
     ".zip",
     ".rar",

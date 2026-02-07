@@ -126,6 +126,14 @@ export async function POST(request: NextRequest) {
     // دریافت تنظیمات Object Storage
     const objectStorageSettings = settings?.objectStorageSettings as any;
 
+    // Debug logging
+    console.log("🔍 Object Storage Settings Check:");
+    console.log("  enabled:", objectStorageSettings?.enabled);
+    console.log("  accessKeyId:", objectStorageSettings?.accessKeyId ? "✓" : "✗");
+    console.log("  secretAccessKey:", objectStorageSettings?.secretAccessKey ? "✓" : "✗");
+    console.log("  endpoint:", objectStorageSettings?.endpoint);
+    console.log("  bucket:", objectStorageSettings?.bucket);
+
     if (
       !objectStorageSettings?.enabled ||
       !objectStorageSettings?.accessKeyId ||
@@ -133,11 +141,14 @@ export async function POST(request: NextRequest) {
       !objectStorageSettings?.endpoint ||
       !objectStorageSettings?.bucket
     ) {
+      console.error("❌ Object Storage validation failed!");
       return NextResponse.json(
         { error: "تنظیمات Object Storage انجام نشده است" },
         { status: 400 }
       );
     }
+
+    console.log("✅ Object Storage settings valid");
 
     // اعتبارسنجی تمام فایل‌ها قبل از آپلود
     const validationErrors: string[] = [];
@@ -155,11 +166,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (validationErrors.length > 0) {
+      console.error("❌ File validation errors:", validationErrors);
       return NextResponse.json(
         { error: "خطاهای اعتبارسنجی", errors: validationErrors },
         { status: 400 }
       );
     }
+
+    console.log("✅ File validation passed");
 
     // بررسی سهمیه کاربر
     const userQuotaError = await checkUserStorageQuota(
@@ -169,8 +183,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (userQuotaError) {
+      console.error("❌ User quota error:", userQuotaError);
       return NextResponse.json({ error: userQuotaError }, { status: 400 });
     }
+
+    console.log("✅ User quota check passed");
 
     // بررسی سهمیه پروژه (اگر در پروژه است)
     if (projectId) {
@@ -181,11 +198,14 @@ export async function POST(request: NextRequest) {
       );
 
       if (projectQuotaError) {
+        console.error("❌ Project quota error:", projectQuotaError);
         return NextResponse.json(
           { error: projectQuotaError },
           { status: 400 }
         );
       }
+
+      console.log("✅ Project quota check passed");
     }
 
     // آپلود فایل‌ها

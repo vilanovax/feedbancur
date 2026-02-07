@@ -16,6 +16,8 @@
     "create-admin": "ts-node scripts/create-admin.ts",
     "backup-to-seed": "ts-node scripts/backup-to-seed.ts",
     "export-db": "ts-node scripts/export-database.ts",
+    "data:export": "ts-node scripts/export-data.ts",
+    "data:import": "ts-node scripts/import-data.ts",
     "bundle-report": "npx tsx scripts/analyze-bundle.ts",
     "check-leaks": "npx tsx scripts/check-memory-leaks.ts"
   },

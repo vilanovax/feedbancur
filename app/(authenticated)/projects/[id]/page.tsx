@@ -24,6 +24,8 @@ import {
   Files,
 } from "lucide-react";
 import Link from "next/link";
+import Sidebar from "@/components/Sidebar";
+import AppHeader from "@/components/AdminHeader";
 
 interface Project {
   id: string;
@@ -69,6 +71,11 @@ interface UserOption {
   name: string;
   mobile: string;
   department: string | null;
+}
+
+interface Department {
+  id: string;
+  name: string;
 }
 
 const tabs = [
@@ -118,6 +125,10 @@ export default function ProjectDetailPage() {
   const [userSearch, setUserSearch] = useState("");
   const [userOptions, setUserOptions] = useState<UserOption[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [sortOrder, setSortOrder] = useState<string>("asc");
 
   // Feedbacks
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -167,6 +178,29 @@ export default function ProjectDetailPage() {
       fetchFeedbacks();
     }
   }, [activeTab, feedbacks.length, fetchFeedbacks]);
+
+  useEffect(() => {
+    if (showAddMember) {
+      if (departments.length === 0) {
+        fetchDepartments();
+      }
+      // بارگذاری اولیه لیست کاربران
+      searchUsers(userSearch);
+    }
+  }, [showAddMember]);
+
+  useEffect(() => {
+    if (showAddMember) {
+      searchUsers(userSearch);
+    }
+  }, [selectedDepartment, sortBy, sortOrder]);
+
+  // Redirect to files page when Files tab is clicked
+  useEffect(() => {
+    if (activeTab === "files") {
+      router.push(`/files/project/${projectId}`);
+    }
+  }, [activeTab, projectId, router]);
 
   const handleSaveSettings = async () => {
     setSaving(true);
@@ -220,26 +254,44 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const searchUsers = async (query: string) => {
-    if (query.length < 2) {
-      setUserOptions([]);
-      return;
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch("/api/departments");
+      if (res.ok) {
+        const data = await res.json();
+        setDepartments(data.departments || data);
+      }
+    } catch (error) {
+      console.error("Error fetching departments:", error);
     }
+  };
 
+  const searchUsers = async (query: string = "") => {
     setSearchingUsers(true);
     try {
-      const res = await fetch(`/api/users?search=${query}&limit=10`);
+      const params = new URLSearchParams();
+      if (query.length >= 2) {
+        params.set("search", query);
+      }
+      if (selectedDepartment) {
+        params.set("departmentId", selectedDepartment);
+      }
+      params.set("sortBy", sortBy);
+      params.set("sortOrder", sortOrder);
+      params.set("limit", "50");
+
+      const res = await fetch(`/api/users?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         const existingIds = members.map((m) => m.user.id);
         setUserOptions(
-          data.users
+          (Array.isArray(data) ? data : data.users || [])
             .filter((u: any) => !existingIds.includes(u.id))
             .map((u: any) => ({
               id: u.id,
               name: u.name,
               mobile: u.mobile,
-              department: u.department?.name || null,
+              department: u.departments?.name || null,
             }))
         );
       }
@@ -319,7 +371,12 @@ export default function ProjectDetailPage() {
   if (!project) return null;
 
   return (
-    <div className="p-6" dir="rtl">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 pt-16">
+          <div className="p-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
@@ -523,7 +580,7 @@ export default function ProjectDetailPage() {
           {/* Add member modal */}
           {showAddMember && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     افزودن عضو جدید
@@ -533,6 +590,9 @@ export default function ProjectDetailPage() {
                       setShowAddMember(false);
                       setUserSearch("");
                       setUserOptions([]);
+                      setSelectedDepartment("");
+                      setSortBy("name");
+                      setSortOrder("asc");
                     }}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
                   >
@@ -540,6 +600,7 @@ export default function ProjectDetailPage() {
                   </button>
                 </div>
 
+                {/* Search */}
                 <div className="relative mb-4">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -554,7 +615,60 @@ export default function ProjectDetailPage() {
                   />
                 </div>
 
-                <div className="max-h-60 overflow-y-auto">
+                {/* Filters and Sort */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                  {/* Department Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      بخش
+                    </label>
+                    <select
+                      value={selectedDepartment}
+                      onChange={(e) => setSelectedDepartment(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                    >
+                      <option value="">همه بخش‌ها</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sort By */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      مرتب‌سازی بر اساس
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                    >
+                      <option value="name">نام</option>
+                      <option value="department">بخش</option>
+                      <option value="createdAt">تاریخ ایجاد</option>
+                    </select>
+                  </div>
+
+                  {/* Sort Order */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      ترتیب
+                    </label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+                    >
+                      <option value="asc">صعودی</option>
+                      <option value="desc">نزولی</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
                   {searchingUsers ? (
                     <div className="text-center py-4">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />
@@ -581,13 +695,9 @@ export default function ProjectDetailPage() {
                         </button>
                       ))}
                     </div>
-                  ) : userSearch.length >= 2 ? (
-                    <p className="text-center py-4 text-gray-500">
-                      کاربری یافت نشد
-                    </p>
                   ) : (
                     <p className="text-center py-4 text-gray-500">
-                      نام کاربر را جستجو کنید
+                      کاربری یافت نشد
                     </p>
                   )}
                 </div>
@@ -745,6 +855,9 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

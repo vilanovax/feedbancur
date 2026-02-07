@@ -21,6 +21,7 @@ import FilePreviewModal from "@/components/files/FilePreviewModal";
 import TagFilter from "@/components/files/TagFilter";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
+import { buttonVariants } from "@/lib/design-tokens";
 
 /**
  * صفحه مرورگر فایل - ادمین (سطح سازمان)
@@ -307,47 +308,47 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="flex h-screen bg-secondary-50 dark:bg-secondary-900">
       <Sidebar />
-      <AppHeader />
-
-      <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-secondary-50 dark:bg-secondary-900 pt-16 p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">
               مدیریت فایل‌ها
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-secondary-600 dark:text-secondary-400 mt-1">
               فایل‌های سازمانی
             </p>
           </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={handleRefresh}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.ghost}`}
               >
                 <RefreshCw size={18} />
                 <span className="hidden sm:inline">بروزرسانی</span>
               </button>
               <button
                 onClick={() => router.push("/files/trash")}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.ghost}`}
               >
                 <Trash2 size={18} />
                 <span className="hidden sm:inline">سطل زباله</span>
               </button>
               <button
                 onClick={() => setCreateFolderModalOpen(true)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2"
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.secondary}`}
               >
                 <FolderPlus size={18} />
                 <span className="hidden sm:inline">پوشه جدید</span>
               </button>
               <button
                 onClick={() => setUploadModalOpen(true)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.primary}`}
               >
                 <Upload size={18} />
                 <span className="hidden sm:inline">آپلود فایل</span>
@@ -366,8 +367,8 @@ export default function FilesPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Folder Tree */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4">
+              <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">
                 پوشه‌ها
               </h3>
               <FolderTreeView
@@ -378,7 +379,7 @@ export default function FilesPage() {
             </div>
 
             {/* Tag Filter */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4">
               <TagFilter
                 selectedTags={selectedTags}
                 onChange={setSelectedTags}
@@ -389,33 +390,33 @@ export default function FilesPage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
               {/* Toolbar */}
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-4 border-b border-secondary-200 dark:border-secondary-700">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                   {/* Search */}
                   <div className="relative flex-1 w-full sm:w-auto">
                     <Search
                       size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400"
                     />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="جستجو در فایل‌ها..."
-                      className="w-full pr-10 pl-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pr-10 pl-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 text-secondary-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
 
                   {/* View Mode Toggle */}
-                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                  <div className="flex items-center gap-2 bg-secondary-100 dark:bg-secondary-700 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode("list")}
                       className={`p-2 rounded ${
                         viewMode === "list"
-                          ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400"
-                          : "text-gray-600 dark:text-gray-400"
+                          ? "bg-white dark:bg-secondary-600 text-primary-600 dark:text-primary-400"
+                          : "text-secondary-600 dark:text-secondary-400"
                       }`}
                     >
                       <List size={18} />
@@ -424,8 +425,8 @@ export default function FilesPage() {
                       onClick={() => setViewMode("grid")}
                       className={`p-2 rounded ${
                         viewMode === "grid"
-                          ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400"
-                          : "text-gray-600 dark:text-gray-400"
+                          ? "bg-white dark:bg-secondary-600 text-primary-600 dark:text-primary-400"
+                          : "text-secondary-600 dark:text-secondary-400"
                       }`}
                     >
                       <Grid3x3 size={18} />
@@ -455,22 +456,22 @@ export default function FilesPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="p-4 border-t border-secondary-200 dark:border-secondary-700">
                   <div className="flex items-center justify-center gap-2">
                     <button
                       onClick={() => setPage(page - 1)}
                       disabled={page === 1}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                      className="px-3 py-1 border border-secondary-300 dark:border-secondary-600 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50"
                     >
                       قبلی
                     </button>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-secondary-600 dark:text-secondary-400">
                       صفحه {page} از {totalPages}
                     </span>
                     <button
                       onClick={() => setPage(page + 1)}
                       disabled={page === totalPages}
-                      className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                      className="px-3 py-1 border border-secondary-300 dark:border-secondary-600 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50"
                     >
                       بعدی
                     </button>
@@ -480,7 +481,8 @@ export default function FilesPage() {
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
 
       {/* Modals */}
       <UploadModal

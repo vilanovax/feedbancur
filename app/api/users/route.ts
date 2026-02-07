@@ -39,6 +39,8 @@ export async function GET(req: NextRequest) {
     const departmentId = searchParams.get("departmentId");
     const search = searchParams.get("search");
     const showAdmins = searchParams.get("showAdmins") === "true";
+    const sortBy = searchParams.get("sortBy") || "createdAt"; // name, createdAt, department
+    const sortOrder = searchParams.get("sortOrder") || "desc"; // asc, desc
 
     // Pagination parameters
     const page = parseInt(searchParams.get("page") || "1");
@@ -105,15 +107,23 @@ export async function GET(req: NextRequest) {
       updatedAt: true,
     };
 
+    // تعیین ترتیب سورت
+    let orderBy: any = { createdAt: "desc" };
+    if (sortBy === "name") {
+      orderBy = { name: sortOrder };
+    } else if (sortBy === "department") {
+      orderBy = { departments: { name: sortOrder } };
+    } else if (sortBy === "createdAt") {
+      orderBy = { createdAt: sortOrder };
+    }
+
     try {
       // بهینه‌سازی: اجرای همزمان query و count
       const [usersResult, countResult] = await Promise.all([
         (prisma.users.findMany as any)({
           where,
           select: selectFields,
-          orderBy: {
-            createdAt: "desc",
-          },
+          orderBy,
           skip,
           take: limit,
         }),
@@ -139,9 +149,7 @@ export async function GET(req: NextRequest) {
           prisma.users.findMany({
             where,
             select: selectWithoutIsActive,
-            orderBy: {
-              createdAt: "desc",
-            },
+            orderBy,
             skip,
             take: limit,
           }),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_FILE_SHARE_SETTINGS } from "@/lib/file-validation";
 
 // Default status texts
 const DEFAULT_STATUS_TEXTS = {
@@ -177,6 +178,14 @@ export async function GET() {
               allowedDepartments: [],
             },
           },
+      fileShareSettings: dbSettings?.fileShareSettings
+        ? (typeof dbSettings.fileShareSettings === 'string'
+            ? JSON.parse(dbSettings.fileShareSettings)
+            : {
+                ...DEFAULT_FILE_SHARE_SETTINGS,
+                ...(dbSettings.fileShareSettings as any),
+              })
+        : DEFAULT_FILE_SHARE_SETTINGS,
     };
 
     // اگر ADMIN است، همه تنظیمات را برگردان
