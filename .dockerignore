@@ -1,8 +1,44 @@
+# Dependencies (نصب داخل کانتینر)
 node_modules
-.next
-.git
-.env
-.env.local
-.DS_Store
-*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
+# Build output (ساخت داخل کانتینر)
+.next
+out
+dist
+build
+
+# Git
+.git
+.gitignore
+
+# Env (رمزها در runtime به کانتینر پاس داده می‌شوند)
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.idea
+.vscode
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test & coverage
+coverage
+.nyc_output
+*.test.*
+*.spec.*
+
+# Prisma (فقط schema کپی می‌شود؛ مایگریشن روی سرور جدا اجرا شود)
+prisma/backups
+
+# Misc
+*.md
+!README.md
+.cursor
+.agent-transcripts
+agent-tools

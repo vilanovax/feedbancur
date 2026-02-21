@@ -46,6 +46,7 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+/prisma/backups/
 
 
 # YoYo AI version control directory

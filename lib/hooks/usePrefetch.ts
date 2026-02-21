@@ -42,7 +42,17 @@ export function usePrefetch() {
       },
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error("Prefetch failed");
+        if (!res.ok) {
+          const text = await res.text();
+          if (process.env.NODE_ENV === "development") {
+            console.warn(
+              `[Prefetch] ${res.status} ${res.statusText} for ${url}`,
+              text.slice(0, 200)
+            );
+          }
+          pendingRequests.delete(url);
+          return null;
+        }
         const data = await res.json();
         prefetchCache.set(url, { data, timestamp: Date.now() });
         pendingRequests.delete(url);
@@ -50,7 +60,9 @@ export function usePrefetch() {
       })
       .catch((error) => {
         pendingRequests.delete(url);
-        console.error(`Prefetch error for ${url}:`, error);
+        if (process.env.NODE_ENV === "development") {
+          console.warn(`[Prefetch] request failed for ${url}:`, error?.message ?? error);
+        }
         return null;
       });
 
