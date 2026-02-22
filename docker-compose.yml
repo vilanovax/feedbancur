@@ -10,7 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=5002
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=postgresql://postgres:KetabMetab88%40@host.docker.internal:5432/feedban?schema=public
+      - DATABASE_URL=postgresql://postgres:KetabMetab88%40@postgresql:5432/feedban?schema=public
       - NEXTAUTH_URL=https://app.feedban.ir
       - NEXTAUTH_SECRET=MkqTls7YuSB/k1bK5sxdPpTY3fIi4tyFih7FEvwJSVw=
       - OTP_ENABLED=true
