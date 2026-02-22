@@ -14,8 +14,8 @@ RUN npm config set registry "https://mirror-npm.runflare.com" \
     && npm config set strict-ssl false \
     && npm config set progress=true
 
-# نصب با verbose
-RUN npm install --verbose
+# نصب با verbose (ignore-scripts چون prisma/schema هنوز کپی نشده؛ prisma generate در stage بعد اجرا می‌شود)
+RUN npm install --verbose --ignore-scripts
 
 # Stage 2: بیلد اپ
 FROM node:20-alpine AS builder
