@@ -34,7 +34,6 @@ yarn-error.log*
 .vercel
 
 # docker & database
-docker-compose.yml
 DATABASE_SETUP.md
 liara_backup.dump
 *.dump

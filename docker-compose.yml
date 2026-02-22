@@ -1,0 +1,18 @@
+# فقط اپ. PostgreSQL روی همین ماشین در کانتینر دیگری اجرا می‌شود.
+# متغیرها فقط در docker-compose؛ از فایل .env استفاده نمی‌شود.
+
+services:
+  app:
+    build: .
+    ports:
+      - "5002:5002"
+    environment:
+      - NODE_ENV=production
+      - PORT=5002
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=postgresql://postgres:KetabMetab88%40@host.docker.internal:5432/feedban?schema=public
+      - NEXTAUTH_URL=https://app.feedban.ir
+      - NEXTAUTH_SECRET=MkqTls7YuSB/k1bK5sxdPpTY3fIi4tyFih7FEvwJSVw=
+      - OTP_ENABLED=true
+      - OTP_DEFAULT=123456
+    restart: unless-stopped
