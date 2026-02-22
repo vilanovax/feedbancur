@@ -6,7 +6,16 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci
+
+
+
+# ست کردن ریجستری Runflare
+RUN npm config set registry "https://mirror-npm.runflare.com" \
+    && npm config set strict-ssl false \
+    && npm config set progress=true
+
+# نصب با verbose
+RUN npm install --verbose
 
 # Stage 2: بیلد اپ
 FROM node:20-alpine AS builder
