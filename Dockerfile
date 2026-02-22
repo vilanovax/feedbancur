@@ -24,10 +24,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-# فقط برای prisma generate در زمان بیلد (مقدار واقعی در runtime پاس داده می‌شود)
+# Prisma در بیلد به DATABASE_URL نیاز دارد (مقدار واقعی در runtime از compose می‌آید)
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy?schema=public"
 
-RUN npx prisma generate
 RUN npm run build
 RUN npm prune --production
 
@@ -35,19 +34,8 @@ RUN npm prune --production
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+# NODE_ENV, PORT, HOSTNAME و بقیه در docker-compose.yml ست می‌شوند
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# پورت و هاست
-ENV PORT=5002
-ENV HOSTNAME="0.0.0.0"
-
-# متغیرهای محیطی (مقادیر واقعی با env_file در docker-compose override می‌شوند)
-ENV DATABASE_URL=""
-ENV NEXTAUTH_URL="http://localhost:5002"
-ENV NEXTAUTH_SECRET=""
-ENV OTP_ENABLED="true"
-ENV OTP_DEFAULT="123456"
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
