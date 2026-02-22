@@ -3,6 +3,38 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+// کش کوتاه‌مدت برای دادهٔ کاربر در session تا در هر درخواست به DB نزنیم
+const SESSION_USER_CACHE_TTL_MS = 60 * 1000; // ۱ دقیقه
+const sessionUserCache = new Map<
+  string,
+  { avatar: string | null; name: string; email: string | null; mustChangePassword: boolean; timestamp: number }
+>();
+
+function getCachedSessionUser(userId: string) {
+  const entry = sessionUserCache.get(userId);
+  if (!entry || Date.now() - entry.timestamp > SESSION_USER_CACHE_TTL_MS) {
+    return null;
+  }
+  return entry;
+}
+
+function setCachedSessionUser(
+  userId: string,
+  data: { avatar: string | null; name: string; email: string | null; mustChangePassword: boolean }
+) {
+  sessionUserCache.set(userId, { ...data, timestamp: Date.now() });
+  // محدود کردن اندازه کش (حداکثر ۵۰۰ کاربر)
+  if (sessionUserCache.size > 500) {
+    const oldest = [...sessionUserCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp);
+    oldest.slice(0, 100).forEach(([k]) => sessionUserCache.delete(k));
+  }
+}
+
+/** بعد از به‌روزرسانی پروفایل از API (بدون session.update) این را صدا بزن تا کش یک کاربر پاک شود */
+export function invalidateSessionUserCache(userId: string) {
+  sessionUserCache.delete(userId);
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -78,12 +110,23 @@ export const authOptions: NextAuthOptions = {
         // و باعث خطای 431 (Request Header Fields Too Large) می‌شود
       }
       
-      // وقتی update() فراخوانی می‌شود، اطلاعات کاربر را از دیتابیس بخوان
+      // وقتی update() فراخوانی می‌شود، اطلاعات کاربر را از دیتابیس بخوان و کش session را هم به‌روز کن
       if (trigger === "update" && token.id) {
         try {
           const updatedUser = await prisma.users.findUnique({
             where: { id: token.id as string },
-            include: { departments: true },
+            select: {
+              id: true,
+              name: true,
+              mobile: true,
+              email: true,
+              role: true,
+              departmentId: true,
+              statusId: true,
+              mustChangePassword: true,
+              avatar: true,
+              departments: { select: { id: true, name: true } },
+            },
           });
           
           if (updatedUser) {
@@ -94,6 +137,12 @@ export const authOptions: NextAuthOptions = {
             token.departmentId = updatedUser.departmentId ?? null;
             token.statusId = updatedUser.statusId ?? null;
             token.mustChangePassword = updatedUser.mustChangePassword ?? false;
+            setCachedSessionUser(updatedUser.id, {
+              avatar: updatedUser.avatar,
+              name: updatedUser.name,
+              email: updatedUser.email,
+              mustChangePassword: updatedUser.mustChangePassword ?? false,
+            });
           }
         } catch (error) {
           console.error("Error updating JWT token from DB:", error);
@@ -118,34 +167,45 @@ export const authOptions: NextAuthOptions = {
           session.user.departmentId = token.departmentId as string | null;
           (session.user as any).statusId = token.statusId as string | null;
           session.user.mustChangePassword = token.mustChangePassword ?? false;
-          // avatar را از دیتابیس می‌خوانیم (نه از token)
+          // avatar و فیلدهای به‌روز: اول از کش می‌خوانیم تا در هر درخواست به DB نزنیم
           if (token.id) {
-            try {
-              const user = await prisma.users.findUnique({
-                where: { id: token.id as string },
-                select: {
-                  avatar: true,
-                  mustChangePassword: true,
-                  name: true,
-                  email: true,
-                },
-              });
-              (session.user as any).avatar = user?.avatar ?? undefined;
-              // به‌روزرسانی اطلاعات از دیتابیس
-              if (user) {
-                session.user.name = user.name;
-                session.user.email = user.email ?? undefined;
-                session.user.mustChangePassword = user.mustChangePassword ?? false;
+            const userId = token.id as string;
+            const cached = getCachedSessionUser(userId);
+            if (cached) {
+              (session.user as any).avatar = cached.avatar ?? undefined;
+              session.user.name = cached.name;
+              session.user.email = cached.email ?? undefined;
+              session.user.mustChangePassword = cached.mustChangePassword;
+            } else {
+              try {
+                const user = await prisma.users.findUnique({
+                  where: { id: userId },
+                  select: {
+                    avatar: true,
+                    mustChangePassword: true,
+                    name: true,
+                    email: true,
+                  },
+                });
+                if (user) {
+                  setCachedSessionUser(userId, {
+                    avatar: user.avatar,
+                    name: user.name,
+                    email: user.email,
+                    mustChangePassword: user.mustChangePassword ?? false,
+                  });
+                  (session.user as any).avatar = user.avatar ?? undefined;
+                  session.user.name = user.name;
+                  session.user.email = user.email ?? undefined;
+                  session.user.mustChangePassword = user.mustChangePassword ?? false;
+                }
+                (session.user as any).statusId = token.statusId ?? null;
+              } catch (dbError) {
+                console.error("Error fetching user in session callback:", dbError);
+                (session.user as any).statusId = token.statusId ?? null;
               }
-              // statusId و status را از token می‌گیریم (از JWT callback که قبلاً از دیتابیس خوانده شده)
-              (session.user as any).statusId = token.statusId ?? null;
-            } catch (dbError) {
-              console.error("Error fetching user in session callback:", dbError);
-              // در صورت خطا، از مقدار token استفاده کن
-              (session.user as any).statusId = token.statusId ?? null;
             }
           } else {
-            // اگر token.id وجود نداشت، از token استفاده کن
             (session.user as any).statusId = token.statusId ?? null;
           }
         }

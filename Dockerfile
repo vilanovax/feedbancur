@@ -29,6 +29,17 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# پورت و هاست
+ENV PORT=5002
+ENV HOSTNAME="0.0.0.0"
+
+# متغیرهای محیطی (مقادیر واقعی با env_file در docker-compose override می‌شوند)
+ENV DATABASE_URL=""
+ENV NEXTAUTH_URL="http://localhost:5002"
+ENV NEXTAUTH_SECRET=""
+ENV OTP_ENABLED="true"
+ENV OTP_DEFAULT="123456"
+
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
@@ -41,8 +52,6 @@ COPY --from=builder /app/prisma ./prisma
 
 USER nextjs
 
-EXPOSE 3000
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+EXPOSE 5002
 
 CMD ["npm", "start"]
