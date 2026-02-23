@@ -27,7 +27,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # جلوگیری از OOM در بیلد (SIGKILL وقتی حافظه کم است)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Prisma در بیلد به DATABASE_URL نیاز دارد (مقدار واقعی در runtime از compose می‌آید)
-ENV DATABASE_URL="postgresql://postgres:KetabMetab88%40@host.docker.internal:5432/feedban?schema=public"
+ENV DATABASE_URL="postgresql://postgres:KetabMetab88%40@pgsql.feedban.ir:5174/Bizbuzz?schema=feedban"
 
 RUN npm run build
 RUN npm prune --production
