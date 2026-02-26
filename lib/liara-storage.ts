@@ -67,7 +67,8 @@ export async function uploadToLiara(
       ),
     ]);
   } catch (uploadError: any) {
-    throw new Error(`خطا در آپلود فایل به لیارا: ${uploadError.message || "خطای نامشخص"}`);
+    const msg = uploadError?.message || uploadError?.code || String(uploadError);
+    throw new Error(`خطا در آپلود فایل به لیارا: ${msg}`);
   }
 
   // ساخت URL عمومی فایل

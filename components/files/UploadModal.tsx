@@ -130,10 +130,19 @@ export default function UploadModal({
         body: formData,
       });
 
-      const data = await res.json();
+      let data: { error?: string; details?: string; hint?: string; errors?: string[] } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setError(`خطای سرور (${res.status}). پاسخ معتبر نیست.`);
+        return;
+      }
 
       if (!res.ok) {
-        throw new Error(data.error || "خطا در آپلود فایل‌ها");
+        const parts = [data.error, data.details, data.errors?.[0]].filter(Boolean);
+        if (data.hint) parts.push(data.hint);
+        const msg = parts.join(" — ") || "خطا در آپلود فایل‌ها";
+        throw new Error(msg);
       }
 
       // موفقیت
@@ -279,11 +288,11 @@ export default function UploadModal({
             />
           </div>
 
-          {/* خطا */}
+          {/* خطا — بالای دکمه‌ها تا حتماً دیده شود */}
           {error && (
             <div className="flex items-start gap-2 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <AlertCircle size={20} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+              <p className="text-sm text-red-700 dark:text-red-300 break-words">{error}</p>
             </div>
           )}
         </div>

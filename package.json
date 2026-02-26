@@ -19,7 +19,9 @@
     "data:export": "ts-node scripts/export-data.ts",
     "data:import": "ts-node scripts/import-data.ts",
     "bundle-report": "npx tsx scripts/analyze-bundle.ts",
-    "check-leaks": "npx tsx scripts/check-memory-leaks.ts"
+    "check-leaks": "npx tsx scripts/check-memory-leaks.ts",
+    "test:storage": "npx tsx scripts/test-storage.ts",
+    "configure-liara-storage": "npx tsx scripts/configure-liara-storage.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.946.0",

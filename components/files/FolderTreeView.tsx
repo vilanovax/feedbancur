@@ -68,18 +68,17 @@ export default function FolderTreeView({
       {/* Root Folder */}
       <button
         onClick={() => onFolderSelect(null)}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+        className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
           currentFolderId === null
-            ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 font-medium"
-            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            ? "bg-blue-500/20 text-blue-400 font-medium"
+            : "text-gray-400 hover:text-white hover:bg-gray-700/80"
         }`}
       >
-        <Folder size={18} />
+        <Folder size={18} className="shrink-0" />
         <span>همه فایل‌ها</span>
       </button>
 
-      {/* Folder Tree */}
-      <div className="mt-2 space-y-1">
+      <div className="mt-2 space-y-0.5">
         {tree.map((folder) => (
           <FolderNode
             key={folder.id}
@@ -94,9 +93,7 @@ export default function FolderTreeView({
       </div>
 
       {folders.length === 0 && (
-        <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-          پوشه‌ای وجود ندارد
-        </div>
+        <p className="text-center py-6 text-sm text-gray-500">پوشه‌ای وجود ندارد</p>
       )}
     </div>
   );
@@ -128,18 +125,17 @@ function FolderNode({
     <div>
       <button
         onClick={() => onFolderClick(folder.id)}
-        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
           isSelected
-            ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 font-medium"
-            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            ? "bg-blue-500/20 text-blue-400 font-medium"
+            : "text-gray-400 hover:text-white hover:bg-gray-700/80"
         }`}
         style={{ paddingRight: `${(level + 1) * 12 + 12}px` }}
       >
-        {/* Expand/Collapse Icon */}
         {hasChildren ? (
           <button
             onClick={(e) => onToggleExpand(folder.id, e)}
-            className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+            className="p-0.5 hover:bg-gray-600 rounded-lg text-gray-500"
           >
             {isExpanded ? (
               <ChevronDown size={16} />
@@ -163,7 +159,7 @@ function FolderNode({
 
         {/* File Count Badge */}
         {folder._count && folder._count.files > 0 && (
-          <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
+          <span className="px-2 py-0.5 text-xs bg-gray-600 text-gray-300 rounded-full">
             {folder._count.files}
           </span>
         )}

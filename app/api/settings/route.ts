@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_FILE_SHARE_SETTINGS } from "@/lib/file-validation";
+import { getObjectStorageSettings } from "@/lib/object-storage-settings";
 
 // Default status texts
 const DEFAULT_STATUS_TEXTS = {
@@ -128,16 +129,12 @@ export async function GET() {
             maxFileSize: 5,
             allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
           },
-      objectStorageSettings: dbSettings?.objectStorageSettings
-        ? (typeof dbSettings.objectStorageSettings === 'string'
-            ? JSON.parse(dbSettings.objectStorageSettings)
-            : dbSettings.objectStorageSettings)
-        : {
+      objectStorageSettings: (await getObjectStorageSettings(prisma)) ?? {
             enabled: false,
-            endpoint: "https://storage.c2.liara.space",
-            accessKeyId: "3ipqq41nabtsqsdh",
-            secretAccessKey: "49ae07a8-d515-4700-8daa-65ef98da8cab",
-            bucket: "feedban",
+            endpoint: "",
+            accessKeyId: "",
+            secretAccessKey: "",
+            bucket: "",
             region: "us-east-1",
           },
       workingHoursSettings: dbSettings?.workingHoursSettings

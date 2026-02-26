@@ -106,11 +106,12 @@ export default function FileList({
   if (loading) {
     return (
       <div className="animate-pulse space-y-3">
-        {[...Array(5)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"
-          ></div>
+            className="h-14 bg-gray-700/60 rounded-xl"
+            style={{ animationDelay: `${i * 80}ms` }}
+          />
         ))}
       </div>
     );
@@ -118,11 +119,14 @@ export default function FileList({
 
   if (files.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <FileIcon mimeType="" size={32} className="text-gray-400" />
+      <div className="text-center py-16 px-4">
+        <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gray-700/80 flex items-center justify-center ring-2 ring-gray-600/50">
+          <FileIcon mimeType="" size={40} className="text-gray-500" />
         </div>
-        <p className="text-gray-600 dark:text-gray-400">فایلی وجود ندارد</p>
+        <h3 className="text-lg font-medium text-gray-300 mb-2">فایلی در این بخش نیست</h3>
+        <p className="text-gray-500 text-sm max-w-sm mx-auto">
+          با دکمه «آپلود فایل» اولین فایل را اضافه کنید یا پوشه یا عبارت جستجو را عوض کنید.
+        </p>
       </div>
     );
   }
@@ -134,11 +138,11 @@ export default function FileList({
         {files.map((file) => (
           <div
             key={file.id}
-            className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-gray-700 rounded-lg border border-gray-600 p-4 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => onPreview?.(file)}
           >
             <div className="flex items-start justify-between mb-3">
-              <div className="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded">
+              <div className="w-12 h-12 flex items-center justify-center bg-gray-600 rounded">
                 <FileIcon mimeType={file.mimeType} size={24} />
               </div>
               {!readOnly && (
@@ -168,11 +172,11 @@ export default function FileList({
               )}
             </div>
 
-            <h3 className="text-sm font-medium text-gray-800 dark:text-white truncate mb-2">
+            <h3 className="text-sm font-medium text-white truncate mb-2">
               {file.name}
             </h3>
 
-            <div className="text-xs text-gray-500 space-y-1">
+            <div className="text-xs text-gray-400 space-y-1">
               <div>{formatFileSize(file.size)}</div>
               <div>{file.users.name || "ناشناس"}</div>
               <div>{formatDate(file.createdAt)}</div>
@@ -206,47 +210,47 @@ export default function FileList({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <tr className="border-b border-gray-700">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               <button
                 onClick={() => handleSort("name")}
-                className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-1 hover:text-white"
               >
                 نام فایل {getSortIcon("name")}
               </button>
             </th>
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               <button
                 onClick={() => handleSort("size")}
-                className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-1 hover:text-white"
               >
                 حجم {getSortIcon("size")}
               </button>
             </th>
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               آپلودکننده
             </th>
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               <button
                 onClick={() => handleSort("createdAt")}
-                className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-1 hover:text-white"
               >
                 تاریخ {getSortIcon("createdAt")}
               </button>
             </th>
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               <button
                 onClick={() => handleSort("downloadCount")}
-                className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+                className="flex items-center gap-1 hover:text-white"
               >
                 دانلودها {getSortIcon("downloadCount")}
               </button>
             </th>
-            <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <th className="text-right p-3 text-sm font-medium text-gray-300">
               تگ‌ها
             </th>
             {!readOnly && (
-              <th className="text-right p-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <th className="text-right p-3 text-sm font-medium text-gray-300">
                 عملیات
               </th>
             )}
@@ -256,21 +260,21 @@ export default function FileList({
           {files.map((file) => (
             <tr
               key={file.id}
-              className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              className="border-b border-gray-700 hover:bg-gray-700/50 transition-colors"
             >
               <td className="p-3">
                 <div className="flex items-center gap-3">
-                  <FileIcon mimeType={file.mimeType} size={20} />
+                  <FileIcon mimeType={file.mimeType} size={20} className="text-gray-400" />
                   <button
                     onClick={() => onPreview?.(file)}
-                    className="text-sm text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate max-w-xs"
+                    className="text-sm text-white hover:text-blue-400 truncate max-w-xs"
                     title={file.name}
                   >
                     {file.name}
                   </button>
                 </div>
               </td>
-              <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+              <td className="p-3 text-sm text-gray-400">
                 {formatFileSize(file.size)}
               </td>
               <td className="p-3">
@@ -282,19 +286,19 @@ export default function FileList({
                       className="w-6 h-6 rounded-full"
                     />
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs text-gray-600 dark:text-gray-300">
+                    <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs text-gray-300">
                       {file.users.name?.charAt(0) || "؟"}
                     </div>
                   )}
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-sm text-gray-300">
                     {file.users.name || "ناشناس"}
                   </span>
                 </div>
               </td>
-              <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+              <td className="p-3 text-sm text-gray-400">
                 {formatDate(file.createdAt)}
               </td>
-              <td className="p-3 text-sm text-gray-600 dark:text-gray-400">
+              <td className="p-3 text-sm text-gray-400">
                 {file.downloadCount}
               </td>
               <td className="p-3">

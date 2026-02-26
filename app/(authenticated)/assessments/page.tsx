@@ -111,15 +111,15 @@ export default function AssessmentsPage() {
               )}
             </div>
 
-            {/* Filters */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6">
+            {/* Filters - همان استایل تیره صفحه فیدبک */}
+            <div className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 p-4 sm:p-6 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   نوع آزمون
                 </label>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full bg-gray-700 border-gray-600 text-white placeholder:text-gray-400">
                     <SelectValue placeholder="نوع آزمون" value={typeFilterLabels[typeFilter] || "نوع آزمون"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -134,11 +134,11 @@ export default function AssessmentsPage() {
               </div>
 
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
                   وضعیت
                 </label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full bg-gray-700 border-gray-600 text-white placeholder:text-gray-400">
                     <SelectValue placeholder="وضعیت" value={statusFilterLabels[statusFilter] || "وضعیت"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -153,12 +153,12 @@ export default function AssessmentsPage() {
 
           {/* Assessments Grid */}
           {isLoading ? (
-            <div className="flex items-center justify-center h-64 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-center h-64 bg-gray-800 rounded-lg shadow-sm border border-gray-700">
               <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
             </div>
           ) : assessments.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <p className="text-gray-600 dark:text-gray-400">هیچ آزمونی یافت نشد</p>
+            <div className="text-center py-12 bg-gray-800 rounded-lg shadow-sm border border-gray-700">
+              <p className="text-gray-400">هیچ آزمونی یافت نشد</p>
               {session?.user.role === "ADMIN" && (
                 <Button
                   variant="outline"

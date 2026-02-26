@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
-// توجه: آپلود محلی حذف شده - فقط از Object Storage استفاده می‌شود
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -277,21 +277,8 @@ export async function POST(request: NextRequest) {
       
       // آپلود تصاویر اگر وجود داشته باشند
       if (imageCount > 0) {
-        // دریافت تنظیمات Object Storage
-        const settings = await prisma.settings.findFirst();
-        const objectStorageSettings = settings?.objectStorageSettings
-          ? (typeof settings.objectStorageSettings === 'string'
-              ? JSON.parse(settings.objectStorageSettings)
-              : settings.objectStorageSettings)
-          : { enabled: false };
-
-        // بررسی کامل بودن تنظیمات Object Storage
-        const hasValidObjectStorage = 
-          objectStorageSettings.enabled &&
-          objectStorageSettings.accessKeyId &&
-          objectStorageSettings.secretAccessKey &&
-          objectStorageSettings.endpoint &&
-          objectStorageSettings.bucket;
+        const objectStorageSettings = await getObjectStorageSettings(prisma);
+        const hasValidObjectStorage = isStorageConfigValid(objectStorageSettings);
 
         for (let i = 0; i < imageCount; i++) {
           const imageFile = formData.get(`image_${i}`) as File | null;
@@ -337,15 +324,13 @@ export async function POST(request: NextRequest) {
 
             let imageUrl: string | undefined;
 
-            // Object Storage باید فعال و تنظیم شده باشد
-            if (!hasValidObjectStorage) {
+            if (!hasValidObjectStorage || !objectStorageSettings) {
               return NextResponse.json(
-                { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
+                { error: "تنظیمات Object Storage انجام نشده است. متغیرهای LIARA_* را در .env قرار دهید یا از بخش تنظیمات پیکربندی کنید." },
                 { status: 400 }
               );
             }
 
-            // آپلود به لیارا Object Storage
             try {
               imageUrl = await uploadToLiara(
                 buffer,

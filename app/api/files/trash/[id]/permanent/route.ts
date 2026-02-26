@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { deleteFromLiara } from "@/lib/liara-storage";
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 
 /**
  * DELETE /api/files/trash/[id]/permanent
@@ -35,23 +36,12 @@ export async function DELETE(
       );
     }
 
-    // دریافت تنظیمات Object Storage
-    const settings = await prisma.settings.findFirst();
-    const objectStorageSettings = settings?.objectStorageSettings as any;
-
-    if (
-      objectStorageSettings?.enabled &&
-      objectStorageSettings?.accessKeyId &&
-      objectStorageSettings?.secretAccessKey &&
-      objectStorageSettings?.endpoint &&
-      objectStorageSettings?.bucket
-    ) {
-      // حذف از Object Storage
+    const objectStorageSettings = await getObjectStorageSettings(prisma);
+    if (isStorageConfigValid(objectStorageSettings)) {
       try {
         await deleteFromLiara(file.storagePath, objectStorageSettings);
       } catch (deleteError) {
         console.error("Error deleting file from storage:", deleteError);
-        // ادامه می‌دهیم و فایل را از دیتابیس حذف می‌کنیم
       }
     }
 

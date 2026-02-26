@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { uploadToLiara } from '@/lib/liara-storage';
+import { getObjectStorageSettings, isStorageConfigValid } from '@/lib/object-storage-settings';
 import { randomUUID } from 'crypto';
 
 const createAnnouncementSchema = z.object({
@@ -234,18 +235,10 @@ export async function POST(req: NextRequest) {
       
       // فقط ADMIN می‌تواند فایل اضافه کند
       if (session.user.role === 'ADMIN' && fileCount > 0) {
-        // دریافت تنظیمات Object Storage
-        const settings = await prisma.settings.findFirst();
-        const objectStorageSettings = settings?.objectStorageSettings
-          ? (typeof settings.objectStorageSettings === 'string'
-              ? JSON.parse(settings.objectStorageSettings)
-              : settings.objectStorageSettings)
-          : { enabled: false };
-
-        // بررسی فعال بودن Object Storage
-        if (!objectStorageSettings.enabled) {
+        const objectStorageSettings = await getObjectStorageSettings(prisma);
+        if (!isStorageConfigValid(objectStorageSettings)) {
           return NextResponse.json(
-            { error: 'Object Storage غیرفعال است. لطفاً در تنظیمات فعال کنید.' },
+            { error: 'Object Storage پیکربندی نشده است. متغیرهای LIARA_* را در .env قرار دهید یا از بخش تنظیمات پیکربندی کنید.' },
             { status: 400 }
           );
         }
@@ -284,7 +277,7 @@ export async function POST(req: NextRequest) {
                 buffer,
                 fileName,
                 file.type,
-                objectStorageSettings,
+                objectStorageSettings!,
                 'announcements'
               );
               attachments.push({

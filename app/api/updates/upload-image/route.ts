@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToLiara } from "@/lib/liara-storage";
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
@@ -43,25 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // دریافت تنظیمات Object Storage
-    const settings = await prisma.settings.findFirst();
-    const objectStorageSettings = settings?.objectStorageSettings
-      ? (typeof settings.objectStorageSettings === "string"
-          ? JSON.parse(settings.objectStorageSettings)
-          : settings.objectStorageSettings)
-      : { enabled: false };
-
-    // بررسی کامل بودن تنظیمات Object Storage
-    const hasValidObjectStorage =
-      objectStorageSettings.enabled &&
-      objectStorageSettings.accessKeyId &&
-      objectStorageSettings.secretAccessKey &&
-      objectStorageSettings.endpoint &&
-      objectStorageSettings.bucket;
-
-    if (!hasValidObjectStorage) {
+    const objectStorageSettings = await getObjectStorageSettings(prisma);
+    if (!isStorageConfigValid(objectStorageSettings)) {
       return NextResponse.json(
-        { error: "تنظیمات Object Storage انجام نشده است. لطفاً ابتدا Object Storage را در تنظیمات فعال کنید." },
+        { error: "تنظیمات Object Storage انجام نشده است. متغیرهای LIARA_* را در .env قرار دهید یا از بخش تنظیمات پیکربندی کنید." },
         { status: 400 }
       );
     }
@@ -141,14 +127,13 @@ export async function POST(request: NextRequest) {
     const extension = optimizedMimeType === "image/webp" ? "webp" : "jpg";
     const filename = `update-${timestamp}.${extension}`;
 
-    // آپلود به Object Storage
     try {
       const fileUrl = await uploadToLiara(
         optimizedBuffer,
         filename,
         optimizedMimeType,
-        objectStorageSettings,
-        "updates" // پوشه مخصوص اطلاع‌رسانی‌ها
+        objectStorageSettings!,
+        "updates"
       );
 
       return NextResponse.json({

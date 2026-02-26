@@ -274,8 +274,8 @@ export default function Sidebar() {
         ></div>
       )}
 
-      {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col fixed right-0 top-0 h-screen w-64 bg-white border-l border-gray-200 shadow-xl z-30">
+      {/* Sidebar - Desktop: زیر هدر شروع می‌شود تا overlap نداشته باشد */}
+      <aside className="hidden lg:flex lg:flex-col fixed right-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white border-l border-gray-200 shadow-xl z-20 overflow-y-auto">
         <SidebarContent />
       </aside>
 

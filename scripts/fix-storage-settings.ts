@@ -2,7 +2,8 @@
 
 /**
  * اسکریپت اصلاح تنظیمات Object Storage
- * این space اضافی و فیلدهای گمشده را برطرف می‌کند
+ * فقط endpoint را نرمال می‌کند (حذف space و اسلش انتهایی). مقادیر را از دیتابیس تغییر نمی‌دهد.
+ * برای تنظیم لیارا: از npm run configure-liara-storage استفاده کنید.
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -10,7 +11,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function fixSettings() {
-  console.log("🔧 در حال اصلاح تنظیمات Object Storage...\n");
+  console.log("🔧 در حال اصلاح فرمت تنظیمات Object Storage...\n");
 
   try {
     const settings = await prisma.settings.findFirst();
@@ -20,45 +21,24 @@ async function fixSettings() {
       return;
     }
 
-    // تنظیمات صحیح بدون space اضافی
-    const correctSettings = {
-      enabled: true,
-      endpoint: "http://localhost:9000",
-      bucket: "feedban",
-      accessKeyId: "bizbuzz-minio",
-      secretAccessKey: "bizbuzz-minio-secret-key",
-      region: "us-east-1",
-      forcePathStyle: true,
-    };
+    const raw = settings.objectStorageSettings as any;
+    if (!raw || typeof raw !== "object") {
+      console.error("❌ objectStorageSettings یافت نشد یا نامعتبر است.");
+      return;
+    }
 
-    console.log("📝 تنظیمات جدید:");
-    console.log(JSON.stringify(correctSettings, null, 2));
-    console.log();
+    const corrected = {
+      ...raw,
+      endpoint: String(raw.endpoint || "").trim().replace(/\/$/, "") || raw.endpoint,
+      region: raw.region || "us-east-1",
+    };
 
     await prisma.settings.update({
       where: { id: settings.id },
-      data: {
-        objectStorageSettings: correctSettings,
-      },
+      data: { objectStorageSettings: corrected },
     });
 
-    console.log("✅ تنظیمات اصلاح شد!");
-    console.log();
-
-    // بررسی مجدد
-    const updated = await prisma.settings.findFirst();
-    const updatedSettings = updated?.objectStorageSettings as any;
-
-    console.log("🔍 بررسی تنظیمات جدید:");
-    console.log("endpoint:", JSON.stringify(updatedSettings?.endpoint), "length:", updatedSettings?.endpoint?.length);
-    console.log("forcePathStyle:", updatedSettings?.forcePathStyle);
-    console.log();
-
-    if (updatedSettings?.endpoint?.trim() === "http://localhost:9000" && updatedSettings?.forcePathStyle === true) {
-      console.log("✅ همه چیز صحیح است!");
-    } else {
-      console.log("⚠️  هنوز مشکل وجود دارد");
-    }
+    console.log("✅ endpoint نرمال شد:", corrected.endpoint);
   } catch (error) {
     console.error("❌ خطا:", error);
   } finally {

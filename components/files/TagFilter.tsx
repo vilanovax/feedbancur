@@ -68,14 +68,11 @@ export default function TagFilter({
   if (loading) {
     return (
       <div className={`${className}`}>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-3"></div>
+        <div className="animate-pulse space-y-2">
+          <div className="h-4 bg-gray-700 rounded w-24" />
           <div className="flex flex-wrap gap-2">
             {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"
-              ></div>
+              <div key={i} className="h-8 bg-gray-700/60 rounded-xl w-20" />
             ))}
           </div>
         </div>
@@ -84,23 +81,17 @@ export default function TagFilter({
   }
 
   if (tags.length === 0) {
-    return (
-      <div className={`text-sm text-gray-500 ${className}`}>
-        تگی یافت نشد
-      </div>
-    );
+    return <p className={`text-sm text-gray-500 ${className}`}>تگی یافت نشد</p>;
   }
 
   return (
     <div className={`${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          فیلتر با تگ
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-200">فیلتر با تگ</h3>
         {selectedTags.length > 0 && (
           <button
             onClick={clearAll}
-            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
           >
             پاک کردن همه
           </button>
@@ -114,10 +105,10 @@ export default function TagFilter({
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl border transition-colors ${
                 isSelected
-                  ? "bg-blue-100 dark:bg-blue-900 border-blue-500 text-blue-700 dark:text-blue-200"
-                  : "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-blue-500/20 border-blue-500/50 text-blue-400"
+                  : "bg-gray-700/50 border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-300"
               }`}
             >
               {isSelected && <Check size={14} />}
@@ -131,16 +122,14 @@ export default function TagFilter({
       {hasMore && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-3"
+          className="text-sm text-blue-400 hover:text-blue-300 mt-3 transition-colors"
         >
           {showAll ? "نمایش کمتر" : `نمایش ${tags.length - 10} تگ دیگر`}
         </button>
       )}
 
       {selectedTags.length > 0 && (
-        <div className="mt-3 text-xs text-gray-600 dark:text-gray-400">
-          {selectedTags.length} تگ انتخاب شده
-        </div>
+        <p className="mt-3 text-xs text-gray-500">{selectedTags.length} تگ انتخاب شده</p>
       )}
     </div>
   );

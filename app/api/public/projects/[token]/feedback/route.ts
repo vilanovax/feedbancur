@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { uploadToLiara } from "@/lib/liara-storage";
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 import { randomUUID } from "crypto";
 
 // POST - ثبت فیدبک عمومی
@@ -110,15 +111,8 @@ export async function POST(
         );
       }
 
-      // دریافت تنظیمات Object Storage
-      const settings = await prisma.settings.findFirst();
-      const objectStorageSettings = settings?.objectStorageSettings
-        ? (typeof settings.objectStorageSettings === "string"
-            ? JSON.parse(settings.objectStorageSettings)
-            : settings.objectStorageSettings)
-        : { enabled: false };
-
-      if (objectStorageSettings.enabled) {
+      const objectStorageSettings = await getObjectStorageSettings(prisma);
+      if (isStorageConfigValid(objectStorageSettings)) {
         try {
           const bytes = await imageFile.arrayBuffer();
           const buffer = Buffer.from(bytes);
@@ -135,7 +129,6 @@ export async function POST(
           );
         } catch (uploadError) {
           console.error("Error uploading image:", uploadError);
-          // ادامه بدون تصویر
         }
       }
     }

@@ -9,6 +9,7 @@ import {
   type FileShareSettings,
 } from "@/lib/file-validation";
 import { uploadToLiara, deleteFromLiara } from "@/lib/liara-storage";
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 
 /**
  * POST /api/files/[id]/replace
@@ -75,20 +76,12 @@ export async function POST(
       );
     }
 
-    // دریافت تنظیمات
     const settings = await prisma.settings.findFirst();
     const fileShareSettings: FileShareSettings =
       (settings?.fileShareSettings as any) || DEFAULT_FILE_SHARE_SETTINGS;
 
-    const objectStorageSettings = settings?.objectStorageSettings as any;
-
-    if (
-      !objectStorageSettings?.enabled ||
-      !objectStorageSettings?.accessKeyId ||
-      !objectStorageSettings?.secretAccessKey ||
-      !objectStorageSettings?.endpoint ||
-      !objectStorageSettings?.bucket
-    ) {
+    const objectStorageSettings = await getObjectStorageSettings(prisma);
+    if (!isStorageConfigValid(objectStorageSettings)) {
       return NextResponse.json(
         { error: "تنظیمات Object Storage انجام نشده است" },
         { status: 400 }
@@ -122,13 +115,12 @@ export async function POST(
         buffer,
         uniqueFileName,
         newFile.type,
-        objectStorageSettings,
+        objectStorageSettings!,
         folderPath
       );
 
-      // حذف فایل قدیمی از Object Storage
       try {
-        await deleteFromLiara(file.storagePath, objectStorageSettings);
+        await deleteFromLiara(file.storagePath, objectStorageSettings!);
       } catch (deleteError) {
         console.error("Error deleting old file from storage:", deleteError);
         // ادامه می‌دهیم حتی اگر حذف فایل قدیمی با مشکل مواجه شود

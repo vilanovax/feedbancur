@@ -12,6 +12,7 @@ import {
   type FileShareSettings,
 } from "@/lib/file-validation";
 import { uploadToLiara } from "@/lib/liara-storage";
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 
 /**
  * POST /api/files/upload
@@ -118,37 +119,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // دریافت تنظیمات
-    const settings = await prisma.settings.findFirst();
+    // دریافت تنظیمات (از env یا دیتابیس، به‌صورت اتوماتیک)
+    let settings;
+    try {
+      settings = await prisma.settings.findFirst();
+    } catch (dbError: any) {
+      console.error("❌ Error fetching settings:", dbError);
+      return NextResponse.json(
+        { error: "خطا در خواندن تنظیمات از دیتابیس" },
+        { status: 500 }
+      );
+    }
+
     const fileShareSettings: FileShareSettings =
       (settings?.fileShareSettings as any) || DEFAULT_FILE_SHARE_SETTINGS;
 
-    // دریافت تنظیمات Object Storage
-    const objectStorageSettings = settings?.objectStorageSettings as any;
-
-    // Debug logging
-    console.log("🔍 Object Storage Settings Check:");
-    console.log("  enabled:", objectStorageSettings?.enabled);
-    console.log("  accessKeyId:", objectStorageSettings?.accessKeyId ? "✓" : "✗");
-    console.log("  secretAccessKey:", objectStorageSettings?.secretAccessKey ? "✓" : "✗");
-    console.log("  endpoint:", objectStorageSettings?.endpoint);
-    console.log("  bucket:", objectStorageSettings?.bucket);
-
-    if (
-      !objectStorageSettings?.enabled ||
-      !objectStorageSettings?.accessKeyId ||
-      !objectStorageSettings?.secretAccessKey ||
-      !objectStorageSettings?.endpoint ||
-      !objectStorageSettings?.bucket
-    ) {
-      console.error("❌ Object Storage validation failed!");
+    const objectStorageSettings = await getObjectStorageSettings(prisma);
+    if (!isStorageConfigValid(objectStorageSettings)) {
       return NextResponse.json(
-        { error: "تنظیمات Object Storage انجام نشده است" },
+        {
+          error: "تنظیمات Object Storage انجام نشده است. متغیرهای LIARA_* را در .env قرار دهید یا از بخش تنظیمات پیکربندی کنید.",
+          code: "OBJECT_STORAGE_NOT_CONFIGURED",
+        },
         { status: 400 }
       );
     }
 
-    console.log("✅ Object Storage settings valid");
+    const storageSettings = objectStorageSettings;
 
     // اعتبارسنجی تمام فایل‌ها قبل از آپلود
     const validationErrors: string[] = [];
@@ -234,7 +231,7 @@ export async function POST(request: NextRequest) {
           buffer,
           uniqueFileName,
           file.type,
-          objectStorageSettings,
+          storageSettings,
           folderPath
         );
 
@@ -280,12 +277,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // اگر همه فایل‌ها با خطا مواجه شدند
     if (uploadedFiles.length === 0 && uploadErrors.length > 0) {
+      const firstError = uploadErrors[0] || "خطای نامشخص";
+      const isConnectionError = /ECONNREFUSED|ENOTFOUND|ETIMEDOUT|network|اتصال/i.test(firstError);
       return NextResponse.json(
         {
-          error: "آپلود تمام فایل‌ها با خطا مواجه شد",
+          error: "آپلود فایل‌ها ناموفق بود.",
+          details: firstError,
           errors: uploadErrors,
+          ...(isConnectionError && {
+            hint: "احتمالاً تنظیمات Object Storage (endpoint/کلیدها) اشتباه است یا سرویس در دسترس نیست. از بخش تنظیمات، endpoint لیارا (مثلاً https://storage.iran.liara.space) و Access Key را وارد کنید.",
+          }),
         },
         { status: 500 }
       );
@@ -301,10 +303,15 @@ export async function POST(request: NextRequest) {
           ? `${uploadedFiles.length} فایل با موفقیت آپلود شد، ${uploadErrors.length} فایل با خطا مواجه شد`
           : `${uploadedFiles.length} فایل با موفقیت آپلود شد`,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error uploading files:", error);
+    const message = error?.message || "خطا در آپلود فایل‌ها";
     return NextResponse.json(
-      { error: "خطا در آپلود فایل‌ها" },
+      {
+        error: message,
+        details: error?.message || undefined,
+        ...(process.env.NODE_ENV === "development" && { stack: error?.stack }),
+      },
       { status: 500 }
     );
   }

@@ -21,7 +21,6 @@ import FilePreviewModal from "@/components/files/FilePreviewModal";
 import TagFilter from "@/components/files/TagFilter";
 import Sidebar from "@/components/Sidebar";
 import AppHeader from "@/components/AdminHeader";
-import { buttonVariants } from "@/lib/design-tokens";
 
 /**
  * صفحه مرورگر فایل - ادمین (سطح سازمان)
@@ -308,135 +307,129 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-secondary-50 dark:bg-secondary-900">
+    <div className="flex h-screen bg-gray-900" dir="rtl">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0 w-full lg:max-w-[calc(100%-16rem)] lg:mr-auto">
         <AppHeader />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-secondary-50 dark:bg-secondary-900 pt-16 p-4 sm:p-6 lg:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-secondary-900 dark:text-white">
-              مدیریت فایل‌ها
-            </h1>
-            <p className="text-secondary-600 dark:text-secondary-400 mt-1">
-              فایل‌های سازمانی
-            </p>
-          </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.ghost}`}
-              >
-                <RefreshCw size={18} />
-                <span className="hidden sm:inline">بروزرسانی</span>
-              </button>
-              <button
-                onClick={() => router.push("/files/trash")}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.ghost}`}
-              >
-                <Trash2 size={18} />
-                <span className="hidden sm:inline">سطل زباله</span>
-              </button>
-              <button
-                onClick={() => setCreateFolderModalOpen(true)}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.secondary}`}
-              >
-                <FolderPlus size={18} />
-                <span className="hidden sm:inline">پوشه جدید</span>
-              </button>
-              <button
-                onClick={() => setUploadModalOpen(true)}
-                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${buttonVariants.primary}`}
-              >
-                <Upload size={18} />
-                <span className="hidden sm:inline">آپلود فایل</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Breadcrumb */}
-          <FolderBreadcrumb
-            folders={breadcrumbFolders}
-            onNavigate={handleFolderSelect}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Folder Tree */}
-            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4">
-              <h3 className="text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-3">
-                پوشه‌ها
-              </h3>
-              <FolderTreeView
-                folders={folders}
-                currentFolderId={currentFolderId}
-                onFolderSelect={handleFolderSelect}
-              />
-            </div>
-
-            {/* Tag Filter */}
-            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm p-4">
-              <TagFilter
-                selectedTags={selectedTags}
-                onChange={setSelectedTags}
-                projectId={null}
-              />
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow-sm">
-              {/* Toolbar */}
-              <div className="p-4 border-b border-secondary-200 dark:border-secondary-700">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                  {/* Search */}
-                  <div className="relative flex-1 w-full sm:w-auto">
-                    <Search
-                      size={18}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary-400"
-                    />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="جستجو در فایل‌ها..."
-                      className="w-full pr-10 pl-4 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 text-secondary-800 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-
-                  {/* View Mode Toggle */}
-                  <div className="flex items-center gap-2 bg-secondary-100 dark:bg-secondary-700 rounded-lg p-1">
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={`p-2 rounded ${
-                        viewMode === "list"
-                          ? "bg-white dark:bg-secondary-600 text-primary-600 dark:text-primary-400"
-                          : "text-secondary-600 dark:text-secondary-400"
-                      }`}
-                    >
-                      <List size={18} />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={`p-2 rounded ${
-                        viewMode === "grid"
-                          ? "bg-white dark:bg-secondary-600 text-primary-600 dark:text-primary-400"
-                          : "text-secondary-600 dark:text-secondary-400"
-                      }`}
-                    >
-                      <Grid3x3 size={18} />
-                    </button>
-                  </div>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto min-w-0 pt-24">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+            {/* هدر صفحه */}
+            <header className="mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                    مدیریت فایل‌ها
+                  </h1>
+                  <p className="text-gray-400 mt-1 text-sm sm:text-base">
+                    فایل‌های سازمانی را مرور و مدیریت کنید
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleRefresh}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 border border-gray-600 transition-colors"
+                  >
+                    <RefreshCw size={18} className="shrink-0" />
+                    <span className="hidden sm:inline">بروزرسانی</span>
+                  </button>
+                  <button
+                    onClick={() => router.push("/files/trash")}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 border border-gray-600 transition-colors"
+                  >
+                    <Trash2 size={18} className="shrink-0" />
+                    <span className="hidden sm:inline">سطل زباله</span>
+                  </button>
+                  <button
+                    onClick={() => setCreateFolderModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white bg-gray-700 hover:bg-gray-600 border border-gray-600 transition-colors"
+                  >
+                    <FolderPlus size={18} className="shrink-0" />
+                    <span className="hidden sm:inline">پوشه جدید</span>
+                  </button>
+                  <button
+                    onClick={() => setUploadModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-colors"
+                  >
+                    <Upload size={18} className="shrink-0" />
+                    آپلود فایل
+                  </button>
                 </div>
               </div>
+              <FolderBreadcrumb
+                folders={breadcrumbFolders}
+                onNavigate={handleFolderSelect}
+                className="mt-4"
+              />
+            </header>
 
-              {/* File List */}
-              <div className="p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* سایدبار: پوشه‌ها و تگ‌ها */}
+              <aside className="lg:col-span-1 space-y-4 lg:sticky lg:top-24 lg:self-start">
+                <section className="bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-700/80 p-4 shadow-xl shadow-black/10">
+                  <h2 className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <FolderPlus size={18} className="text-blue-400" />
+                    پوشه‌ها
+                  </h2>
+                  <FolderTreeView
+                    folders={folders}
+                    currentFolderId={currentFolderId}
+                    onFolderSelect={handleFolderSelect}
+                  />
+                </section>
+                <section className="bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-700/80 p-4 shadow-xl shadow-black/10">
+                  <TagFilter
+                    selectedTags={selectedTags}
+                    onChange={setSelectedTags}
+                    projectId={null}
+                  />
+                </section>
+              </aside>
+
+              {/* محتوای اصلی */}
+              <div className="lg:col-span-3">
+                <div className="bg-gray-800/80 backdrop-blur rounded-2xl border border-gray-700/80 shadow-xl shadow-black/10 overflow-hidden">
+                  {/* نوار جستجو و نمای لیست/گرید */}
+                  <div className="p-4 border-b border-gray-700/80 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <div className="relative flex-1 min-w-0">
+                      <Search
+                        size={20}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                      />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="جستجو در فایل‌ها..."
+                        className="w-full pr-11 pl-4 py-2.5 rounded-xl border border-gray-600 bg-gray-700/50 text-white placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-colors text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 bg-gray-700/50 rounded-xl p-1 shrink-0">
+                      <button
+                        onClick={() => setViewMode("list")}
+                        className={`p-2.5 rounded-lg transition-colors ${
+                          viewMode === "list"
+                            ? "bg-gray-600 text-blue-400"
+                            : "text-gray-500 hover:text-gray-300"
+                        }`}
+                        title="نمای لیست"
+                      >
+                        <List size={20} />
+                      </button>
+                      <button
+                        onClick={() => setViewMode("grid")}
+                        className={`p-2.5 rounded-lg transition-colors ${
+                          viewMode === "grid"
+                            ? "bg-gray-600 text-blue-400"
+                            : "text-gray-500 hover:text-gray-300"
+                        }`}
+                        title="نمای شبکه‌ای"
+                      >
+                        <Grid3x3 size={20} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-4 sm:p-6 min-h-[280px]">
                 <FileList
                   files={files}
                   loading={loading}
@@ -452,35 +445,33 @@ export default function FilesPage() {
                   sortOrder={sortOrder}
                   onSort={handleSort}
                 />
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="p-4 border-t border-secondary-200 dark:border-secondary-700">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => setPage(page - 1)}
-                      disabled={page === 1}
-                      className="px-3 py-1 border border-secondary-300 dark:border-secondary-600 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50"
-                    >
-                      قبلی
-                    </button>
-                    <span className="text-sm text-secondary-600 dark:text-secondary-400">
-                      صفحه {page} از {totalPages}
-                    </span>
-                    <button
-                      onClick={() => setPage(page + 1)}
-                      disabled={page === totalPages}
-                      className="px-3 py-1 border border-secondary-300 dark:border-secondary-600 rounded hover:bg-secondary-100 dark:hover:bg-secondary-700 disabled:opacity-50"
-                    >
-                      بعدی
-                    </button>
                   </div>
+
+                  {totalPages > 1 && (
+                    <div className="px-4 py-3 border-t border-gray-700/80 flex items-center justify-center gap-4 bg-gray-800/50">
+                      <button
+                        onClick={() => setPage(page - 1)}
+                        disabled={page === 1}
+                        className="px-4 py-2 rounded-xl text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        قبلی
+                      </button>
+                      <span className="text-sm text-gray-400">
+                        صفحه {page} از {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setPage(page + 1)}
+                        disabled={page === totalPages}
+                        className="px-4 py-2 rounded-xl text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        بعدی
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-        </div>
         </main>
       </div>
 

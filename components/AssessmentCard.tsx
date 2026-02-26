@@ -2,14 +2,6 @@
 
 import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Clock, FileQuestion, Users, CheckCircle2 } from "lucide-react";
 import { badgeVariants } from "@/lib/design-tokens";
 
@@ -74,8 +66,8 @@ function AssessmentCardComponent({
   const typeInfo = getTypeLabel(assessment.type);
 
   return (
-    <Card className="hover:shadow-md transition-shadow dark:bg-secondary-800 dark:border-secondary-700">
-      <CardHeader>
+    <div className="rounded-lg border border-gray-700 bg-gray-800 shadow-sm hover:shadow-md transition-shadow text-gray-100">
+      <div className="flex flex-col space-y-1.5 p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
@@ -83,50 +75,48 @@ function AssessmentCardComponent({
                 {typeInfo.label}
               </Badge>
             </div>
-            <CardTitle className="text-xl mb-2 text-secondary-900 dark:text-white">{assessment.title}</CardTitle>
+            <h3 className="text-xl font-semibold mb-2 text-white">{assessment.title}</h3>
             {assessment.description && (
-              <CardDescription className="line-clamp-2 text-secondary-600 dark:text-secondary-400">
-                {assessment.description}
-              </CardDescription>
+              <p className="text-sm line-clamp-2 text-gray-400">{assessment.description}</p>
             )}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent>
+      <div className="p-6 pt-0">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-4">
             {showStats && assessment._count?.assignments !== undefined && (
-              <div className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-400">
-                <Users className="w-4 h-4 text-secondary-500 dark:text-secondary-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Users className="w-4 h-4 text-gray-500" />
                 <span>{assessment._count.assignments} بخش</span>
               </div>
             )}
 
             {assessment._count?.questions !== undefined && (
-              <div className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-400">
-                <FileQuestion className="w-4 h-4 text-secondary-500 dark:text-secondary-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <FileQuestion className="w-4 h-4 text-gray-500" />
                 <span>{assessment._count.questions} سوال</span>
               </div>
             )}
 
             {showStats && assessment._count?.results !== undefined && (
-              <div className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-400">
-                <CheckCircle2 className="w-4 h-4 text-secondary-500 dark:text-secondary-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <CheckCircle2 className="w-4 h-4 text-gray-500" />
                 <span>{assessment._count.results} شرکت‌کننده</span>
               </div>
             )}
 
             {assessment.timeLimit && (
-              <div className="flex items-center gap-2 text-sm text-secondary-600 dark:text-secondary-400">
-                <Clock className="w-4 h-4 text-secondary-500 dark:text-secondary-500" />
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Clock className="w-4 h-4 text-gray-500" />
                 <span>{assessment.timeLimit} دقیقه</span>
               </div>
             )}
           </div>
 
           {assessment.isActive !== undefined && (
-            <div className="mt-4 pt-3 border-t border-secondary-200 dark:border-secondary-700">
+            <div className="mt-4 pt-3 border-t border-gray-700">
               <Badge
                 variant={assessment.isActive ? "default" : "secondary"}
                 className={assessment.isActive ? badgeVariants.success : badgeVariants.secondary}
@@ -136,10 +126,10 @@ function AssessmentCardComponent({
             </div>
           )}
         </div>
-      </CardContent>
+      </div>
 
-      {actions && <CardFooter className="pt-4">{actions}</CardFooter>}
-    </Card>
+      {actions && <div className="flex flex-wrap items-center p-6 pt-0">{actions}</div>}
+    </div>
   );
 }
 

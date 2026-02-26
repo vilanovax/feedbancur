@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
-// توجه: آپلود محلی حذف شده - فقط از Object Storage استفاده می‌شود
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 
 const messageSchema = z.object({
   content: z.string().optional(),
@@ -191,13 +191,9 @@ export async function POST(
               ? JSON.parse(settings.chatSettings)
               : settings.chatSettings)
           : { maxFileSize: 5, allowedFileTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"] };
-        
-        const objectStorageSettings = settings?.objectStorageSettings
-          ? (typeof settings.objectStorageSettings === 'string'
-              ? JSON.parse(settings.objectStorageSettings)
-              : settings.objectStorageSettings)
-          : { enabled: false };
-        
+
+        const objectStorageSettings = await getObjectStorageSettings(prisma);
+
         // بررسی حجم فایل
         const maxSizeBytes = (chatSettings.maxFileSize || 5) * 1024 * 1024; // تبدیل به بایت
         if (imageFile.size > maxSizeBytes) {
@@ -237,54 +233,28 @@ export async function POST(
           fileExtension = mimeToExt[imageFile.type] || 'jpg';
         }
         const fileName = `message-${timestamp}-${randomString}.${fileExtension}`;
-        
-        // بررسی کامل بودن تنظیمات Object Storage
-        const hasValidObjectStorage =
-          objectStorageSettings.enabled &&
-          objectStorageSettings.accessKeyId &&
-          objectStorageSettings.secretAccessKey &&
-          objectStorageSettings.endpoint &&
-          objectStorageSettings.bucket;
 
-        if (hasValidObjectStorage) {
-          // آپلود به Object Storage (لیارا / MinIO)
-          try {
-            imageUrl = await uploadToLiara(
-              buffer,
-              fileName,
-              imageFile.type,
-              objectStorageSettings,
-              "messages"
-            );
-            console.log("✅ Image uploaded to Object Storage:", imageUrl);
-          } catch (storageError: any) {
-            console.warn("⚠️  Object Storage upload failed, falling back to local storage:", storageError.message);
-            // Fallback: ذخیره لوکال
-            const fs = await import("fs/promises");
-            const path = await import("path");
-
-            const uploadDir = path.join(process.cwd(), "public", "uploads", "messages");
-            await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
-
-            const filePath = path.join(uploadDir, fileName);
-            await fs.writeFile(filePath, buffer);
-            imageUrl = `/uploads/messages/${fileName}`;
-            console.log("✅ Image saved locally:", imageUrl);
-          }
-        } else {
-          // Fallback: ذخیره لوکال در صورت عدم تنظیم Object Storage
-          console.warn("⚠️  Object Storage not configured, saving locally");
-
-          const fs = await import("fs/promises");
-          const path = await import("path");
-
-          const uploadDir = path.join(process.cwd(), "public", "uploads", "messages");
-          await fs.mkdir(uploadDir, { recursive: true }).catch(() => {});
-
-          const filePath = path.join(uploadDir, fileName);
-          await fs.writeFile(filePath, buffer);
-          imageUrl = `/uploads/messages/${fileName}`;
-          console.log("✅ Image saved locally:", imageUrl);
+        if (!isStorageConfigValid(objectStorageSettings)) {
+          return NextResponse.json(
+            { error: "Object Storage (لیارا) پیکربندی نشده است. متغیرهای LIARA_* را در .env قرار دهید یا از بخش تنظیمات پیکربندی کنید." },
+            { status: 400 }
+          );
+        }
+        try {
+          imageUrl = await uploadToLiara(
+            buffer,
+            fileName,
+            imageFile.type,
+            objectStorageSettings,
+            "messages"
+          );
+          console.log("✅ Image uploaded to Object Storage:", imageUrl);
+        } catch (storageError: any) {
+          console.error("❌ Object Storage upload failed:", storageError.message);
+          return NextResponse.json(
+            { error: `خطا در آپلود تصویر: ${storageError.message || "خطای نامشخص"}` },
+            { status: 500 }
+          );
         }
       }
       

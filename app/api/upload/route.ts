@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToLiara } from "@/lib/liara-storage";
-// توجه: آپلود محلی حذف شده - فقط از Object Storage استفاده می‌شود
+import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
 import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
@@ -43,13 +43,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // دریافت تنظیمات Object Storage
-    const settings = await prisma.settings.findFirst();
-    const objectStorageSettings = settings?.objectStorageSettings
-      ? (typeof settings.objectStorageSettings === 'string'
-          ? JSON.parse(settings.objectStorageSettings)
-          : settings.objectStorageSettings)
-      : { enabled: false };
+    // دریافت تنظیمات Object Storage (از env یا دیتابیس، اتوماتیک)
+    const objectStorageSettings = await getObjectStorageSettings(prisma);
 
     const bytes = await file.arrayBuffer();
     const originalBuffer = Buffer.from(bytes);
@@ -193,18 +188,10 @@ export async function POST(request: NextRequest) {
     const extension = optimizedMimeType === "image/webp" ? "webp" : "png";
     const filename = `logo-${timestamp}.${extension}`;
 
-    // بررسی کامل بودن تنظیمات Object Storage
-    const hasValidObjectStorage =
-      objectStorageSettings.enabled &&
-      objectStorageSettings.accessKeyId &&
-      objectStorageSettings.secretAccessKey &&
-      objectStorageSettings.endpoint &&
-      objectStorageSettings.bucket;
-
+    const hasValidObjectStorage = isStorageConfigValid(objectStorageSettings);
     let fileUrl: string;
 
-    if (hasValidObjectStorage) {
-      // آپلود به Object Storage (لیارا / MinIO)
+    if (hasValidObjectStorage && objectStorageSettings) {
       try {
         fileUrl = await uploadToLiara(
           optimizedBuffer,
@@ -222,35 +209,10 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      // Fallback: ذخیره لوکال در صورت عدم تنظیم Object Storage
-      console.warn("⚠️  Object Storage not configured, saving logo locally");
-
-      const fs = await import("fs/promises");
-      const path = await import("path");
-
-      // مسیر ذخیره‌سازی لوکال
-      const uploadDir = path.join(process.cwd(), "public", "uploads", "logo");
-
-      // ایجاد پوشه اگر وجود ندارد
-      try {
-        await fs.mkdir(uploadDir, { recursive: true });
-      } catch (mkdirError) {
-        console.error("Error creating upload directory:", mkdirError);
-      }
-
-      // ذخیره فایل
-      const filePath = path.join(uploadDir, filename);
-      try {
-        await fs.writeFile(filePath, optimizedBuffer);
-        fileUrl = `/uploads/logo/${filename}`;
-        console.log("✅ Logo saved locally:", fileUrl);
-      } catch (writeError: any) {
-        console.error("❌ Error saving logo locally:", writeError);
-        return NextResponse.json(
-          { error: `خطا در ذخیره لوگو: ${writeError.message || "خطای نامشخص"}` },
-          { status: 500 }
-        );
-      }
+      return NextResponse.json(
+        { error: "Object Storage (لیارا) پیکربندی نشده است. از بخش تنظیمات، ذخیره‌سازی فایل را تنظیم کنید." },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({
