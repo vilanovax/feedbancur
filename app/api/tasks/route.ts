@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 const createTaskSchema = z.object({
   title: z.string().min(1, 'عنوان الزامی است'),
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     // فیلتر براساس نقش کاربر
     if (session.user.role === 'EMPLOYEE') {
       // کارمندان فقط تسک‌های خودشان را می‌بینند
-      where.assignedTo = {
+      where.task_assignments = {
         some: {
           OR: [
             { userId: session.user.id },
@@ -200,12 +201,14 @@ export async function POST(req: NextRequest) {
     // ایجاد تسک
     const task = await prisma.tasks.create({
       data: {
+        id: randomUUID(),
         title: data.title,
         description: data.description,
         departmentId: targetDepartmentId,
         feedbackId: data.feedbackId,
         priority: data.priority || 'MEDIUM',
         createdById: session.user.id,
+        updatedAt: new Date(),
       },
       include: {
         departments: true,
@@ -221,8 +224,9 @@ export async function POST(req: NextRequest) {
 
     // تخصیص به کارمندان/کاربران
     if (data.assignedEmployeeIds && data.assignedEmployeeIds.length > 0) {
-      await prisma.taskAssignment.createMany({
+      await prisma.task_assignments.createMany({
         data: data.assignedEmployeeIds.map((employeeId) => ({
+          id: randomUUID(),
           taskId: task.id,
           employeeId,
         })),
@@ -230,8 +234,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (data.assignedUserIds && data.assignedUserIds.length > 0) {
-      await prisma.taskAssignment.createMany({
+      await prisma.task_assignments.createMany({
         data: data.assignedUserIds.map((userId) => ({
+          id: randomUUID(),
           taskId: task.id,
           userId,
         })),

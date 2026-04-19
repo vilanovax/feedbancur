@@ -112,6 +112,11 @@ export async function GET(req: NextRequest) {
               name: true,
             },
           },
+          announcement_views: {
+            where: { userId: session.user.id },
+            select: { id: true },
+            take: 1,
+          },
         },
         orderBy: {
           createdAt: 'desc',
@@ -127,8 +132,10 @@ export async function GET(req: NextRequest) {
       ...announcement,
       createdBy: announcement.users,
       department: announcement.departments,
+      isRead: announcement.announcement_views.length > 0,
       users: undefined,
       departments: undefined,
+      announcement_views: undefined,
     }));
 
     // پاسخ با pagination یا بدون آن

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 const updateTaskSchema = z.object({
   title: z.string().optional(),
@@ -239,14 +240,15 @@ export async function PATCH(
     // بروزرسانی تخصیص‌ها
     if (data.assignedEmployeeIds || data.assignedUserIds) {
       // حذف تخصیص‌های قبلی
-      await prisma.taskAssignment.deleteMany({
+      await prisma.task_assignments.deleteMany({
         where: { taskId: id },
       });
 
       // ایجاد تخصیص‌های جدید
       if (data.assignedEmployeeIds && data.assignedEmployeeIds.length > 0) {
-        await prisma.taskAssignment.createMany({
+        await prisma.task_assignments.createMany({
           data: data.assignedEmployeeIds.map((employeeId) => ({
+            id: randomUUID(),
             taskId: id,
             employeeId,
           })),
@@ -254,8 +256,9 @@ export async function PATCH(
       }
 
       if (data.assignedUserIds && data.assignedUserIds.length > 0) {
-        await prisma.taskAssignment.createMany({
+        await prisma.task_assignments.createMany({
           data: data.assignedUserIds.map((userId) => ({
+            id: randomUUID(),
             taskId: id,
             userId,
           })),

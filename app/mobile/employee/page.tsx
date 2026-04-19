@@ -38,6 +38,7 @@ export default function EmployeeMobilePage() {
     activePolls: 0,
     newPolls: 0,
     assessments: 0,
+    updates: 0,
   });
 
   useEffect(() => {
@@ -57,11 +58,12 @@ export default function EmployeeMobilePage() {
 
   const fetchStats = async () => {
     try {
-      const [feedbacksRes, tasksRes, statsRes, assessmentsRes] = await Promise.all([
+      const [feedbacksRes, tasksRes, statsRes, assessmentsRes, updatesRes] = await Promise.all([
         fetch("/api/feedback"),
         fetch("/api/tasks"),
         fetch("/api/stats"),
         fetch("/api/assessments/available"),
+        fetch("/api/updates?limit=1"),
       ]);
 
       if (feedbacksRes.ok) {
@@ -88,6 +90,11 @@ export default function EmployeeMobilePage() {
       if (assessmentsRes.ok) {
         const assessments = await assessmentsRes.json();
         setStats((prev) => ({ ...prev, assessments: assessments.length }));
+      }
+
+      if (updatesRes.ok) {
+        const updatesData = await updatesRes.json();
+        setStats((prev) => ({ ...prev, updates: updatesData?.pagination?.total ?? 0 }));
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -159,6 +166,13 @@ export default function EmployeeMobilePage() {
     return labels[type] || type;
   };
 
+  const statNumCls = (n: number) =>
+    `text-2xl font-bold ${
+      n === 0
+        ? "text-secondary-400 dark:text-secondary-600"
+        : "text-secondary-900 dark:text-white"
+    }`;
+
   if (status === "loading" || loading) {
     return (
       <MobileLayout role="EMPLOYEE" title="داشبورد">
@@ -204,29 +218,35 @@ export default function EmployeeMobilePage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+          <Link
+            href="/mobile/feedback"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30">
                 <MessageSquare className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+            <p className={statNumCls(stats.myFeedbacks)}>
               {stats.myFeedbacks}
             </p>
             <p className="text-sm text-secondary-600 dark:text-secondary-400">فیدبک‌ها</p>
-          </div>
+          </Link>
 
-          <div className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+          <Link
+            href="/tasks"
+            className="bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 rounded-lg bg-success-100 dark:bg-success-900/30">
                 <CheckSquare className="w-5 h-5 text-success-600 dark:text-success-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+            <p className={statNumCls(stats.myTasks)}>
               {stats.myTasks}
             </p>
             <p className="text-sm text-secondary-600 dark:text-secondary-400">تسک‌ها</p>
-          </div>
+          </Link>
 
           <Link
             href="/mobile/employee/assessments"
@@ -237,7 +257,7 @@ export default function EmployeeMobilePage() {
                 <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+            <p className={statNumCls(stats.assessments)}>
               {stats.assessments}
             </p>
             <p className="text-sm text-secondary-600 dark:text-secondary-400">آزمون‌ها</p>
@@ -258,7 +278,7 @@ export default function EmployeeMobilePage() {
                 )}
               </div>
             </div>
-            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+            <p className={statNumCls(stats.activeAnnouncements)}>
               {stats.activeAnnouncements}
             </p>
             <p className="text-sm text-secondary-600 dark:text-secondary-400">اعلانات</p>
@@ -284,7 +304,7 @@ export default function EmployeeMobilePage() {
                 )}
               </div>
             </div>
-            <p className="text-2xl font-bold text-secondary-900 dark:text-white">
+            <p className={statNumCls(stats.activePolls)}>
               {stats.activePolls}
             </p>
             <p className="text-sm text-secondary-600 dark:text-secondary-400">نظرسنجی‌ها</p>
@@ -305,10 +325,10 @@ export default function EmployeeMobilePage() {
                 <Newspaper className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
-            <p className="text-sm text-secondary-600 dark:text-secondary-400">اطلاع‌رسانی‌ها</p>
-            <p className="text-xs text-secondary-500 dark:text-secondary-500 mt-1">
-              بهبودها و تغییرات
+            <p className={statNumCls(stats.updates)}>
+              {stats.updates}
             </p>
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">اطلاع‌رسانی‌ها</p>
           </Link>
         </div>
 
@@ -363,24 +383,23 @@ export default function EmployeeMobilePage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white dark:bg-secondary-800 rounded-xl p-8 text-center shadow-sm">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ClipboardList className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            <Link
+              href="/mobile/employee/assessments"
+              className="flex items-center gap-3 bg-white dark:bg-secondary-800 rounded-xl p-3 shadow-sm hover:shadow-md transition-all"
+            >
+              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center shrink-0">
+                <ClipboardList className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <h4 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
-                هنوز آزمونی تکمیل نکرده‌اید
-              </h4>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400 mb-4">
-                پس از تکمیل آزمون‌ها، نتایج در اینجا نمایش داده می‌شود
-              </p>
-              <Link
-                href="/mobile/employee/assessments"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                مشاهده آزمون‌های موجود
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
-            </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-secondary-900 dark:text-white">
+                  هنوز آزمونی تکمیل نکرده‌اید
+                </p>
+                <p className="text-xs text-secondary-600 dark:text-secondary-400">
+                  مشاهده آزمون‌های موجود
+                </p>
+              </div>
+              <ArrowLeft className="w-5 h-5 text-secondary-400 shrink-0" />
+            </Link>
           )}
         </div>
 
@@ -389,22 +408,6 @@ export default function EmployeeMobilePage() {
           <h3 className="text-lg font-semibold text-secondary-800 dark:text-white">
             دسترسی سریع
           </h3>
-
-          <Link
-            href="/mobile/tasks"
-            className="flex items-center gap-4 bg-white dark:bg-secondary-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="w-12 h-12 bg-success-100 dark:bg-success-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
-              <CheckSquare className="w-6 h-6 text-success-600 dark:text-success-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-secondary-800 dark:text-white">تسک‌ها</h4>
-              <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                مدیریت و پیگیری تسک‌ها
-              </p>
-            </div>
-            <ArrowLeft className="w-5 h-5 text-secondary-400 flex-shrink-0" />
-          </Link>
 
           <Link
             href="/mobile/public-board"

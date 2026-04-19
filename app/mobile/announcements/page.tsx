@@ -84,6 +84,11 @@ export default function MobileAnnouncementsPage() {
   const openModal = (announcement: any) => {
     setSelectedAnnouncement(announcement);
     setShowModal(true);
+    if (!announcement.isRead) {
+      setAnnouncements((prev) =>
+        prev.map((a) => (a.id === announcement.id ? { ...a, isRead: true } : a))
+      );
+    }
   };
 
   const closeModal = () => {
@@ -100,7 +105,7 @@ export default function MobileAnnouncementsPage() {
       case "LOW":
         return <Info className="text-blue-500" size={20} />;
       default:
-        return <Bell className="text-gray-500" size={20} />;
+        return null;
     }
   };
 
@@ -113,7 +118,7 @@ export default function MobileAnnouncementsPage() {
       case "LOW":
         return "border-r-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20";
       default:
-        return "border-r-4 border-gray-300";
+        return "";
     }
   };
 
@@ -173,23 +178,24 @@ export default function MobileAnnouncementsPage() {
       <div className="space-y-4">
         {/* Sort Options */}
         {!loading && announcements.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ArrowUpDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                مرتب‌سازی:
-              </label>
-            </div>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as SortOption)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-            >
-              <option value="newest">جدیدترین</option>
-              <option value="oldest">قدیمی‌ترین</option>
-              <option value="priority">اولویت</option>
-              <option value="title">عنوان</option>
-            </select>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {announcements.length} اعلان
+            </span>
+            <label className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 shadow-sm">
+              <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="bg-transparent focus:outline-none pr-1 text-sm"
+                aria-label="مرتب‌سازی"
+              >
+                <option value="newest">جدیدترین</option>
+                <option value="oldest">قدیمی‌ترین</option>
+                <option value="priority">اولویت</option>
+                <option value="title">عنوان</option>
+              </select>
+            </label>
           </div>
         )}
 
@@ -213,16 +219,30 @@ export default function MobileAnnouncementsPage() {
                 )}`}
               >
                 <div className="flex items-start gap-3 mb-2">
-                  <div className="mt-1">
-                    {getPriorityIcon(announcement.priority)}
-                  </div>
-                  <div className="flex-1">
+                  {getPriorityIcon(announcement.priority) && (
+                    <div className="mt-1 shrink-0">
+                      {getPriorityIcon(announcement.priority)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white flex-1">
+                      {!announcement.isRead && (
+                        <span
+                          className="w-2 h-2 rounded-full bg-blue-500 shrink-0"
+                          aria-label="خوانده‌نشده"
+                        />
+                      )}
+                      <h3
+                        className={`text-lg flex-1 ${
+                          announcement.isRead
+                            ? "font-medium text-gray-700 dark:text-gray-300"
+                            : "font-semibold text-gray-900 dark:text-white"
+                        }`}
+                      >
                         {announcement.title}
                       </h3>
                       {announcement.attachments && Array.isArray(announcement.attachments) && announcement.attachments.length > 0 && (
-                        <Paperclip size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                        <Paperclip size={16} className="text-blue-600 dark:text-blue-400 shrink-0" />
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -248,9 +268,11 @@ export default function MobileAnnouncementsPage() {
                         </span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      برای مشاهده جزئیات کلیک کنید
-                    </p>
+                    {announcement.content && (
+                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                        {announcement.content}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
