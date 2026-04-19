@@ -182,7 +182,7 @@ function UpdateModalComponent({ update, onClose }: UpdateModalProps) {
                 <span className="font-medium">فیدبک مرتبط:</span>
               </div>
               <Link
-                href={`/feedback/${update.feedback.id}`}
+                href={`/feedback/with-chat?openChat=${update.feedback.id}`}
                 className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <span>{update.feedback.title}</span>

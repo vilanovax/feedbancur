@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
           message: `فیدبک جدید "${feedback.title}" ثبت کرد`,
           timestamp: feedback.createdAt,
           icon: "MessageSquare",
-          link: `/feedback/${feedback.id}`,
+          link: `/feedback/with-chat?openChat=${feedback.id}`,
         });
       }
       // فیدبک تکمیل شد
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
           message: `فیدبک "${feedback.title}" را تکمیل کرد`,
           timestamp: feedback.updatedAt,
           icon: "CheckCircle",
-          link: `/feedback/${feedback.id}`,
+          link: `/feedback/with-chat?openChat=${feedback.id}`,
         });
       }
       // فیدبک به‌روزرسانی شد
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
           message: `فیدبک "${feedback.title}" را به‌روزرسانی کرد`,
           timestamp: feedback.updatedAt,
           icon: "Edit",
-          link: `/feedback/${feedback.id}`,
+          link: `/feedback/with-chat?openChat=${feedback.id}`,
         });
       }
     });

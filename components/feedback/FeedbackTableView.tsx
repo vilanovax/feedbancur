@@ -139,7 +139,7 @@ export default function FeedbackTableView({
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={`/feedback/${feedback.id}`}
+                      href={`/feedback/with-chat?openChat=${feedback.id}`}
                       className="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       {feedback.title}

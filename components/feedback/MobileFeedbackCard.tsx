@@ -37,7 +37,7 @@ const MobileFeedbackCard = memo(function MobileFeedbackCard({
             onClick={(e) => e.stopPropagation()}
           />
           <Link
-            href={`/feedback/${feedback.id}`}
+            href={`/feedback/with-chat?openChat=${feedback.id}`}
             className="text-base font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 line-clamp-2 flex-1"
           >
             {feedback.title}
