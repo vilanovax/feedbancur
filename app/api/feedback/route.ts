@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { uploadToLiara } from "@/lib/liara-storage";
 import { getObjectStorageSettings, isStorageConfigValid } from "@/lib/object-storage-settings";
+import { randomUUID } from "crypto";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "عنوان الزامی است"),
@@ -427,6 +428,7 @@ export async function POST(request: NextRequest) {
     try {
       feedback = await prisma.feedbacks.create({
         data: {
+          id: randomUUID(),
           title: validatedData.title,
           content: validatedData.content,
           image: validatedData.image,
@@ -437,6 +439,7 @@ export async function POST(request: NextRequest) {
           forwardedToId: forwardedToId,
           forwardedAt: forwardedToId ? new Date() : null,
           status: forwardedToId ? "REVIEWED" : "PENDING",
+          updatedAt: new Date(),
         },
       include: {
         users_feedbacks_userIdTousers: {

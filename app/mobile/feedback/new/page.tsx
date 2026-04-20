@@ -165,9 +165,10 @@ export default function NewFeedbackMobilePage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              بخش
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+              بخش <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.departmentId}
@@ -175,7 +176,7 @@ export default function NewFeedbackMobilePage() {
                 setFormData({ ...formData, departmentId: e.target.value })
               }
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
             >
               <option value="">انتخاب بخش</option>
               {departments.map((dept) => (
@@ -187,8 +188,8 @@ export default function NewFeedbackMobilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              عنوان
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+              عنوان <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -197,14 +198,14 @@ export default function NewFeedbackMobilePage() {
                 setFormData({ ...formData, title: e.target.value })
               }
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
               placeholder="عنوان فیدبک"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              محتوا
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+              محتوا <span className="text-red-500">*</span>
             </label>
             <textarea
               value={formData.content}
@@ -213,14 +214,14 @@ export default function NewFeedbackMobilePage() {
               }
               required
               rows={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
               placeholder="متن فیدبک خود را بنویسید..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              نوع فیدبک
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+              نوع فیدبک <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.type}
@@ -228,7 +229,7 @@ export default function NewFeedbackMobilePage() {
                 setFormData({ ...formData, type: e.target.value })
               }
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400"
             >
               {feedbackTypes.map((type) => (
                 <option key={type.key} value={type.key}>
@@ -246,19 +247,20 @@ export default function NewFeedbackMobilePage() {
               onChange={(e) =>
                 setFormData({ ...formData, isAnonymous: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-5 w-5 accent-blue-600 border-gray-400 rounded cursor-pointer"
             />
             <label
               htmlFor="isAnonymous"
-              className="mr-1.5 block text-sm text-gray-700 dark:text-gray-300"
+              className="mr-2 block text-sm text-gray-800 dark:text-gray-200 cursor-pointer"
             >
               ارسال به صورت ناشناس
             </label>
           </div>
+          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              ضمیمه تصویر (اختیاری - می‌توانید چند تصویر انتخاب کنید)
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
+            <label className="block text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
+              ضمیمه تصویر <span className="text-xs font-normal text-gray-500 dark:text-gray-400">(اختیاری - چند تصویر)</span>
             </label>
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -308,7 +310,7 @@ export default function NewFeedbackMobilePage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex-1 px-6 py-3 border border-gray-400 bg-white rounded-lg text-gray-700 font-medium hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-500 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               انصراف
             </button>

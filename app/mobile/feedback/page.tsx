@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MobileLayout from "@/components/MobileLayout";
-import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X } from "lucide-react";
+import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X, MessageSquare } from "lucide-react";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
@@ -155,31 +155,27 @@ export default function MobileFeedbacksPage() {
   return (
     <MobileLayout role={role} title="فیدبک‌های من">
       <div className="space-y-4">
-        {/* Header Actions */}
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-              showFilters || hasActiveFilters
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            }`}
-          >
-            <Filter size={16} />
-            فیلتر
-            {hasActiveFilters && (
-              <span className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                {[selectedStatus, selectedDepartment, selectedType].filter(Boolean).length}
-              </span>
-            )}
-          </button>
-          <Link
-            href="/mobile/feedback/new"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-          >
-            ثبت فیدبک جدید
-          </Link>
-        </div>
+        {/* Header Actions — filter only, hidden when list is empty and no filters active */}
+        {(feedbacks.length > 0 || hasActiveFilters) && (
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                showFilters || hasActiveFilters
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              }`}
+            >
+              <Filter size={16} />
+              فیلتر
+              {hasActiveFilters && (
+                <span className="bg-white text-blue-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                  {[selectedStatus, selectedDepartment, selectedType].filter(Boolean).length}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Filters Panel */}
         {showFilters && (
@@ -257,24 +253,25 @@ export default function MobileFeedbacksPage() {
 
         {/* Sort Options */}
         {!loading && filteredAndSortedFeedbacks.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ArrowUpDown className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                مرتب‌سازی:
-              </label>
-            </div>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value as SortOption)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
-            >
-              <option value="date-desc">جدیدترین</option>
-              <option value="date-asc">قدیمی‌ترین</option>
-              <option value="rating-desc">امتیاز (بالا به پایین)</option>
-              <option value="rating-asc">امتیاز (پایین به بالا)</option>
-              <option value="status">وضعیت</option>
-            </select>
+          <div className="flex items-center justify-between px-1">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {filteredAndSortedFeedbacks.length} فیدبک
+            </span>
+            <label className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-800 dark:text-gray-200 shadow-sm">
+              <ArrowUpDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value as SortOption)}
+                className="bg-transparent focus:outline-none pr-1 text-sm text-gray-900 dark:text-white"
+                aria-label="مرتب‌سازی"
+              >
+                <option value="date-desc">جدیدترین</option>
+                <option value="date-asc">قدیمی‌ترین</option>
+                <option value="rating-desc">امتیاز (بالا به پایین)</option>
+                <option value="rating-asc">امتیاز (پایین به بالا)</option>
+                <option value="status">وضعیت</option>
+              </select>
+            </label>
           </div>
         )}
 
@@ -283,27 +280,40 @@ export default function MobileFeedbacksPage() {
             <div className="text-gray-600 dark:text-gray-400">در حال بارگذاری...</div>
           </div>
         ) : filteredAndSortedFeedbacks.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-            <p className="text-gray-600 dark:text-gray-400">
-              {hasActiveFilters
-                ? "فیدبکی با فیلترهای انتخابی یافت نشد"
-                : "فیدبکی یافت نشد"}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="mt-4 inline-block bg-gray-600 text-white px-4 py-2 rounded-lg text-sm"
-              >
-                پاک کردن فیلترها
-              </button>
-            )}
-            {!hasActiveFilters && (
-              <Link
-                href="/mobile/feedback/new"
-                className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm"
-              >
-                ثبت فیدبک جدید
-              </Link>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm px-6 py-10 text-center">
+            <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            </div>
+            {hasActiveFilters ? (
+              <>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                  فیدبکی با این فیلترها یافت نشد
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                  فیلترها را تغییر دهید یا پاک کنید
+                </p>
+                <button
+                  onClick={clearFilters}
+                  className="inline-block bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition"
+                >
+                  پاک کردن فیلترها
+                </button>
+              </>
+            ) : (
+              <>
+                <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                  هنوز فیدبکی ثبت نکرده‌اید
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                  اولین فیدبک خود را ثبت کنید و روند پیگیری آن را ببینید
+                </p>
+                <Link
+                  href="/mobile/feedback/new"
+                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                >
+                  ثبت فیدبک جدید
+                </Link>
+              </>
             )}
           </div>
         ) : (
