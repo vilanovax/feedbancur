@@ -434,7 +434,7 @@ export default function SettingsPage() {
       <DynamicHeader />
       
       <main className="flex-1 lg:mr-64 mt-16 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center space-x-3 space-x-reverse mb-4">
               <Settings className="text-gray-700 dark:text-gray-300" size={32} />
@@ -453,12 +453,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* تب‌های تنظیمات */}
-          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8 space-x-reverse">
+          {/* تب‌های تنظیمات — قابل اسکرول افقی برای جلوگیری از clip شدن */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <nav className="flex space-x-8 space-x-reverse min-w-max">
               <button
                 onClick={() => setActiveTab("general")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "general"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -468,7 +468,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("feedback")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "feedback"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -478,7 +478,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("notifications")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "notifications"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -488,7 +488,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("chat")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "chat"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -498,7 +498,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("storage")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "storage"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -508,7 +508,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("workingHours")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "workingHours"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -518,7 +518,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("database")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "database"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -528,7 +528,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("teamStatus")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "teamStatus"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -538,7 +538,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("openai")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "openai"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -548,7 +548,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setActiveTab("fileShare")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === "fileShare"
                     ? "border-blue-500 text-blue-600 dark:text-blue-400"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
@@ -668,69 +668,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* تنظیمات اعلانات */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <div className="flex items-center space-x-2 space-x-reverse mb-6">
-                <Bell className="text-yellow-500" size={24} />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                  تنظیمات اعلانات
-                </h2>
-              </div>
-
-              <div className="space-y-4">
-                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.emailNotifications}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        emailNotifications: e.target.checked,
-                      })
-                    }
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    اعلانات ایمیل
-                  </span>
-                </label>
-
-                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.smsNotifications}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        smsNotifications: e.target.checked,
-                      })
-                    }
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    اعلانات پیامک
-                  </span>
-                </label>
-
-                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={settings.pushNotifications}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        pushNotifications: e.target.checked,
-                      })
-                    }
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300">
-                    اعلانات Push
-                  </span>
-                </label>
-              </div>
-            </div>
-
             {/* تنظیمات امنیتی */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-2 space-x-reverse mb-6">
@@ -796,7 +733,62 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* تنظیمات فیدبک */}
+            {/* تنظیمات نمایش */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                <Palette className="text-purple-500" size={24} />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  تنظیمات نمایش
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    تعداد آیتم در هر صفحه
+                  </label>
+                  <select
+                    value={settings.itemsPerPage}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        itemsPerPage: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    تم
+                  </label>
+                  <select
+                    value={settings.theme}
+                    onChange={(e) =>
+                      setSettings({ ...settings, theme: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  >
+                    <option value="light">روشن</option>
+                    <option value="dark">تاریک</option>
+                    <option value="auto">خودکار</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+              </>
+            )}
+
+            {/* محتوای تب مدیریت فیدبک */}
+            {activeTab === "feedback" && (
+              <>
+            {/* تنظیمات فیدبک (قوانین و محدودیت‌ها) */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-2 space-x-reverse mb-6">
                 <Mail className="text-green-500" size={24} />
@@ -863,61 +855,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* تنظیمات نمایش */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <div className="flex items-center space-x-2 space-x-reverse mb-6">
-                <Palette className="text-purple-500" size={24} />
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-                  تنظیمات نمایش
-                </h2>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    تعداد آیتم در هر صفحه
-                  </label>
-                  <select
-                    value={settings.itemsPerPage}
-                    onChange={(e) =>
-                      setSettings({
-                        ...settings,
-                        itemsPerPage: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    تم
-                  </label>
-                  <select
-                    value={settings.theme}
-                    onChange={(e) =>
-                      setSettings({ ...settings, theme: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  >
-                    <option value="light">روشن</option>
-                    <option value="dark">تاریک</option>
-                    <option value="auto">خودکار</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-              </>
-            )}
-
-            {/* محتوای تب مدیریت فیدبک */}
-            {activeTab === "feedback" && (
-              <>
             {/* تنظیمات تگ‌های وضعیت */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
               <div className="flex items-center space-x-2 space-x-reverse mb-6">
@@ -1152,6 +1089,68 @@ export default function SettingsPage() {
             {/* محتوای تب نوتیفیکیشن */}
             {activeTab === "notifications" && (
               <>
+            {/* تنظیمات اعلانات (کانال‌ها) */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div className="flex items-center space-x-2 space-x-reverse mb-6">
+                <Bell className="text-yellow-500" size={24} />
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+                  تنظیمات اعلانات
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.emailNotifications}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        emailNotifications: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    اعلانات ایمیل
+                  </span>
+                </label>
+
+                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.smsNotifications}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        smsNotifications: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    اعلانات پیامک
+                  </span>
+                </label>
+
+                <label className="flex items-center space-x-3 space-x-reverse cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.pushNotifications}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        pushNotifications: e.target.checked,
+                      })
+                    }
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    اعلانات Push
+                  </span>
+                </label>
+              </div>
+            </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                   <div className="flex items-center space-x-2 space-x-reverse mb-6">
                     <Bell className="text-blue-500" size={24} />
@@ -2695,12 +2694,12 @@ export default function SettingsPage() {
               </>
             )}
 
-            {/* دکمه ذخیره */}
-            <div className="flex justify-end">
+            {/* دکمه ذخیره — sticky تا همیشه در دسترس باشد */}
+            <div className="sticky bottom-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 bg-white/85 dark:bg-gray-900/85 backdrop-blur border-t border-gray-200 dark:border-gray-700 flex justify-end z-20">
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center space-x-2 space-x-reverse bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
                 <Save size={20} />
                 <span>{loading ? "در حال ذخیره..." : "ذخیره تنظیمات"}</span>
