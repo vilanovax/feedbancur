@@ -24,6 +24,7 @@ import {
   Newspaper,
   FolderKanban,
   Files,
+  Link2,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
@@ -193,6 +194,12 @@ export default function Sidebar() {
         name: "مدیریت ادمین‌ها",
         href: "/admins",
         icon: Shield,
+        roles: ["ADMIN"],
+      },
+      {
+        name: "مدیریت لینک‌های مفید",
+        href: "/admin-links",
+        icon: Link2,
         roles: ["ADMIN"],
       },
       {

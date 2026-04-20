@@ -194,6 +194,7 @@ model departments {
   tasks                          tasks[]
   users                          users[]
   manager                        users?                   @relation("department_manager", fields: [managerId], references: [id])
+  admin_links                    admin_links[]
 }
 
 model employees {
@@ -492,6 +493,7 @@ model users {
   departments_managed departments[]       @relation("department_manager")
   user_notes          user_notes[]
   user_checklists     user_checklists[]
+  admin_links         admin_links[]
 
   // Indexes for common queries
   @@index([role])
@@ -781,4 +783,26 @@ model user_checklist_items {
 
   @@index([checklistId])
   @@index([checklistId, order])
+}
+
+model admin_links {
+  id           String       @id
+  title        String
+  url          String
+  description  String?
+  icon         String?
+  category     String?
+  departmentId String?
+  order        Int          @default(0)
+  isActive     Boolean      @default(true)
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime
+  users        users        @relation(fields: [createdById], references: [id])
+  departments  departments? @relation(fields: [departmentId], references: [id])
+
+  @@index([isActive])
+  @@index([departmentId])
+  @@index([isActive, order])
+  @@index([createdById])
 }

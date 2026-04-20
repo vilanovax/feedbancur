@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Newspaper,
   NotebookPen,
+  Link2,
 } from "lucide-react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -209,6 +210,11 @@ export default function MobileLayout({
         name: "یادداشت‌ها و چک‌لیست",
         href: "/mobile/notes",
         icon: NotebookPen,
+      },
+      {
+        name: "لینک‌های مفید",
+        href: "/mobile/links",
+        icon: Link2,
       },
     ],
     [role]
