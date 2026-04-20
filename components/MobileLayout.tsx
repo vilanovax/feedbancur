@@ -14,6 +14,7 @@ import {
   Newspaper,
   NotebookPen,
   Link2,
+  LayoutGrid,
 } from "lucide-react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -230,7 +231,11 @@ export default function MobileLayout({
             href: "/mobile/manager/tasks",
             icon: CheckSquare,
           }
-        : navItems[1], // ثبت فیدبک (برای کارمند)
+        : {
+            name: "بیشتر",
+            href: "/mobile/more",
+            icon: LayoutGrid,
+          }, // جایگزین «ثبت فیدبک» — FAB در صفحه فیدبک‌های من این کار را انجام می‌دهد
       navItems[2], // فیدبک‌های من
       {
         name: "اعلانات",
