@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MobileLayout from "@/components/MobileLayout";
-import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X, MessageSquare } from "lucide-react";
+import { Star, Calendar, Building2, User, ArrowUpDown, Filter, X, MessageSquare, Plus } from "lucide-react";
 import { getStatusColor } from "@/lib/status-utils";
 import { useStatusTexts } from "@/lib/hooks/useStatusTexts";
 import { formatPersianDate, getTimeAgo } from "@/lib/date-utils";
@@ -364,6 +364,17 @@ export default function MobileFeedbacksPage() {
           </div>
         )}
       </div>
+
+      {/* FAB: ثبت فیدبک — فقط وقتی فیدبک داریم (empty state خودش CTA دارد) */}
+      {!loading && feedbacks.length > 0 && (
+        <Link
+          href="/mobile/feedback/new"
+          className="fixed bottom-20 left-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-200 active:scale-95 z-40"
+          aria-label="ثبت فیدبک جدید"
+        >
+          <Plus size={28} />
+        </Link>
+      )}
     </MobileLayout>
   );
 }

@@ -482,45 +482,47 @@ model users {
   departments                              departments?            @relation(fields: [departmentId], references: [id])
   user_statuses                            user_statuses?          @relation(fields: [statusId], references: [id])
 
+  // Relations
+  updates             updates[]
+  projects            projects[]
+  project_members     project_members[]
+  project_feedbacks   project_feedbacks[]
+  shared_folders      shared_folders[]
+  shared_files        shared_files[]
+  departments_managed departments[]       @relation("department_manager")
+  user_notes          user_notes[]
+  user_checklists     user_checklists[]
+
   // Indexes for common queries
   @@index([role])
   @@index([isActive])
   @@index([departmentId])
   @@index([role, isActive])
   @@index([departmentId, role])
-
-  // Relations
-  updates            updates[]
-  projects           projects[]
-  project_members    project_members[]
-  project_feedbacks  project_feedbacks[]
-  shared_folders     shared_folders[]
-  shared_files       shared_files[]
-  departments_managed departments[] @relation("department_manager")
 }
 
 model updates {
-  id          String         @id @default(uuid())
-  title       String
-  content     String         @db.Text
-  summary     String?        @db.Text
-  category    UpdateCategory
-  source      UpdateSource
+  id       String         @id @default(uuid())
+  title    String
+  content  String         @db.Text
+  summary  String?        @db.Text
+  category UpdateCategory
+  source   UpdateSource
 
-  feedbackId  String?        @unique
-  feedbacks   feedbacks?     @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
+  feedbackId String?    @unique
+  feedbacks  feedbacks? @relation(fields: [feedbackId], references: [id], onDelete: SetNull)
 
-  isDraft     Boolean        @default(false)
-  isPublished Boolean        @default(true)
+  isDraft     Boolean   @default(false)
+  isPublished Boolean   @default(true)
   publishedAt DateTime?
 
-  tags        Json           @default("[]")
-  imageUrl    String?        // URL تصویر در Object Storage
+  tags     Json    @default("[]")
+  imageUrl String? // URL تصویر در Object Storage
 
   createdById String
-  users       users          @relation(fields: [createdById], references: [id])
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  users       users    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([category])
   @@index([isPublished])
@@ -611,28 +613,28 @@ enum ProjectMemberRole {
 }
 
 model projects {
-  id                      String              @id @default(uuid())
-  name                    String
-  description             String?             @db.Text
-  token                   String              @unique @default(uuid())
+  id          String  @id @default(uuid())
+  name        String
+  description String? @db.Text
+  token       String  @unique @default(uuid())
 
-  isPublic                Boolean             @default(true)
-  requireLogin            Boolean             @default(false)
-  allowAnonymous          Boolean             @default(true)
-  membersCanViewFeedbacks Boolean             @default(false)
+  isPublic                Boolean @default(true)
+  requireLogin            Boolean @default(false)
+  allowAnonymous          Boolean @default(true)
+  membersCanViewFeedbacks Boolean @default(false)
 
-  isActive                Boolean             @default(true)
+  isActive Boolean @default(true)
 
-  createdById             String
-  users                   users               @relation(fields: [createdById], references: [id])
+  createdById String
+  users       users  @relation(fields: [createdById], references: [id])
 
-  project_members         project_members[]
-  project_feedbacks       project_feedbacks[]
-  shared_folders          shared_folders[]
-  shared_files            shared_files[]
+  project_members   project_members[]
+  project_feedbacks project_feedbacks[]
+  shared_folders    shared_folders[]
+  shared_files      shared_files[]
 
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([token])
   @@index([isActive])
@@ -645,10 +647,10 @@ model project_members {
   userId    String
   role      ProjectMemberRole @default(MEMBER)
 
-  projects  projects          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  users     users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects projects @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  users    users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  joinedAt  DateTime          @default(now())
+  joinedAt DateTime @default(now())
 
   @@unique([projectId, userId])
   @@index([projectId])
@@ -656,27 +658,27 @@ model project_members {
 }
 
 model project_feedbacks {
-  id          String         @id @default(uuid())
-  projectId   String
+  id        String @id @default(uuid())
+  projectId String
 
-  title       String
-  content     String         @db.Text
-  type        String         @default("SUGGESTION")
-  image       String?        @db.Text
+  title   String
+  content String  @db.Text
+  type    String  @default("SUGGESTION")
+  image   String? @db.Text
 
-  isAnonymous Boolean        @default(false)
+  isAnonymous Boolean @default(false)
   senderName  String?
   senderEmail String?
   userId      String?
 
-  status      FeedbackStatus @default(PENDING)
-  adminNotes  String?        @db.Text
+  status     FeedbackStatus @default(PENDING)
+  adminNotes String?        @db.Text
 
-  projects    projects       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  users       users?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projects projects @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  users    users?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
   @@index([userId])
@@ -684,10 +686,10 @@ model project_feedbacks {
 }
 
 model shared_folders {
-  id          String   @id @default(uuid())
-  name        String
-  parentId    String?
-  projectId   String?
+  id        String  @id @default(uuid())
+  name      String
+  parentId  String?
+  projectId String?
 
   createdById String
   createdAt   DateTime @default(now())
@@ -707,30 +709,30 @@ model shared_folders {
 }
 
 model shared_files {
-  id             String   @id @default(uuid())
-  name           String
-  originalName   String
-  storagePath    String
-  url            String
-  size           Int
-  mimeType       String
+  id           String @id @default(uuid())
+  name         String
+  originalName String
+  storagePath  String
+  url          String
+  size         Int
+  mimeType     String
 
-  folderId       String?
-  projectId      String?
+  folderId  String?
+  projectId String?
 
-  uploadedById   String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  uploadedById String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   downloadCount  Int       @default(0)
   lastAccessedAt DateTime?
   deletedAt      DateTime?
 
-  tags           String?   @db.Text
+  tags String? @db.Text
 
-  users   users           @relation(fields: [uploadedById], references: [id])
-  projects projects?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  folders shared_folders? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  users    users           @relation(fields: [uploadedById], references: [id])
+  projects projects?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folders  shared_folders? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@index([folderId])
   @@index([projectId])
@@ -738,4 +740,45 @@ model shared_files {
   @@index([deletedAt])
   @@index([projectId, folderId])
   @@index([projectId, deletedAt])
+}
+
+model user_notes {
+  id        String   @id
+  userId    String
+  title     String?
+  content   String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, pinned])
+  @@index([userId, updatedAt])
+}
+
+model user_checklists {
+  id        String                 @id
+  userId    String
+  title     String
+  createdAt DateTime               @default(now())
+  updatedAt DateTime
+  users     users                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     user_checklist_items[]
+
+  @@index([userId])
+  @@index([userId, updatedAt])
+}
+
+model user_checklist_items {
+  id              String          @id
+  checklistId     String
+  text            String
+  isDone          Boolean         @default(false)
+  order           Int             @default(0)
+  createdAt       DateTime        @default(now())
+  user_checklists user_checklists @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  @@index([checklistId])
+  @@index([checklistId, order])
 }

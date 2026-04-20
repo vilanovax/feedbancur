@@ -12,6 +12,7 @@ import {
   Users,
   ClipboardList,
   Newspaper,
+  NotebookPen,
 } from "lucide-react";
 import { useStatusChange } from "@/lib/hooks/useStatusChange";
 import { useNotifications } from "@/lib/hooks/useNotifications";
@@ -203,6 +204,11 @@ export default function MobileLayout({
             ? "/mobile/manager/team-status"
             : "/mobile/employee/team-status",
         icon: Users,
+      },
+      {
+        name: "یادداشت‌ها و چک‌لیست",
+        href: "/mobile/notes",
+        icon: NotebookPen,
       },
     ],
     [role]
